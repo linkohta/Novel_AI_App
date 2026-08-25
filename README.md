@@ -82,7 +82,7 @@ NovelAIの画像生成は1回ごとにAnlas（有料トークン）を消費し�
 
 ## 開発
 
-UIをブラウザで素早く確認したい場合は `npm run dev`（Vite開発サーバー）を使えます。ただし `window.api` はCapacitorのWeb実装頼みになるため、画像生成やファイル保存の一部はElectron/実機ほど動作しない点に注意してください。
+UIを素早く確認しながら開発したい場合は `npm run dev`（[electron-vite](https://electron-vite.org/)）を使えます。`main.js`/`preload.js`/`src/`をHMR付きでビルドし、実際のElectronアプリを自動起動するため、`window.api`は本物のIPC経由で動作します（画像生成やファイル保存もそのまま試せます）。
 
 コードを変更したら、コミット前に以下でフォーマット・静的検査を行ってください。
 

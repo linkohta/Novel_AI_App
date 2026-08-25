@@ -36,14 +36,15 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
   - `src/components/modals/*.jsx` — 編集・適用モーダル（`ChunkEditModal`, `TemplateEditModal`, `TemplateApplyModal`, `FavArtistEditModal`, `FavCharEditModal`）。共通の `ModalOverlay` は `open` が falsy なら何も描画しない（旧実装のような `.open` クラス切り替えではなく、条件付きレンダリングで開閉する）。
   - `src/hooks/useNamedList.js` — チャンク・テンプレート・お気に入りに共通する「読み込み→追加→編集→削除のたびにサーバー側の最新リストで置き換える」パターンを提供するフック。`src/hooks/useFavoritesList.js` はこれを`kind`（`'artist'`/`'character'`）でラップしてお気に入りに使う。
   - `src/utils/templateVariables.js` — `(変数名)` プレースホルダーの抽出・置換ロジック（純粋関数、Reactに依存しない）。
-  - `src/styles.css` — 全体のスタイル（旧 `www/index.html` の `<style>` をそのまま移植）。折りたたみセクションは `<details className="section">` をReactの `open`/`onToggle` で制御しており、CSSの矢印回転等はHTML版と同じ仕組み。
+  - `src/styles.css` — 全体のスタイル（旧 `www/index.html` の `<style>` をそのまま移植）。折りたたみセクションは `<details className="section">` をReactの `open`/`onToggle` で制御しており、CSSの矢印回転等はHTML版と同じ仕組み。**`#root { display: flex; height: 100vh; }` は必須**（旧HTML版では`body`が`.left`/`.right`の直接の親でこのスタイルを持っていたが、Reactは`#root`配下にマウントするため、`body`ではなく`#root`にflexレイアウトを持たせる必要がある。これを外すと`.left`/`.right`が横並びでなく縦積みになり、`.left`が高さの制約を失って`.generate-sticky`の固定表示や生成画像の表示位置が壊れる）。
   - `src/platform/capacitorBridge.js` — 旧 `src/capacitor-bridge.js` と同内容（後述）。
 - **共有ロジック (`shared/`)**
   - `shared/novelai.mjs` — NovelAI APIへのリクエストボディ組み立て（`buildRequestBody` / `isV4Model`）とエンドポイントURL（`NOVELAI_IMAGE_ENDPOINT`）。**ネイティブESM**（`export function` / `export const`）で書かれている。`main.js`（CommonJS）はNode標準の動的 `import()` で読み込み（`loadNovelaiModule()`、初回呼び出し時にPromiseをキャッシュ）、`capacitorBridge.js`は通常の `import { ... } from '../../shared/novelai.mjs'` で読み込む（Viteが `vite build` ではRollupで、`vite dev` ではesbuildのプリバンドルでそれぞれ解決する）。
     - **`shared/novelai.mjs` を CommonJS (`module.exports`) に戻さないこと。** `main.js`からの`require()`では動くが、Viteの開発サーバー（`npm run dev`）はローカルの相対パスファイルに対してCJS→ESM変換を行わないため、ブラウザ側で `module is not defined` エラーになり起動できなくなる（`vite build`によるプロダクションビルドはRollupが変換するため気づきにくいので注意）。
 - **Electron側 (`window.api` の実装 = preload.js + main.js)**
   - `preload.js` — `contextBridge` で `window.api` を公開する preload スクリプト（`loadSettings` / `saveSettings` / `generateImage` / `openOutputFolder` / `loadChunks` / `saveChunk` / `updateChunk` / `deleteChunk` / `loadTemplates` / `saveTemplate` / `updateTemplate` / `deleteTemplate` / `loadFavorites` / `saveFavorite` / `updateFavorite` / `deleteFavorite`）。`loadFavorites`等は第一引数に `kind`（`'artist'` または `'character'`）を取る。ページの他のスクリプトより先に実行されるため、Capacitor側のブリッジは「`window.api` が未定義の場合のみ」自身を定義するガードを持つ。
-  - `main.js` — メインプロセスのエントリーポイント（`package.json` の `main` フィールドで指定）。`www/index.html`（Viteのビルド成果物）を読み込み、起動時に最大化して表示するウィンドウ生成、日本語化した `Menu`、上記IPCハンドラの実装、NovelAI API呼び出し（`https`モジュール）、ZIPレスポンスの展開（`fflate`）とファイル保存を行う。お気に入りは `kind` ごとに `FAVORITE_PATHS` で切り替えたJSONファイルに保存する共通ハンドラ（`load-favorites` / `save-favorite` / `update-favorite` / `delete-favorite`）で実装。
+  - `main.js` — メインプロセスのエントリーポイント（`package.json` の `main` フィールドで指定）。通常は `www/index.html`（Viteのビルド成果物）を読み込むが、`process.env.ELECTRON_RENDERER_URL`（`electron-vite dev` が設定する）がある場合はその開発サーバーURLを`loadURL`する。同様にpreloadのパスも `devServerUrl` の有無で `preload.js`（プロジェクト直下、通常時）と `out-dev/preload/preload.js`（`electron-vite dev`がビルドした場所、開発時）を切り替える。起動時に最大化して表示するウィンドウ生成、日本語化した `Menu`、上記IPCハンドラの実装、NovelAI API呼び出し（`https`モジュール）、ZIPレスポンスの展開（`fflate`）とファイル保存を行う。お気に入りは `kind` ごとに `FAVORITE_PATHS` で切り替えたJSONファイルに保存する共通ハンドラ（`load-favorites` / `save-favorite` / `update-favorite` / `delete-favorite`）で実装。
+  - `electron.vite.config.js` — `npm run dev`（`electron-vite dev`）専用の設定。`main.js`/`preload.js`をwatchビルドしつつ、`src/`のVite開発サーバーを起動し、実際のElectronアプリを自動起動する（HMR付き、`window.api`は本物のpreload経由IPC）。ビルド出力は `out-dev/`（gitignore対象、`main`は`out-dev/main/main.js`、`preload`は`out-dev/preload/preload.js`、`renderer`は`out-dev/renderer/`）。**本番パイプライン（`npm start` / `npm run build:web` / `npm run cap:sync` / `npm run dist`）はこの設定を使わず、引き続き `vite.config.js` による通常の `vite build` → `www/` の流れのまま**（`electron.vite.config.js`は開発時の起動体験を改善するためだけに追加したもので、パッケージング方式自体は変更していない）。
   - 生成画像の保存先は `app.getPath('documents')/NovelAI/output/` 配下（**`__dirname` 配下ではない**）。パッケージ化した配布版はインストール先（`Program Files` 等）が読み取り専用になるため、必ずユーザー領域である `documents` を書き込み先にすること。開発時（`npm start`）も同じパスが使われる。
   - 設定 (`settings.json`)、プロンプトチャンク (`chunks.json`)、プロンプトテンプレート (`templates.json`)、お気に入りアーティスト (`favorite-artists.json`)、お気に入りキャラクター (`favorite-characters.json`) は `app.getPath('userData')` 配下に保存される（リポジトリには含まれない）。
 - **Android側 (`window.api` の実装 = src/platform/capacitorBridge.js)**
@@ -59,11 +60,12 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
   - `@capacitor/core` / `@capacitor/android` / `@capacitor/filesystem` / `@capacitor/preferences` / `@capacitor/share`: Android版の実行基盤とネイティブ機能アクセス。
   - `@capacitor/cli`: Androidプロジェクトの同期用CLI（devDependency）。
   - `electron-builder`: デスクトップ版を単独実行可能なインストーラー/実行ファイルにパッケージングする（devDependency）。設定は `package.json` の `build` フィールド。
+  - `electron-vite`: `npm run dev` 専用の開発用ランチャー（devDependency、`electron.vite.config.js`）。本番ビルド（`vite build`）には関与しない。
 
 ## 開発コマンド
 
 ```
-npm run dev           # vite の開発サーバーを起動（ブラウザでUIを素早く確認する用途。window.api はCapacitorのWeb実装頼みで、画像生成・ファイル保存の一部はElectron/実機ほど動かない点に注意）
+npm run dev           # electron-vite dev で main.js/preload.js/src をHMR付きでビルドし、実際のElectronアプリを起動（window.apiはpreload.js経由の本物のIPC。out-dev/ に一時ビルドされ、gitignore対象）
 npm start             # vite build を実行してから electron . でデスクトップ版を起動
 npm run build:web     # src/ を vite build で www/ にビルド
 npm run cap:sync      # ビルド後、Androidネイティブプロジェクトへ www/ の内容を同期（npx cap sync android）

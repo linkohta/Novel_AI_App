@@ -6,6 +6,13 @@ body {
   margin: 0;
   background: #1e1f24;
   color: #e8e8ea;
+  height: 100vh;
+}
+/* React mounts .left/.right into #root, so #root (not body) needs to be the
+   flex row container — without this, the two panels stack vertically instead
+   of side by side, and .left loses its bounded height, which also breaks
+   overflow-y:auto scrolling and the sticky generate button. */
+#root {
   display: flex;
   height: 100vh;
 }
