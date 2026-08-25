@@ -4,7 +4,7 @@
 
 ## プロジェクト概要
 
-NovelAI の画像生成 API にプロンプトを送信し、生成された画像を保存・閲覧するアプリです（`package.json` の description: 「Novel AI 画像生成プロンプト送信・保存アプリ」）。Electronによるデスクトップ版と、Capacitorによるスマートフォン(Android)版で、`www/` 配下のUI（HTML/CSS/JS）を共通のソースコードとして共有している。
+NovelAI の画像生成 API にプロンプトを送信し、生成された画像を保存・閲覧するアプリです（`package.json` の description: 「Novel AI 画像生成プロンプト送信・保存アプリ」）。Electronによるデスクトップ版と、Capacitorによるスマートフォン(Android)版で、React + Vite で書かれたUI（`src/`）を共通のソースコードとして共有している。
 
 ## 機能
 
@@ -25,50 +25,50 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
 
 ## アーキテクチャ
 
-本アプリは **UI層を Electron / Capacitor(Android) で共有し、「window.api」を境界にプラットフォーム固有の実装を差し替える** 構成になっている。
+本アプリは **UI層を React + Vite で書き、Electron / Capacitor(Android) で共有し、「window.api」を境界にプラットフォーム固有の実装を差し替える** 構成になっている。`src/` が Vite のプロジェクトルート（`vite.config.js` の `root: 'src'`）であり、`vite build` の出力（`build.outDir: '../www'`）が `www/` に生成される。**`www/` はビルド成果物であり、手で編集しない**（gitignore対象、`npm run build:web` で再生成）。
 
-- **共有UI (`www/`)** — Electron・Android両方でそのまま使われる画面本体。
-  - `www/index.html` — メイン画面のUI（設定パネル + プレビュー/履歴パネル）。左パネルの各機能は `<details class="section">` で折りたたみ可能なブロックとして構成されており、新しい機能セクションを追加する場合もこの形式に合わせる。**開閉状態を保存対象にするため、追加する `<details class="section">` には必ず一意な `id` を付けること**（`id` が無いセクションは開閉状態が保存されない）。
-  - `www/js/*.js` — 画面ロジック。**Electron/Android を意識したコードを直接書かず、`window.api` インターフェース越しにのみプラットフォーム機能を呼び出す**。プロンプトチャンク／テンプレートは `loadedChunks` / `loadedTemplates` にキャッシュされ、キャラクター名での追加機能の選択肢（`charNameSource`）にも再利用される。
-    - モジュールバンドラを使わない方針のため、機能ごとに複数の `<script>` タグ（`www/index.html` 末尾）へ分割し、**全ファイルが1つのグローバルスコープを共有する**古典的な構成になっている。読み込み順は次の通りで、**この順序を変更すると動作しなくなる**。
-      1. `state.js` — DOM要素参照・共有状態（`characters`, `loadedChunks` 等）・`persistSettings`・`trackFocus`・折りたたみ状態の保存/復元など、他の全ファイルが依存する基盤。必ず最初に読み込む。
-      2. `characters.js` — キャラクタープロンプトカードの描画、キャラクター名での追加フォーム。
-      3. `favorites.js` — お気に入りアーティスト／キャラクター。
-      4. `chunks.js` — プロンプトチャンク。
-      5. `templates.js` — プロンプトテンプレート（`openTemplateApplyModal` は characters.js からも呼ばれる）。
-      6. `batch.js` — 連続生成。
-      7. `main.js` — 初期化 (`init()`) と単発生成。**最後に読み込む**（`init()` の呼び出しが末尾にあり、他の全ファイルの初期化が完了している前提のため）。
-    - トップレベル（関数の外）で他ファイルの関数・変数を呼び出すコードを書かないこと。イベントハンドラのコールバック内であれば、読み込み順に関わらず他ファイルの関数を安全に参照できる（呼び出されるのはページ読み込み完了後のため）。新しい機能ファイルを追加する場合も、DOM要素の取得・共有状態は `state.js` に置き、機能ファイル自身のトップレベルでは基本的に `addEventListener` の登録のみを行う。
-    - ESLintの `no-undef` / `no-unused-vars` / `prefer-const` はこのディレクトリ（`www/**/*.js`）に対して無効化している（`eslint.config.js`）。各ファイル単体では他ファイルからの参照・再代入を検知できず誤検知になるため。
-  - `www/capacitor-bridge.bundle.js` — `src/capacitor-bridge.js` を esbuild でバンドルしたビルド成果物（gitignore対象、`npm run build:web` で再生成）。
+- **UI (`src/`)** — Electron・Android共通の画面本体（React）。
+  - `src/index.html` — Viteのエントリーテンプレート。`<div id="root">` と `src/main.jsx` へのモジュールスクリプトのみを持つ。
+  - `src/main.jsx` — エントリーポイント。`./platform/capacitorBridge` を**最初に**副作用importしてから（Electronの`preload.js`が既に`window.api`を用意している場合はここで何もしない）、`<App />` を `#root` にマウントする。
+  - `src/App.jsx` — アプリ全体の状態（`apiKey`/`prompt`/`characters`/`sectionState`等）とすべてのイベントハンドラを持つトップレベルコンポーネント。設定の読み込み・デバウンス保存（変更後300ms）、キャラクター配列の更新、テンプレート変数モーダルの開閉、連続生成ループなどはすべてここに集約している。
+    - フォーカス中のプロンプト系フィールド（チャンク/お気に入り挿入・テンプレート反映の対象）は `focusedFieldKey`（`'prompt'` / `'negativePrompt'` / `` `char:${index}:prompt` `` 等の文字列）で管理し、`resolveFocusedField()` で都度その時点の最新値・setterを解決する。DOM要素への直接アクセスは行わない。
+  - `src/components/*.jsx` — 機能ごとのプレゼンテーションコンポーネント（`Section`, `PromptSection`, `TemplatesSection`, `FavoritesSection`, `CharactersSection`/`CharacterCard`, `ModelSection`, `BatchSection`, `ResultPanel`）。状態は持たず、props経由でApp.jsxの状態とハンドラを受け取る。
+  - `src/components/modals/*.jsx` — 編集・適用モーダル（`ChunkEditModal`, `TemplateEditModal`, `TemplateApplyModal`, `FavArtistEditModal`, `FavCharEditModal`）。共通の `ModalOverlay` は `open` が falsy なら何も描画しない（旧実装のような `.open` クラス切り替えではなく、条件付きレンダリングで開閉する）。
+  - `src/hooks/useNamedList.js` — チャンク・テンプレート・お気に入りに共通する「読み込み→追加→編集→削除のたびにサーバー側の最新リストで置き換える」パターンを提供するフック。`src/hooks/useFavoritesList.js` はこれを`kind`（`'artist'`/`'character'`）でラップしてお気に入りに使う。
+  - `src/utils/templateVariables.js` — `(変数名)` プレースホルダーの抽出・置換ロジック（純粋関数、Reactに依存しない）。
+  - `src/styles.css` — 全体のスタイル（旧 `www/index.html` の `<style>` をそのまま移植）。折りたたみセクションは `<details className="section">` をReactの `open`/`onToggle` で制御しており、CSSの矢印回転等はHTML版と同じ仕組み。
+  - `src/platform/capacitorBridge.js` — 旧 `src/capacitor-bridge.js` と同内容（後述）。
 - **共有ロジック (`shared/`)**
-  - `shared/novelai.js` — NovelAI APIへのリクエストボディ組み立て（`buildRequestBody` / `isV4Model`）とエンドポイントURL（`NOVELAI_IMAGE_ENDPOINT`）。CommonJS形式で、Electron側(`main.js`から`require`)・Capacitor側(`capacitor-bridge.js`からesbuildでバンドル)の両方から読み込まれる。
+  - `shared/novelai.js` — NovelAI APIへのリクエストボディ組み立て（`buildRequestBody` / `isV4Model`）とエンドポイントURL（`NOVELAI_IMAGE_ENDPOINT`）。CommonJS形式で、Electron側(`main.js`から`require`)・Vite側(`capacitorBridge.js`からESM importでバンドル)の両方から読み込まれる。
 - **Electron側 (`window.api` の実装 = preload.js + main.js)**
   - `preload.js` — `contextBridge` で `window.api` を公開する preload スクリプト（`loadSettings` / `saveSettings` / `generateImage` / `openOutputFolder` / `loadChunks` / `saveChunk` / `updateChunk` / `deleteChunk` / `loadTemplates` / `saveTemplate` / `updateTemplate` / `deleteTemplate` / `loadFavorites` / `saveFavorite` / `updateFavorite` / `deleteFavorite`）。`loadFavorites`等は第一引数に `kind`（`'artist'` または `'character'`）を取る。ページの他のスクリプトより先に実行されるため、Capacitor側のブリッジは「`window.api` が未定義の場合のみ」自身を定義するガードを持つ。
-  - `main.js` — メインプロセスのエントリーポイント（`package.json` の `main` フィールドで指定）。`www/index.html` を読み込み、起動時に最大化して表示するウィンドウ生成、日本語化した `Menu`、上記IPCハンドラの実装、NovelAI API呼び出し（`https`モジュール）、ZIPレスポンスの展開（`fflate`）とファイル保存を行う。お気に入りは `kind` ごとに `FAVORITE_PATHS` で切り替えたJSONファイルに保存する共通ハンドラ（`load-favorites` / `save-favorite` / `update-favorite` / `delete-favorite`）で実装。
+  - `main.js` — メインプロセスのエントリーポイント（`package.json` の `main` フィールドで指定）。`www/index.html`（Viteのビルド成果物）を読み込み、起動時に最大化して表示するウィンドウ生成、日本語化した `Menu`、上記IPCハンドラの実装、NovelAI API呼び出し（`https`モジュール）、ZIPレスポンスの展開（`fflate`）とファイル保存を行う。お気に入りは `kind` ごとに `FAVORITE_PATHS` で切り替えたJSONファイルに保存する共通ハンドラ（`load-favorites` / `save-favorite` / `update-favorite` / `delete-favorite`）で実装。
   - 生成画像の保存先は `app.getPath('documents')/NovelAI/output/` 配下（**`__dirname` 配下ではない**）。パッケージ化した配布版はインストール先（`Program Files` 等）が読み取り専用になるため、必ずユーザー領域である `documents` を書き込み先にすること。開発時（`npm start`）も同じパスが使われる。
   - 設定 (`settings.json`)、プロンプトチャンク (`chunks.json`)、プロンプトテンプレート (`templates.json`)、お気に入りアーティスト (`favorite-artists.json`)、お気に入りキャラクター (`favorite-characters.json`) は `app.getPath('userData')` 配下に保存される（リポジトリには含まれない）。
-- **Android側 (`window.api` の実装 = src/capacitor-bridge.js)**
-  - `src/capacitor-bridge.js` — Capacitor公式プラグインで `window.api` を実装。`@capacitor/preferences`で設定・チャンク・テンプレート・お気に入りを永続化（チャンクとテンプレートは項目形式が固定の`makeNamedListApi`、お気に入りは項目形式が可変な`makeGenericListApi`ヘルパーで共通実装）、`@capacitor/filesystem`で画像を端末の `Documents/output/` 配下に保存、`fflate`でZIP展開、NovelAI APIへのリクエストは `fetch` を使用（`capacitor.config.json` の `CapacitorHttp.enabled: true` によりネイティブ実行時はCORSを回避するようパッチされる）。
-  - Android にはアプリの保存フォルダをファイラーで開く汎用APIが無いため、「保存フォルダを開く」ボタンは Android では「最新の画像を共有」（`@capacitor/share`）として動作する。`www/js/main.js` は `window.isNativeApp` フラグ（ブリッジが`Capacitor.isNativePlatform()`から設定）でボタンラベルを切り替える。
-  - `capacitor.config.json` — Capacitor設定（`appId`, `appName`, `webDir: "www"`, `CapacitorHttp.enabled: true`）。
+- **Android側 (`window.api` の実装 = src/platform/capacitorBridge.js)**
+  - `src/platform/capacitorBridge.js` — Capacitor公式プラグインで `window.api` を実装。`@capacitor/preferences`で設定・チャンク・テンプレート・お気に入りを永続化（チャンクとテンプレートは項目形式が固定の`makeNamedListApi`、お気に入りは項目形式が可変な`makeGenericListApi`ヘルパーで共通実装）、`@capacitor/filesystem`で画像を端末の `Documents/output/` 配下に保存、`fflate`でZIP展開、NovelAI APIへのリクエストは `fetch` を使用（`capacitor.config.json` の `CapacitorHttp.enabled: true` によりネイティブ実行時はCORSを回避するようパッチされる）。
+  - Android にはアプリの保存フォルダをファイラーで開く汎用APIが無いため、「保存フォルダを開く」ボタンは Android では「最新の画像を共有」（`@capacitor/share`）として動作する。`App.jsx` は `window.isNativeApp` フラグ（ブリッジが`Capacitor.isNativePlatform()`から設定）でボタンラベルを切り替える。
+  - `capacitor.config.json` — Capacitor設定（`appId`, `appName`, `webDir: "www"`, `CapacitorHttp.enabled: true`）。`webDir` は Vite のビルド出力先と一致させること。
   - `android/` — `npx cap add android` で生成されたネイティブAndroidプロジェクト（Android Studio/Gradleでビルドする実体）。
 - **依存関係**
+  - `react` / `react-dom`: UIフレームワーク本体。
+  - `vite` / `@vitejs/plugin-react`: `src/` のビルド（devDependency）。JSXのトランスパイルとバンドルを担当し、`capacitorBridge.js`のバンドルも兼ねる（旧esbuildの役割を統合）。
   - `fflate`: NovelAI APIのレスポンス（ZIP形式で画像が返る）を展開するために使用（Electron・Capacitor両方で共通利用、旧`adm-zip`から置き換え）。
   - `electron`: デスクトップアプリフレームワーク（devDependency）。
   - `@capacitor/core` / `@capacitor/android` / `@capacitor/filesystem` / `@capacitor/preferences` / `@capacitor/share`: Android版の実行基盤とネイティブ機能アクセス。
-  - `@capacitor/cli`, `esbuild`: Androidプロジェクトの同期、および`capacitor-bridge.js`のビルド（devDependency）。
+  - `@capacitor/cli`: Androidプロジェクトの同期用CLI（devDependency）。
   - `electron-builder`: デスクトップ版を単独実行可能なインストーラー/実行ファイルにパッケージングする（devDependency）。設定は `package.json` の `build` フィールド。
 
 ## 開発コマンド
 
 ```
-npm start            # www/capacitor-bridge.bundle.js をビルドしてから electron . でデスクトップ版を起動
-npm run build:web    # src/capacitor-bridge.js を www/capacitor-bridge.bundle.js にバンドル
-npm run cap:sync     # ビルド後、Androidネイティブプロジェクトへ www/ の内容を同期（npx cap sync android）
+npm run dev           # vite の開発サーバーを起動（ブラウザでUIを素早く確認する用途。window.api はCapacitorのWeb実装頼みで、画像生成・ファイル保存の一部はElectron/実機ほど動かない点に注意）
+npm start             # vite build を実行してから electron . でデスクトップ版を起動
+npm run build:web     # src/ を vite build で www/ にビルド
+npm run cap:sync      # ビルド後、Androidネイティブプロジェクトへ www/ の内容を同期（npx cap sync android）
 npm run cap:open:android  # Android Studio で android/ プロジェクトを開く（要 Android Studio インストール）
-npm run dist          # electron-builder で実行中のOS向けに単独アプリをビルド（dist/ に出力）
-npm run dist:win      # Windows向けにNSISインストーラー(.exe)とポータブル版(.exe)を明示的にビルド
+npm run dist           # electron-builder で実行中のOS向けに単独アプリをビルド（dist/ に出力）
+npm run dist:win       # Windows向けにNSISインストーラー(.exe)とポータブル版(.exe)を明示的にビルド
 ```
 
 Android実機/エミュレータでの実行・APKビルドには Android Studio と Android SDK のセットアップが別途必要（このリポジトリの開発環境には含まれない）。`npx cap sync android` 後、Android Studio 上で実行するか `android/gradlew assembleDebug` でビルドする。
@@ -81,14 +81,14 @@ Android実機/エミュレータでの実行・APKビルドには Android Studio
 - `dist/NovelAI 画像生成 Setup <version>.exe` — NSIS形式のインストーラー。
 - `dist/NovelAI 画像生成 <version>.exe` — インストール不要のポータブル版exe。
 
-`package.json` の `build.files` で `android/`・`src/`・`output/`・`dist/` など Electron 実行に不要なディレクトリを除外している。`main.js` の生成画像保存先は `output/`（プロジェクト直下）ではなく `app.getPath('documents')/NovelAI/output/` であり、これはパッケージ化されたアプリのインストール先が読み取り専用であることに対応するための設計（上記アーキテクチャ節を参照）。新しくファイルを永続化する機能を追加する際も、書き込み先には必ず `app.getPath(...)` が返すユーザー領域のパスを使うこと。
+`package.json` の `build.files` で `android/`・`src/`（Reactソース。ビルド成果物である`www/`だけを同梱すれば動く）・`output/`・`dist/` など Electron 実行に不要なディレクトリを除外している。`main.js` の生成画像保存先は `output/`（プロジェクト直下）ではなく `app.getPath('documents')/NovelAI/output/` であり、これはパッケージ化されたアプリのインストール先が読み取り専用であることに対応するための設計（上記アーキテクチャ節を参照）。新しくファイルを永続化する機能を追加する際も、書き込み先には必ず `app.getPath(...)` が返すユーザー領域のパスを使うこと。
 
 ## コーディング規約
 
 Prettier / ESLint を導入済み。コードを変更したら次のコマンドで整形・検査すること（CIはまだ無いため、コミット前に手動実行が必須）。
 
 ```
-npm run format        # main.js / preload.js / shared / www/js/ / src を Prettier で自動整形
+npm run format        # main.js / preload.js / shared / src を Prettier で自動整形
 npm run format:check  # 整形が必要な差分がないかチェックのみ行う
 npm run lint           # 上記対象を ESLint で検査（eslint.config.js）
 ```
@@ -96,23 +96,23 @@ npm run lint           # 上記対象を ESLint で検査（eslint.config.js）
 - **フォーマット（Prettier, `.prettierrc.json`）**: シングルクォート、セミコロンあり、`printWidth: 100`、`trailingComma: "es5"`。手動でスタイルを合わせようとせず、必ず `npm run format` に任せる。
 - **命名規則**:
   - 変数・関数は `camelCase`、変更されない設定値の定数は `UPPER_SNAKE_CASE`（例: `NOVELAI_IMAGE_ENDPOINT`, `FAVORITE_KEYS`）。
-  - DOM要素を保持する変数は末尾に `El`（例: `promptEl`）、ボタン要素は `Btn`（例: `generateBtn`, `chunkEditSaveBtn`）を付与する。`document.getElementById('foo')` の引数の文字列（HTMLの `id` 属性値）は変数名と一致させる必要はない（変数名にサフィックスを付けても `id` 属性自体は変更しない）。
-  - ファイル名は `kebab-case`。
+  - Reactコンポーネントは `PascalCase` のファイル名・関数名（例: `CharactersSection.jsx`）、hooksは `useXxx` 命名（例: `useNamedList.js`）。
+  - `main.js`/`preload.js`/`shared/`側のファイル名は `kebab-case`。
 - **モジュール形式の使い分け**:
   - `main.js` / `preload.js` / `shared/*.js` — CommonJS（`require` / `module.exports`）。
-  - `src/*.js` — ESM（`import` / `export`）。esbuildで `www/capacitor-bridge.bundle.js` にバンドルされる。
-  - `www/js/*.js` — モジュールを使わないプレーンなブラウザスクリプト（複数の`<script src="...">`で読み込む前提、グローバルスコープを共有。読み込み順の制約は上記アーキテクチャ節を参照）。
+  - `src/**/*.{js,jsx}` — ESM（`import` / `export`）。Vite（`vite build`）で `www/` にバンドルされる。JSXの自動ランタイムを使うため、コンポーネントファイルで `import React from 'react'` は不要。
 - **文字列・関数定義**: 文字列はシングルクォート、変数展開が必要な場合のみテンプレートリテラルを使う。トップレベルの関数は `function` 宣言、コールバック/イベントハンドラはアロー関数。非同期処理は必ず `async/await` を使い、`.then()` チェーンは書かない。
 - **エラーメッセージ**: ユーザー向けに表示されるエラーは日本語で `throw new Error('...')` する（既存の `APIキーを入力してください` 等のパターンに従う）。
+- **Reactの状態管理**: Redux等の外部状態管理ライブラリは導入しない。`App.jsx` がアプリ全体の状態を持ち、`src/components/*.jsx` は基本的に状態を持たないpropsベースのコンポーネントとする（既存の分割に合わせる）。DOMを直接操作しない（`document.getElementById` 等をコンポーネント内で使わない。既存コードで参照が必要なのは `App.jsx` の `charNameByNameRef`（フォーカス移動）程度に留めている）。
 
 ## 開発ルール
 
 - **セキュリティ**: `preload.js` の `contextBridge` によるAPI公開パターンを維持し、`nodeIntegration` をレンダラーで有効化しない。APIキーなどの機密情報をログ出力・平文でリポジトリにコミットしない。
-- **`window.api` の両実装を同期させる**: `window.api` に新しいメソッドを追加・変更する場合、`preload.js`＋`main.js`（Electron側）と `src/capacitor-bridge.js`（Android側）の**両方**に対応する実装を必ず追加し、シグネチャ・戻り値の形を一致させる。片方だけ実装すると、もう一方のプラットフォームで機能が動作しなくなる。
-- **UIとロジックの分離**: `www/js/` にNovelAI APIの直接呼び出しやファイルI/Oを書かず、必ず `window.api` 経由でやり取りする（Electronでは`main.js`、Androidでは`capacitor-bridge.js`がその実体を担う）。プラットフォーム分岐が必要な場合も`www/js/`側には極力書かず、`window.isNativeApp`など明示的なフラグ経由に留める。
-- **共通ロジックは `shared/` に置く**: NovelAI APIのリクエスト形式など、Electron・Android両方で必要になるロジックは`shared/novelai.js`のようにCommonJSモジュールとして切り出し、`main.js`からは`require`、`capacitor-bridge.js`からはesbuildバンドル経由で読み込む。同じロジックを両側に重複実装しない。
-- **小さな変更を積み重ねる**: 既存のシンプルな構成（フラットなファイル配置、フレームワーク未使用）を尊重し、不要な抽象化やビルドツールの導入は行わない。
-- **エラーハンドリング**: API呼び出し失敗時は www/js/ の各ファイルの `try/catch` で捕捉し、`status` 要素にユーザー向けメッセージを表示する既存パターンに従う。
+- **`window.api` の両実装を同期させる**: `window.api` に新しいメソッドを追加・変更する場合、`preload.js`＋`main.js`（Electron側）と `src/platform/capacitorBridge.js`（Android側）の**両方**に対応する実装を必ず追加し、シグネチャ・戻り値の形を一致させる。片方だけ実装すると、もう一方のプラットフォームで機能が動作しなくなる。
+- **UIとロジックの分離**: `src/`（Reactコンポーネント）にNovelAI APIの直接呼び出しやファイルI/Oを書かず、必ず `window.api` 経由でやり取りする（Electronでは`main.js`、Androidでは`capacitorBridge.js`がその実体を担う）。プラットフォーム分岐が必要な場合も個別のコンポーネントには極力書かず、`window.isNativeApp`など明示的なフラグ経由に留める。
+- **共通ロジックは `shared/` に置く**: NovelAI APIのリクエスト形式など、Electron・Android両方で必要になるロジックは`shared/novelai.js`のようにCommonJSモジュールとして切り出し、`main.js`からは`require`、`capacitorBridge.js`からはESM importでVite側にバンドルして読み込む。同じロジックを両側に重複実装しない。
+- **小さな変更を積み重ねる**: 過剰な抽象化は避け、必要になってから一般化する。ただしUI層のビルドツール（Vite）・フレームワーク（React）は本アプリの明示的な方針として既に採用済みであり、「ビルドツールを増やさない」原則は適用しない——新しい依存追加はREADME/CLAUDE.mdの更新とセットで検討すること。
+- **エラーハンドリング**: API呼び出し失敗時は `App.jsx` の `try/catch` で捕捉し、`status` の状態に反映してユーザー向けメッセージを表示する既存パターンに従う。
 - **コミット前確認**: `output/` ディレクトリに生成された画像ファイルや、APIキーを含む設定ファイルを誤ってコミットしないよう `.gitignore` を確認する。
 - **連続リクエストへの配慮**: NovelAI APIへの連続リクエストはAnlas消費とレート制限のリスクがあるため、間隔を空けずに大量リクエストする機能は追加しない。バッチ処理を実装する場合は生成間隔（待機時間）を必須にし、中断できる手段を用意する。
 - 機能を追加・修正したときは、必ずCLAUDE.mdとREADMEに反映すること。依存関係を追加・更新した場合は `THIRD_PARTY_NOTICES.md` のライセンス一覧も見直すこと。
