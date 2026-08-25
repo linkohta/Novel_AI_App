@@ -1,0 +1,18 @@
+node_modules/
+output/*.png
+output/*.json
+output/batch_*/
+!output/.gitkeep
+
+# Capacitor / Android build artifacts (regenerate via `npm run build:web` / `npx cap sync`)
+www/capacitor-bridge.bundle.js
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/captures/
+android/*.iml
+android/app/*.iml
+
+# electron-builder output (regenerate via `npm run dist`)
+dist/

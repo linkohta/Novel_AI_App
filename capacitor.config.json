@@ -1,0 +1,10 @@
+{
+  "appId": "net.novelai.promptapp",
+  "appName": "NovelAI 画像生成",
+  "webDir": "www",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}
