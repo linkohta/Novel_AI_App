@@ -12,7 +12,7 @@
     "dist:win": "npm run build:web && electron-builder --win nsis portable"
   },
   "author": "",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "private": true,
   "dependencies": {
     "@capacitor/android": "^8.5.0",
