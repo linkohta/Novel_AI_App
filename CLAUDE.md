@@ -29,7 +29,17 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
 
 - **共有UI (`www/`)** — Electron・Android両方でそのまま使われる画面本体。
   - `www/index.html` — メイン画面のUI（設定パネル + プレビュー/履歴パネル）。左パネルの各機能は `<details class="section">` で折りたたみ可能なブロックとして構成されており、新しい機能セクションを追加する場合もこの形式に合わせる。**開閉状態を保存対象にするため、追加する `<details class="section">` には必ず一意な `id` を付けること**（`id` が無いセクションは開閉状態が保存されない）。
-  - `www/renderer.js` — 画面ロジック。フォーム状態管理、`window.api` 経由での操作呼び出し、履歴サムネイル描画、連続生成ループなどを担当。**Electron/Android を意識したコードを直接書かず、`window.api` インターフェース越しにのみプラットフォーム機能を呼び出す**。プロンプトチャンク／テンプレートは `loadedChunks` / `loadedTemplates` にキャッシュされ、キャラクター名での追加機能の選択肢（`charNameSource`）にも再利用される。
+  - `www/js/*.js` — 画面ロジック。**Electron/Android を意識したコードを直接書かず、`window.api` インターフェース越しにのみプラットフォーム機能を呼び出す**。プロンプトチャンク／テンプレートは `loadedChunks` / `loadedTemplates` にキャッシュされ、キャラクター名での追加機能の選択肢（`charNameSource`）にも再利用される。
+    - モジュールバンドラを使わない方針のため、機能ごとに複数の `<script>` タグ（`www/index.html` 末尾）へ分割し、**全ファイルが1つのグローバルスコープを共有する**古典的な構成になっている。読み込み順は次の通りで、**この順序を変更すると動作しなくなる**。
+      1. `state.js` — DOM要素参照・共有状態（`characters`, `loadedChunks` 等）・`persistSettings`・`trackFocus`・折りたたみ状態の保存/復元など、他の全ファイルが依存する基盤。必ず最初に読み込む。
+      2. `characters.js` — キャラクタープロンプトカードの描画、キャラクター名での追加フォーム。
+      3. `favorites.js` — お気に入りアーティスト／キャラクター。
+      4. `chunks.js` — プロンプトチャンク。
+      5. `templates.js` — プロンプトテンプレート（`openTemplateApplyModal` は characters.js からも呼ばれる）。
+      6. `batch.js` — 連続生成。
+      7. `main.js` — 初期化 (`init()`) と単発生成。**最後に読み込む**（`init()` の呼び出しが末尾にあり、他の全ファイルの初期化が完了している前提のため）。
+    - トップレベル（関数の外）で他ファイルの関数・変数を呼び出すコードを書かないこと。イベントハンドラのコールバック内であれば、読み込み順に関わらず他ファイルの関数を安全に参照できる（呼び出されるのはページ読み込み完了後のため）。新しい機能ファイルを追加する場合も、DOM要素の取得・共有状態は `state.js` に置き、機能ファイル自身のトップレベルでは基本的に `addEventListener` の登録のみを行う。
+    - ESLintの `no-undef` / `no-unused-vars` / `prefer-const` はこのディレクトリ（`www/**/*.js`）に対して無効化している（`eslint.config.js`）。各ファイル単体では他ファイルからの参照・再代入を検知できず誤検知になるため。
   - `www/capacitor-bridge.bundle.js` — `src/capacitor-bridge.js` を esbuild でバンドルしたビルド成果物（gitignore対象、`npm run build:web` で再生成）。
 - **共有ロジック (`shared/`)**
   - `shared/novelai.js` — NovelAI APIへのリクエストボディ組み立て（`buildRequestBody` / `isV4Model`）とエンドポイントURL（`NOVELAI_IMAGE_ENDPOINT`）。CommonJS形式で、Electron側(`main.js`から`require`)・Capacitor側(`capacitor-bridge.js`からesbuildでバンドル)の両方から読み込まれる。
@@ -40,7 +50,7 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
   - 設定 (`settings.json`)、プロンプトチャンク (`chunks.json`)、プロンプトテンプレート (`templates.json`)、お気に入りアーティスト (`favorite-artists.json`)、お気に入りキャラクター (`favorite-characters.json`) は `app.getPath('userData')` 配下に保存される（リポジトリには含まれない）。
 - **Android側 (`window.api` の実装 = src/capacitor-bridge.js)**
   - `src/capacitor-bridge.js` — Capacitor公式プラグインで `window.api` を実装。`@capacitor/preferences`で設定・チャンク・テンプレート・お気に入りを永続化（チャンクとテンプレートは項目形式が固定の`makeNamedListApi`、お気に入りは項目形式が可変な`makeGenericListApi`ヘルパーで共通実装）、`@capacitor/filesystem`で画像を端末の `Documents/output/` 配下に保存、`fflate`でZIP展開、NovelAI APIへのリクエストは `fetch` を使用（`capacitor.config.json` の `CapacitorHttp.enabled: true` によりネイティブ実行時はCORSを回避するようパッチされる）。
-  - Android にはアプリの保存フォルダをファイラーで開く汎用APIが無いため、「保存フォルダを開く」ボタンは Android では「最新の画像を共有」（`@capacitor/share`）として動作する。`renderer.js`は`window.isNativeApp`フラグ（ブリッジが`Capacitor.isNativePlatform()`から設定）でボタンラベルを切り替える。
+  - Android にはアプリの保存フォルダをファイラーで開く汎用APIが無いため、「保存フォルダを開く」ボタンは Android では「最新の画像を共有」（`@capacitor/share`）として動作する。`www/js/main.js` は `window.isNativeApp` フラグ（ブリッジが`Capacitor.isNativePlatform()`から設定）でボタンラベルを切り替える。
   - `capacitor.config.json` — Capacitor設定（`appId`, `appName`, `webDir: "www"`, `CapacitorHttp.enabled: true`）。
   - `android/` — `npx cap add android` で生成されたネイティブAndroidプロジェクト（Android Studio/Gradleでビルドする実体）。
 - **依存関係**
@@ -73,14 +83,36 @@ Android実機/エミュレータでの実行・APKビルドには Android Studio
 
 `package.json` の `build.files` で `android/`・`src/`・`output/`・`dist/` など Electron 実行に不要なディレクトリを除外している。`main.js` の生成画像保存先は `output/`（プロジェクト直下）ではなく `app.getPath('documents')/NovelAI/output/` であり、これはパッケージ化されたアプリのインストール先が読み取り専用であることに対応するための設計（上記アーキテクチャ節を参照）。新しくファイルを永続化する機能を追加する際も、書き込み先には必ず `app.getPath(...)` が返すユーザー領域のパスを使うこと。
 
+## コーディング規約
+
+Prettier / ESLint を導入済み。コードを変更したら次のコマンドで整形・検査すること（CIはまだ無いため、コミット前に手動実行が必須）。
+
+```
+npm run format        # main.js / preload.js / shared / www/js/ / src を Prettier で自動整形
+npm run format:check  # 整形が必要な差分がないかチェックのみ行う
+npm run lint           # 上記対象を ESLint で検査（eslint.config.js）
+```
+
+- **フォーマット（Prettier, `.prettierrc.json`）**: シングルクォート、セミコロンあり、`printWidth: 100`、`trailingComma: "es5"`。手動でスタイルを合わせようとせず、必ず `npm run format` に任せる。
+- **命名規則**:
+  - 変数・関数は `camelCase`、変更されない設定値の定数は `UPPER_SNAKE_CASE`（例: `NOVELAI_IMAGE_ENDPOINT`, `FAVORITE_KEYS`）。
+  - DOM要素を保持する変数は末尾に `El`（例: `promptEl`）、ボタン要素は `Btn`（例: `generateBtn`, `chunkEditSaveBtn`）を付与する。`document.getElementById('foo')` の引数の文字列（HTMLの `id` 属性値）は変数名と一致させる必要はない（変数名にサフィックスを付けても `id` 属性自体は変更しない）。
+  - ファイル名は `kebab-case`。
+- **モジュール形式の使い分け**:
+  - `main.js` / `preload.js` / `shared/*.js` — CommonJS（`require` / `module.exports`）。
+  - `src/*.js` — ESM（`import` / `export`）。esbuildで `www/capacitor-bridge.bundle.js` にバンドルされる。
+  - `www/js/*.js` — モジュールを使わないプレーンなブラウザスクリプト（複数の`<script src="...">`で読み込む前提、グローバルスコープを共有。読み込み順の制約は上記アーキテクチャ節を参照）。
+- **文字列・関数定義**: 文字列はシングルクォート、変数展開が必要な場合のみテンプレートリテラルを使う。トップレベルの関数は `function` 宣言、コールバック/イベントハンドラはアロー関数。非同期処理は必ず `async/await` を使い、`.then()` チェーンは書かない。
+- **エラーメッセージ**: ユーザー向けに表示されるエラーは日本語で `throw new Error('...')` する（既存の `APIキーを入力してください` 等のパターンに従う）。
+
 ## 開発ルール
 
 - **セキュリティ**: `preload.js` の `contextBridge` によるAPI公開パターンを維持し、`nodeIntegration` をレンダラーで有効化しない。APIキーなどの機密情報をログ出力・平文でリポジトリにコミットしない。
 - **`window.api` の両実装を同期させる**: `window.api` に新しいメソッドを追加・変更する場合、`preload.js`＋`main.js`（Electron側）と `src/capacitor-bridge.js`（Android側）の**両方**に対応する実装を必ず追加し、シグネチャ・戻り値の形を一致させる。片方だけ実装すると、もう一方のプラットフォームで機能が動作しなくなる。
-- **UIとロジックの分離**: `www/renderer.js` にNovelAI APIの直接呼び出しやファイルI/Oを書かず、必ず `window.api` 経由でやり取りする（Electronでは`main.js`、Androidでは`capacitor-bridge.js`がその実体を担う）。プラットフォーム分岐が必要な場合も`renderer.js`側には極力書かず、`window.isNativeApp`など明示的なフラグ経由に留める。
+- **UIとロジックの分離**: `www/js/` にNovelAI APIの直接呼び出しやファイルI/Oを書かず、必ず `window.api` 経由でやり取りする（Electronでは`main.js`、Androidでは`capacitor-bridge.js`がその実体を担う）。プラットフォーム分岐が必要な場合も`www/js/`側には極力書かず、`window.isNativeApp`など明示的なフラグ経由に留める。
 - **共通ロジックは `shared/` に置く**: NovelAI APIのリクエスト形式など、Electron・Android両方で必要になるロジックは`shared/novelai.js`のようにCommonJSモジュールとして切り出し、`main.js`からは`require`、`capacitor-bridge.js`からはesbuildバンドル経由で読み込む。同じロジックを両側に重複実装しない。
 - **小さな変更を積み重ねる**: 既存のシンプルな構成（フラットなファイル配置、フレームワーク未使用）を尊重し、不要な抽象化やビルドツールの導入は行わない。
-- **エラーハンドリング**: API呼び出し失敗時は `renderer.js` の `try/catch` で捕捉し、`status` 要素にユーザー向けメッセージを表示する既存パターンに従う。
+- **エラーハンドリング**: API呼び出し失敗時は www/js/ の各ファイルの `try/catch` で捕捉し、`status` 要素にユーザー向けメッセージを表示する既存パターンに従う。
 - **コミット前確認**: `output/` ディレクトリに生成された画像ファイルや、APIキーを含む設定ファイルを誤ってコミットしないよう `.gitignore` を確認する。
 - **連続リクエストへの配慮**: NovelAI APIへの連続リクエストはAnlas消費とレート制限のリスクがあるため、間隔を空けずに大量リクエストする機能は追加しない。バッチ処理を実装する場合は生成間隔（待機時間）を必須にし、中断できる手段を用意する。
 - 機能を追加・修正したときは、必ずCLAUDE.mdとREADMEに反映すること。依存関係を追加・更新した場合は `THIRD_PARTY_NOTICES.md` のライセンス一覧も見直すこと。

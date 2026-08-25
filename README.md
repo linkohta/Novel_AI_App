@@ -41,7 +41,7 @@ npm run cap:sync         # www/ の内容と shared/ のロジックを Android 
 npm run cap:open:android # Android Studio で android/ プロジェクトを開く
 ```
 
-Android Studio が開いたら、実機またはエミュレータを選択して実行してください（Run）。UI (`www/index.html` / `www/renderer.js`) やAPIリクエスト組み立て (`shared/novelai.js`) を変更した場合は、`npm run cap:sync` を再実行してAndroidプロジェクトに反映してから実行し直してください。
+Android Studio が開いたら、実機またはエミュレータを選択して実行してください（Run）。UI (`www/index.html` / `www/js/`) やAPIリクエスト組み立て (`shared/novelai.js`) を変更した場合は、`npm run cap:sync` を再実行してAndroidプロジェクトに反映してから実行し直してください。
 
 初回のみ `npx cap add android` は実行済みです（`android/` ディレクトリがネイティブプロジェクトの実体です）。
 
@@ -81,5 +81,12 @@ NovelAIの画像生成は1回ごとにAnlas（有料トークン）を消費し�
 本アプリ自体は [Apache License 2.0](./LICENSE) のもとで公開されています。利用しているOSSライブラリのライセンス一覧は [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) を参照してください（すべてMIT等の許諾型ライセンスで、コピーレフト・ライセンスは含まれていません）。
 
 ## 開発
+
+コードを変更したら、コミット前に以下でフォーマット・静的検査を行ってください。
+
+```
+npm run format  # Prettier で自動整形
+npm run lint    # ESLint で検査
+```
 
 詳細な開発ルールや内部構成は [CLAUDE.md](./CLAUDE.md) を参照してください。

@@ -9,7 +9,10 @@
     "cap:sync": "npm run build:web && npx cap sync android",
     "cap:open:android": "npx cap open android",
     "dist": "npm run build:web && electron-builder",
-    "dist:win": "npm run build:web && electron-builder --win nsis portable"
+    "dist:win": "npm run build:web && electron-builder --win nsis portable",
+    "format": "prettier --write main.js preload.js shared www/js src",
+    "format:check": "prettier --check main.js preload.js shared www/js src",
+    "lint": "eslint main.js preload.js shared www/js src"
   },
   "author": "",
   "license": "Apache-2.0",
@@ -24,9 +27,12 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2",
+    "@eslint/js": "^10.0.1",
     "electron": "^43.0.0",
     "electron-builder": "^26.15.3",
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "eslint": "^10.9.1",
+    "prettier": "^3.9.6"
   },
   "build": {
     "appId": "net.novelai.promptapp",
@@ -46,17 +52,24 @@
       "output": "dist"
     },
     "win": {
-      "target": ["nsis", "portable"]
+      "target": [
+        "nsis",
+        "portable"
+      ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     },
     "mac": {
-      "target": ["dmg"]
+      "target": [
+        "dmg"
+      ]
     },
     "linux": {
-      "target": ["AppImage"]
+      "target": [
+        "AppImage"
+      ]
     }
   }
 }
