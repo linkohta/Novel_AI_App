@@ -132,8 +132,12 @@ if (!window.api) {
     const imageBytes = unzipped[entryNames[0]];
     const base64 = bytesToBase64(imageBytes);
     const fileName = `${Date.now()}_${body.parameters.seed}.png`;
-    const safeBatchFolder = params.batchFolder ? String(params.batchFolder).replace(/[^a-zA-Z0-9_-]/g, '') : '';
-    const relativePath = safeBatchFolder ? `output/${safeBatchFolder}/${fileName}` : `output/${fileName}`;
+    const safeBatchFolder = params.batchFolder
+      ? String(params.batchFolder).replace(/[^a-zA-Z0-9_-]/g, '')
+      : '';
+    const relativePath = safeBatchFolder
+      ? `output/${safeBatchFolder}/${fileName}`
+      : `output/${fileName}`;
 
     await Filesystem.writeFile({
       path: relativePath,
@@ -144,7 +148,10 @@ if (!window.api) {
 
     let filePath = relativePath;
     try {
-      const uriResult = await Filesystem.getUri({ path: relativePath, directory: Directory.Documents });
+      const uriResult = await Filesystem.getUri({
+        path: relativePath,
+        directory: Directory.Documents,
+      });
       filePath = uriResult.uri;
       lastSavedUri = uriResult.uri;
     } catch {

@@ -16,3 +16,6 @@ android/app/*.iml
 
 # electron-builder output (regenerate via `npm run dist`)
 dist/
+
+# stray log files from manual test runs
+*.log

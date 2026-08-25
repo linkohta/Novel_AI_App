@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, shell, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -260,7 +260,9 @@ ipcMain.handle('generate-image', async (event, params) => {
 
   const imageBuffer = Buffer.from(unzipped[entryNames[0]]);
   const fileName = `${Date.now()}_${body.parameters.seed}.png`;
-  const safeBatchFolder = params.batchFolder ? String(params.batchFolder).replace(/[^a-zA-Z0-9_-]/g, '') : '';
+  const safeBatchFolder = params.batchFolder
+    ? String(params.batchFolder).replace(/[^a-zA-Z0-9_-]/g, '')
+    : '';
   const targetDir = safeBatchFolder ? path.join(outputDir, safeBatchFolder) : outputDir;
   fs.mkdirSync(targetDir, { recursive: true });
   const filePath = path.join(targetDir, fileName);

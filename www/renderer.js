@@ -23,43 +23,53 @@ const addCharByNameBtn = document.getElementById('addCharByNameBtn');
 const chunkNameEl = document.getElementById('chunkName');
 const saveChunkBtn = document.getElementById('saveChunkBtn');
 const chunkListEl = document.getElementById('chunkList');
-const chunkEditOverlay = document.getElementById('chunkEditOverlay');
-const chunkEditName = document.getElementById('chunkEditName');
-const chunkEditText = document.getElementById('chunkEditText');
-const chunkEditSave = document.getElementById('chunkEditSave');
-const chunkEditCancel = document.getElementById('chunkEditCancel');
+const chunkEditOverlayEl = document.getElementById('chunkEditOverlay');
+const chunkEditNameEl = document.getElementById('chunkEditName');
+const chunkEditTextEl = document.getElementById('chunkEditText');
+const chunkEditSaveBtn = document.getElementById('chunkEditSave');
+const chunkEditCancelBtn = document.getElementById('chunkEditCancel');
 const templateNameEl = document.getElementById('templateName');
 const templateTextEl = document.getElementById('templateText');
 const saveTemplateBtn = document.getElementById('saveTemplateBtn');
 const templateListEl = document.getElementById('templateList');
-const templateEditOverlay = document.getElementById('templateEditOverlay');
-const templateEditName = document.getElementById('templateEditName');
-const templateEditText = document.getElementById('templateEditText');
-const templateEditSave = document.getElementById('templateEditSave');
-const templateEditCancel = document.getElementById('templateEditCancel');
-const templateApplyOverlay = document.getElementById('templateApplyOverlay');
-const templateApplyFields = document.getElementById('templateApplyFields');
-const templateApplyConfirm = document.getElementById('templateApplyConfirm');
-const templateApplyCancel = document.getElementById('templateApplyCancel');
+const templateEditOverlayEl = document.getElementById('templateEditOverlay');
+const templateEditNameEl = document.getElementById('templateEditName');
+const templateEditTextEl = document.getElementById('templateEditText');
+const templateEditSaveBtn = document.getElementById('templateEditSave');
+const templateEditCancelBtn = document.getElementById('templateEditCancel');
+const templateApplyOverlayEl = document.getElementById('templateApplyOverlay');
+const templateApplyFieldsEl = document.getElementById('templateApplyFields');
+const templateApplyConfirmBtn = document.getElementById('templateApplyConfirm');
+const templateApplyCancelBtn = document.getElementById('templateApplyCancel');
 const characterSectionEl = document.getElementById('characterSection');
 const favArtistNameEl = document.getElementById('favArtistName');
 const saveFavArtistBtn = document.getElementById('saveFavArtistBtn');
 const favArtistListEl = document.getElementById('favArtistList');
-const favArtistEditOverlay = document.getElementById('favArtistEditOverlay');
-const favArtistEditName = document.getElementById('favArtistEditName');
-const favArtistEditSave = document.getElementById('favArtistEditSave');
-const favArtistEditCancel = document.getElementById('favArtistEditCancel');
+const favArtistEditOverlayEl = document.getElementById('favArtistEditOverlay');
+const favArtistEditNameEl = document.getElementById('favArtistEditName');
+const favArtistEditSaveBtn = document.getElementById('favArtistEditSave');
+const favArtistEditCancelBtn = document.getElementById('favArtistEditCancel');
 const favCharNameEl = document.getElementById('favCharName');
 const favCharSeriesEl = document.getElementById('favCharSeries');
 const saveFavCharBtn = document.getElementById('saveFavCharBtn');
 const favCharListEl = document.getElementById('favCharList');
-const favCharEditOverlay = document.getElementById('favCharEditOverlay');
-const favCharEditName = document.getElementById('favCharEditName');
-const favCharEditSeries = document.getElementById('favCharEditSeries');
-const favCharEditSave = document.getElementById('favCharEditSave');
-const favCharEditCancel = document.getElementById('favCharEditCancel');
+const favCharEditOverlayEl = document.getElementById('favCharEditOverlay');
+const favCharEditNameEl = document.getElementById('favCharEditName');
+const favCharEditSeriesEl = document.getElementById('favCharEditSeries');
+const favCharEditSaveBtn = document.getElementById('favCharEditSave');
+const favCharEditCancelBtn = document.getElementById('favCharEditCancel');
 
-const fields = [apiKeyEl, promptEl, negativePromptEl, modelEl, widthEl, heightEl, stepsEl, scaleEl, samplerEl];
+const fields = [
+  apiKeyEl,
+  promptEl,
+  negativePromptEl,
+  modelEl,
+  widthEl,
+  heightEl,
+  stepsEl,
+  scaleEl,
+  samplerEl,
+];
 
 let characters = [];
 let editingChunkId = null;
@@ -280,8 +290,8 @@ async function renderFavoriteArtists() {
     editSpan.textContent = '✎';
     editSpan.addEventListener('click', () => {
       editingFavArtistId = favorite.id;
-      favArtistEditName.value = favorite.name;
-      favArtistEditOverlay.classList.add('open');
+      favArtistEditNameEl.value = favorite.name;
+      favArtistEditOverlayEl.classList.add('open');
     });
 
     const deleteSpan = document.createElement('span');
@@ -310,20 +320,20 @@ saveFavArtistBtn.addEventListener('click', async () => {
   renderFavoriteArtists();
 });
 
-favArtistEditCancel.addEventListener('click', () => {
+favArtistEditCancelBtn.addEventListener('click', () => {
   editingFavArtistId = null;
-  favArtistEditOverlay.classList.remove('open');
+  favArtistEditOverlayEl.classList.remove('open');
 });
 
-favArtistEditSave.addEventListener('click', async () => {
-  const name = favArtistEditName.value.trim();
+favArtistEditSaveBtn.addEventListener('click', async () => {
+  const name = favArtistEditNameEl.value.trim();
   if (!name) {
     statusEl.textContent = 'アーティスト名を入力してください';
     return;
   }
   await window.api.updateFavorite('artist', { id: editingFavArtistId, name });
   editingFavArtistId = null;
-  favArtistEditOverlay.classList.remove('open');
+  favArtistEditOverlayEl.classList.remove('open');
   renderFavoriteArtists();
 });
 
@@ -352,9 +362,9 @@ async function renderFavoriteCharacters() {
     editSpan.textContent = '✎';
     editSpan.addEventListener('click', () => {
       editingFavCharId = favorite.id;
-      favCharEditName.value = favorite.name;
-      favCharEditSeries.value = favorite.series || '';
-      favCharEditOverlay.classList.add('open');
+      favCharEditNameEl.value = favorite.name;
+      favCharEditSeriesEl.value = favorite.series || '';
+      favCharEditOverlayEl.classList.add('open');
     });
 
     const deleteSpan = document.createElement('span');
@@ -386,21 +396,21 @@ saveFavCharBtn.addEventListener('click', async () => {
   renderFavoriteCharacters();
 });
 
-favCharEditCancel.addEventListener('click', () => {
+favCharEditCancelBtn.addEventListener('click', () => {
   editingFavCharId = null;
-  favCharEditOverlay.classList.remove('open');
+  favCharEditOverlayEl.classList.remove('open');
 });
 
-favCharEditSave.addEventListener('click', async () => {
-  const name = favCharEditName.value.trim();
-  const series = favCharEditSeries.value.trim();
+favCharEditSaveBtn.addEventListener('click', async () => {
+  const name = favCharEditNameEl.value.trim();
+  const series = favCharEditSeriesEl.value.trim();
   if (!name) {
     statusEl.textContent = 'キャラクター名を入力してください';
     return;
   }
   await window.api.updateFavorite('character', { id: editingFavCharId, name, series });
   editingFavCharId = null;
-  favCharEditOverlay.classList.remove('open');
+  favCharEditOverlayEl.classList.remove('open');
   renderFavoriteCharacters();
 });
 
@@ -446,21 +456,21 @@ async function renderChunks() {
 
 function openChunkEditModal(chunk) {
   editingChunkId = chunk.id;
-  chunkEditName.value = chunk.name;
-  chunkEditText.value = chunk.text;
-  chunkEditOverlay.classList.add('open');
+  chunkEditNameEl.value = chunk.name;
+  chunkEditTextEl.value = chunk.text;
+  chunkEditOverlayEl.classList.add('open');
 }
 
 function closeChunkEditModal() {
   editingChunkId = null;
-  chunkEditOverlay.classList.remove('open');
+  chunkEditOverlayEl.classList.remove('open');
 }
 
-chunkEditCancel.addEventListener('click', closeChunkEditModal);
+chunkEditCancelBtn.addEventListener('click', closeChunkEditModal);
 
-chunkEditSave.addEventListener('click', async () => {
-  const name = chunkEditName.value.trim();
-  const text = chunkEditText.value.trim();
+chunkEditSaveBtn.addEventListener('click', async () => {
+  const name = chunkEditNameEl.value.trim();
+  const text = chunkEditTextEl.value.trim();
   if (!name || !text) {
     statusEl.textContent = 'チャンク名とプロンプトを入力してください';
     return;
@@ -533,21 +543,21 @@ async function renderTemplates() {
 
 function openTemplateEditModal(template) {
   editingTemplateId = template.id;
-  templateEditName.value = template.name;
-  templateEditText.value = template.text;
-  templateEditOverlay.classList.add('open');
+  templateEditNameEl.value = template.name;
+  templateEditTextEl.value = template.text;
+  templateEditOverlayEl.classList.add('open');
 }
 
 function closeTemplateEditModal() {
   editingTemplateId = null;
-  templateEditOverlay.classList.remove('open');
+  templateEditOverlayEl.classList.remove('open');
 }
 
-templateEditCancel.addEventListener('click', closeTemplateEditModal);
+templateEditCancelBtn.addEventListener('click', closeTemplateEditModal);
 
-templateEditSave.addEventListener('click', async () => {
-  const name = templateEditName.value.trim();
-  const text = templateEditText.value.trim();
+templateEditSaveBtn.addEventListener('click', async () => {
+  const name = templateEditNameEl.value.trim();
+  const text = templateEditTextEl.value.trim();
   if (!name || !text) {
     statusEl.textContent = 'テンプレート名と本文を入力してください';
     return;
@@ -573,12 +583,12 @@ saveTemplateBtn.addEventListener('click', async () => {
 function openTemplateApplyModal(template, onApply) {
   applyingTemplate = { template, onApply };
   const variables = extractTemplateVariables(template.text);
-  templateApplyFields.innerHTML = '';
+  templateApplyFieldsEl.innerHTML = '';
   if (!variables.length) {
     const note = document.createElement('div');
     note.className = 'no-vars';
     note.textContent = 'このテンプレートに変数はありません。そのまま反映します。';
-    templateApplyFields.appendChild(note);
+    templateApplyFieldsEl.appendChild(note);
   } else {
     variables.forEach((varName) => {
       const field = document.createElement('div');
@@ -590,23 +600,23 @@ function openTemplateApplyModal(template, onApply) {
       input.dataset.varName = varName;
       field.appendChild(label);
       field.appendChild(input);
-      templateApplyFields.appendChild(field);
+      templateApplyFieldsEl.appendChild(field);
     });
   }
-  templateApplyOverlay.classList.add('open');
+  templateApplyOverlayEl.classList.add('open');
 }
 
 function closeTemplateApplyModal() {
   applyingTemplate = null;
-  templateApplyOverlay.classList.remove('open');
+  templateApplyOverlayEl.classList.remove('open');
 }
 
-templateApplyCancel.addEventListener('click', closeTemplateApplyModal);
+templateApplyCancelBtn.addEventListener('click', closeTemplateApplyModal);
 
-templateApplyConfirm.addEventListener('click', () => {
+templateApplyConfirmBtn.addEventListener('click', () => {
   if (!applyingTemplate) return;
   const { template, onApply } = applyingTemplate;
-  const inputs = templateApplyFields.querySelectorAll('input[data-var-name]');
+  const inputs = templateApplyFieldsEl.querySelectorAll('input[data-var-name]');
   const values = {};
   inputs.forEach((input) => {
     values[input.dataset.varName] = input.value;

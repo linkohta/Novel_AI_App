@@ -1,0 +1,6 @@
+node_modules/
+android/
+dist/
+output/
+www/capacitor-bridge.bundle.js
+package-lock.json

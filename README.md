@@ -82,4 +82,11 @@ NovelAIの画像生成は1回ごとにAnlas（有料トークン）を消費し�
 
 ## 開発
 
+コードを変更したら、コミット前に以下でフォーマット・静的検査を行ってください。
+
+```
+npm run format  # Prettier で自動整形
+npm run lint    # ESLint で検査
+```
+
 詳細な開発ルールや内部構成は [CLAUDE.md](./CLAUDE.md) を参照してください。

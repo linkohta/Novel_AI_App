@@ -73,6 +73,28 @@ Android実機/エミュレータでの実行・APKビルドには Android Studio
 
 `package.json` の `build.files` で `android/`・`src/`・`output/`・`dist/` など Electron 実行に不要なディレクトリを除外している。`main.js` の生成画像保存先は `output/`（プロジェクト直下）ではなく `app.getPath('documents')/NovelAI/output/` であり、これはパッケージ化されたアプリのインストール先が読み取り専用であることに対応するための設計（上記アーキテクチャ節を参照）。新しくファイルを永続化する機能を追加する際も、書き込み先には必ず `app.getPath(...)` が返すユーザー領域のパスを使うこと。
 
+## コーディング規約
+
+Prettier / ESLint を導入済み。コードを変更したら次のコマンドで整形・検査すること（CIはまだ無いため、コミット前に手動実行が必須）。
+
+```
+npm run format        # main.js / preload.js / shared / www/renderer.js / src を Prettier で自動整形
+npm run format:check  # 整形が必要な差分がないかチェックのみ行う
+npm run lint           # 上記対象を ESLint で検査（eslint.config.js）
+```
+
+- **フォーマット（Prettier, `.prettierrc.json`）**: シングルクォート、セミコロンあり、`printWidth: 100`、`trailingComma: "es5"`。手動でスタイルを合わせようとせず、必ず `npm run format` に任せる。
+- **命名規則**:
+  - 変数・関数は `camelCase`、変更されない設定値の定数は `UPPER_SNAKE_CASE`（例: `NOVELAI_IMAGE_ENDPOINT`, `FAVORITE_KEYS`）。
+  - DOM要素を保持する変数は末尾に `El`（例: `promptEl`）、ボタン要素は `Btn`（例: `generateBtn`, `chunkEditSaveBtn`）を付与する。`document.getElementById('foo')` の引数の文字列（HTMLの `id` 属性値）は変数名と一致させる必要はない（変数名にサフィックスを付けても `id` 属性自体は変更しない）。
+  - ファイル名は `kebab-case`。
+- **モジュール形式の使い分け**:
+  - `main.js` / `preload.js` / `shared/*.js` — CommonJS（`require` / `module.exports`）。
+  - `src/*.js` — ESM（`import` / `export`）。esbuildで `www/capacitor-bridge.bundle.js` にバンドルされる。
+  - `www/*.js` — モジュールを使わないプレーンなブラウザスクリプト（`<script src="...">` で読み込む前提、グローバルスコープ）。
+- **文字列・関数定義**: 文字列はシングルクォート、変数展開が必要な場合のみテンプレートリテラルを使う。トップレベルの関数は `function` 宣言、コールバック/イベントハンドラはアロー関数。非同期処理は必ず `async/await` を使い、`.then()` チェーンは書かない。
+- **エラーメッセージ**: ユーザー向けに表示されるエラーは日本語で `throw new Error('...')` する（既存の `APIキーを入力してください` 等のパターンに従う）。
+
 ## 開発ルール
 
 - **セキュリティ**: `preload.js` の `contextBridge` によるAPI公開パターンを維持し、`nodeIntegration` をレンダラーで有効化しない。APIキーなどの機密情報をログ出力・平文でリポジトリにコミットしない。
