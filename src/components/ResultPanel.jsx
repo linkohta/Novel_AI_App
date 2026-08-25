@@ -1,7 +1,7 @@
 export default function ResultPanel({ resultImage, fileInfo, history, onSelectHistory }) {
   return (
     <div className="panel right">
-      <img id="result-image" className={resultImage ? 'visible' : ''} src={resultImage || ''} />
+      {resultImage && <img id="result-image" className="visible" src={resultImage} />}
       <div className="file-info" id="file-info">
         {fileInfo}
       </div>

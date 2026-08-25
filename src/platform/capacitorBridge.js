@@ -3,7 +3,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { Share } from '@capacitor/share';
 import { unzipSync } from 'fflate';
-import { buildRequestBody, NOVELAI_IMAGE_ENDPOINT } from '../../shared/novelai';
+import { buildRequestBody, NOVELAI_IMAGE_ENDPOINT } from '../../shared/novelai.mjs';
 
 // Electron already defines window.api via preload.js's contextBridge before
 // any page script runs, so this bridge only activates for Capacitor/web.

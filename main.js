@@ -4,7 +4,15 @@ const fs = require('fs');
 const https = require('https');
 const crypto = require('crypto');
 const { unzipSync } = require('fflate');
-const { buildRequestBody, NOVELAI_IMAGE_ENDPOINT } = require('./shared/novelai');
+
+// shared/novelai.mjs is a native ESM module (it's also imported directly by
+// the browser-side src/platform/capacitorBridge.js via Vite), so it can't be
+// loaded with require() from this CommonJS file — use a cached dynamic import.
+let novelaiModulePromise;
+function loadNovelaiModule() {
+  if (!novelaiModulePromise) novelaiModulePromise = import('./shared/novelai.mjs');
+  return novelaiModulePromise;
+}
 
 const userDataDir = app.getPath('userData');
 const settingsPath = path.join(userDataDir, 'settings.json');
@@ -212,10 +220,10 @@ ipcMain.handle('delete-favorite', (event, { kind, id }) => {
 
 ipcMain.handle('open-output-folder', () => shell.openPath(outputDir));
 
-function requestImage(apiKey, body) {
+function requestImage(apiKey, body, endpoint) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
-    const url = new URL(NOVELAI_IMAGE_ENDPOINT);
+    const url = new URL(endpoint);
     const req = https.request(
       {
         hostname: url.hostname,
@@ -251,8 +259,9 @@ ipcMain.handle('generate-image', async (event, params) => {
   if (!params.apiKey) throw new Error('APIキーを入力してください');
   if (!params.prompt) throw new Error('プロンプトを入力してください');
 
+  const { buildRequestBody, NOVELAI_IMAGE_ENDPOINT } = await loadNovelaiModule();
   const body = buildRequestBody(params);
-  const zipBuffer = await requestImage(params.apiKey, body);
+  const zipBuffer = await requestImage(params.apiKey, body, NOVELAI_IMAGE_ENDPOINT);
 
   const unzipped = unzipSync(new Uint8Array(zipBuffer));
   const entryNames = Object.keys(unzipped);

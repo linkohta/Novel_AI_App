@@ -31,6 +31,16 @@ module.exports = [
     rules: commonRules,
   },
   {
+    // Shared request-building logic: native ESM so it can be `import`ed directly
+    // by both the browser (via Vite) and main.js (via dynamic import()).
+    files: ['shared/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+    },
+    rules: commonRules,
+  },
+  {
     // React + Capacitor bridge source, bundled by Vite (ESM + browser environment).
     files: ['src/**/*.js', 'src/**/*.jsx'],
     languageOptions: {

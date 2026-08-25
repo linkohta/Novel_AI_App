@@ -39,7 +39,8 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
   - `src/styles.css` — 全体のスタイル（旧 `www/index.html` の `<style>` をそのまま移植）。折りたたみセクションは `<details className="section">` をReactの `open`/`onToggle` で制御しており、CSSの矢印回転等はHTML版と同じ仕組み。
   - `src/platform/capacitorBridge.js` — 旧 `src/capacitor-bridge.js` と同内容（後述）。
 - **共有ロジック (`shared/`)**
-  - `shared/novelai.js` — NovelAI APIへのリクエストボディ組み立て（`buildRequestBody` / `isV4Model`）とエンドポイントURL（`NOVELAI_IMAGE_ENDPOINT`）。CommonJS形式で、Electron側(`main.js`から`require`)・Vite側(`capacitorBridge.js`からESM importでバンドル)の両方から読み込まれる。
+  - `shared/novelai.mjs` — NovelAI APIへのリクエストボディ組み立て（`buildRequestBody` / `isV4Model`）とエンドポイントURL（`NOVELAI_IMAGE_ENDPOINT`）。**ネイティブESM**（`export function` / `export const`）で書かれている。`main.js`（CommonJS）はNode標準の動的 `import()` で読み込み（`loadNovelaiModule()`、初回呼び出し時にPromiseをキャッシュ）、`capacitorBridge.js`は通常の `import { ... } from '../../shared/novelai.mjs'` で読み込む（Viteが `vite build` ではRollupで、`vite dev` ではesbuildのプリバンドルでそれぞれ解決する）。
+    - **`shared/novelai.mjs` を CommonJS (`module.exports`) に戻さないこと。** `main.js`からの`require()`では動くが、Viteの開発サーバー（`npm run dev`）はローカルの相対パスファイルに対してCJS→ESM変換を行わないため、ブラウザ側で `module is not defined` エラーになり起動できなくなる（`vite build`によるプロダクションビルドはRollupが変換するため気づきにくいので注意）。
 - **Electron側 (`window.api` の実装 = preload.js + main.js)**
   - `preload.js` — `contextBridge` で `window.api` を公開する preload スクリプト（`loadSettings` / `saveSettings` / `generateImage` / `openOutputFolder` / `loadChunks` / `saveChunk` / `updateChunk` / `deleteChunk` / `loadTemplates` / `saveTemplate` / `updateTemplate` / `deleteTemplate` / `loadFavorites` / `saveFavorite` / `updateFavorite` / `deleteFavorite`）。`loadFavorites`等は第一引数に `kind`（`'artist'` または `'character'`）を取る。ページの他のスクリプトより先に実行されるため、Capacitor側のブリッジは「`window.api` が未定義の場合のみ」自身を定義するガードを持つ。
   - `main.js` — メインプロセスのエントリーポイント（`package.json` の `main` フィールドで指定）。`www/index.html`（Viteのビルド成果物）を読み込み、起動時に最大化して表示するウィンドウ生成、日本語化した `Menu`、上記IPCハンドラの実装、NovelAI API呼び出し（`https`モジュール）、ZIPレスポンスの展開（`fflate`）とファイル保存を行う。お気に入りは `kind` ごとに `FAVORITE_PATHS` で切り替えたJSONファイルに保存する共通ハンドラ（`load-favorites` / `save-favorite` / `update-favorite` / `delete-favorite`）で実装。
@@ -110,7 +111,7 @@ npm run lint           # 上記対象を ESLint で検査（eslint.config.js）
 - **セキュリティ**: `preload.js` の `contextBridge` によるAPI公開パターンを維持し、`nodeIntegration` をレンダラーで有効化しない。APIキーなどの機密情報をログ出力・平文でリポジトリにコミットしない。
 - **`window.api` の両実装を同期させる**: `window.api` に新しいメソッドを追加・変更する場合、`preload.js`＋`main.js`（Electron側）と `src/platform/capacitorBridge.js`（Android側）の**両方**に対応する実装を必ず追加し、シグネチャ・戻り値の形を一致させる。片方だけ実装すると、もう一方のプラットフォームで機能が動作しなくなる。
 - **UIとロジックの分離**: `src/`（Reactコンポーネント）にNovelAI APIの直接呼び出しやファイルI/Oを書かず、必ず `window.api` 経由でやり取りする（Electronでは`main.js`、Androidでは`capacitorBridge.js`がその実体を担う）。プラットフォーム分岐が必要な場合も個別のコンポーネントには極力書かず、`window.isNativeApp`など明示的なフラグ経由に留める。
-- **共通ロジックは `shared/` に置く**: NovelAI APIのリクエスト形式など、Electron・Android両方で必要になるロジックは`shared/novelai.js`のようにCommonJSモジュールとして切り出し、`main.js`からは`require`、`capacitorBridge.js`からはESM importでVite側にバンドルして読み込む。同じロジックを両側に重複実装しない。
+- **共通ロジックは `shared/` に置く**: NovelAI APIのリクエスト形式など、Electron・Android両方で必要になるロジックは`shared/novelai.mjs`のようにネイティブESMモジュールとして切り出し、`main.js`からは動的`import()`、`capacitorBridge.js`からは通常の`import`で読み込む。同じロジックを両側に重複実装しない。
 - **小さな変更を積み重ねる**: 過剰な抽象化は避け、必要になってから一般化する。ただしUI層のビルドツール（Vite）・フレームワーク（React）は本アプリの明示的な方針として既に採用済みであり、「ビルドツールを増やさない」原則は適用しない——新しい依存追加はREADME/CLAUDE.mdの更新とセットで検討すること。
 - **エラーハンドリング**: API呼び出し失敗時は `App.jsx` の `try/catch` で捕捉し、`status` の状態に反映してユーザー向けメッセージを表示する既存パターンに従う。
 - **コミット前確認**: `output/` ディレクトリに生成された画像ファイルや、APIキーを含む設定ファイルを誤ってコミットしないよう `.gitignore` を確認する。
