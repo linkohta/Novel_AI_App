@@ -53,8 +53,13 @@ module.exports = [
     rules: commonRules,
   },
   {
-    // Plain browser script, no module system, loaded directly via <script>.
-    files: ['www/*.js'],
+    // Plain browser scripts, no module system, loaded via multiple <script> tags
+    // in a fixed order (see index.html) and sharing one global scope by design.
+    // no-undef/no-unused-vars/prefer-const are disabled here because each file
+    // is linted in isolation and cannot see that a `const`/`let`/`function` it
+    // declares is read, called, or reassigned from a different www/js/*.js
+    // file — that is expected, not a bug.
+    files: ['www/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'script',
@@ -66,6 +71,11 @@ module.exports = [
         Event: 'readonly',
       },
     },
-    rules: commonRules,
+    rules: {
+      ...commonRules,
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      'prefer-const': 'off',
+    },
   },
 ];

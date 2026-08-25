@@ -41,7 +41,7 @@ npm run cap:sync         # www/ の内容と shared/ のロジックを Android 
 npm run cap:open:android # Android Studio で android/ プロジェクトを開く
 ```
 
-Android Studio が開いたら、実機またはエミュレータを選択して実行してください（Run）。UI (`www/index.html` / `www/renderer.js`) やAPIリクエスト組み立て (`shared/novelai.js`) を変更した場合は、`npm run cap:sync` を再実行してAndroidプロジェクトに反映してから実行し直してください。
+Android Studio が開いたら、実機またはエミュレータを選択して実行してください（Run）。UI (`www/index.html` / `www/js/`) やAPIリクエスト組み立て (`shared/novelai.js`) を変更した場合は、`npm run cap:sync` を再実行してAndroidプロジェクトに反映してから実行し直してください。
 
 初回のみ `npx cap add android` は実行済みです（`android/` ディレクトリがネイティブプロジェクトの実体です）。
 
