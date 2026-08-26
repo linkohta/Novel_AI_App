@@ -6,9 +6,9 @@ export default function ResultPanel({ resultImage, fileInfo, history, onSelectHi
         {fileInfo}
       </div>
       <div id="history">
-        {history.map((item, index) => (
+        {history.map((item) => (
           <img
-            key={index}
+            key={item.fileName}
             src={item.dataUrl}
             title={item.fileName}
             onClick={() => onSelectHistory(item)}

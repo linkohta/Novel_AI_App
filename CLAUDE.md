@@ -62,6 +62,7 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
   - `@capacitor/cli`: Androidプロジェクトの同期用CLI（devDependency）。
   - `electron-builder`: デスクトップ版を単独実行可能なインストーラー/実行ファイルにパッケージングする（devDependency）。設定は `package.json` の `build` フィールド。
   - `electron-vite`: `npm run dev` 専用の開発用ランチャー（devDependency、`electron.vite.config.js`）。本番ビルド（`vite build`）には関与しない。
+  - `eslint-plugin-react-hooks`: `src/**/*.jsx` のHooksルール（`rules-of-hooks` / `exhaustive-deps`）をESLintで検査するためのプラグイン（devDependency、`eslint.config.js`）。
 
 ## 開発コマンド
 
@@ -94,7 +95,7 @@ Prettier / ESLint を導入済み。コードを変更したら次のコマン�
 ```
 npm run format        # main.js / preload.js / shared / src を Prettier で自動整形
 npm run format:check  # 整形が必要な差分がないかチェックのみ行う
-npm run lint           # 上記対象を ESLint で検査（eslint.config.js）
+npm run lint           # 上記対象を ESLint で検査（eslint.config.js。src/**/*.jsx には eslint-plugin-react-hooks の rules-of-hooks（error）/ exhaustive-deps（warn）を適用）
 ```
 
 - **フォーマット（Prettier, `.prettierrc.json`）**: シングルクォート、セミコロンあり、`printWidth: 100`、`trailingComma: "es5"`。手動でスタイルを合わせようとせず、必ず `npm run format` に任せる。
@@ -108,6 +109,8 @@ npm run lint           # 上記対象を ESLint で検査（eslint.config.js）
 - **文字列・関数定義**: 文字列はシングルクォート、変数展開が必要な場合のみテンプレートリテラルを使う。トップレベルの関数は `function` 宣言、コールバック/イベントハンドラはアロー関数。非同期処理は必ず `async/await` を使い、`.then()` チェーンは書かない。
 - **エラーメッセージ**: ユーザー向けに表示されるエラーは日本語で `throw new Error('...')` する（既存の `APIキーを入力してください` 等のパターンに従う）。
 - **Reactの状態管理**: Redux等の外部状態管理ライブラリは導入しない。`App.jsx` がアプリ全体の状態を持ち、`src/components/*.jsx` は基本的に状態を持たないpropsベースのコンポーネントとする（既存の分割に合わせる）。DOMを直接操作しない（`document.getElementById` 等をコンポーネント内で使わない。既存コードで参照が必要なのは `App.jsx` の `charNameByNameRef`（フォーカス移動）程度に留めている）。
+- **Hooksのルール**: `eslint-plugin-react-hooks`（`react-hooks/rules-of-hooks` / `react-hooks/exhaustive-deps`）が `src/**/*.jsx` に適用されており、`npm run lint` で検査される。`useEffect`/`useCallback`/`useMemo` の依存配列は原則としてlintの指摘通り過不足なく書く（意図的に外す場合のみ理由をコメントで残す）。
+- **リストの `key`**: `Array.prototype.map` でリストをレンダリングする際、要素の並び替え・削除が起こり得る配列（`characters` 等）では配列のインデックスではなく、要素が持つ安定した一意のID（例: 生成時に付与する `crypto.randomUUID()`）を `key` に使う。並び替え・削除が起こらない固定リスト（`MODEL_OPTIONS` 等の定数配列）はインデックスキーでも問題ない。
 
 ## 開発ルール
 

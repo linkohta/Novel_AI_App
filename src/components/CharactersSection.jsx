@@ -73,7 +73,7 @@ export default function CharactersSection({
       <div id="characterList">
         {characters.map((character, index) => (
           <CharacterCard
-            key={index}
+            key={character.id}
             index={index}
             character={character}
             onChange={onChangeCharacter}
