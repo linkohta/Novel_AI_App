@@ -74,6 +74,7 @@ export default function App() {
   const [charNameByName, setCharNameByName] = useState('');
   const [charSeriesByName, setCharSeriesByName] = useState('');
   const [charNameSource, setCharNameSource] = useState('');
+  const [charNameNegativeSource, setCharNameNegativeSource] = useState('');
 
   // Modal drafts.
   const [chunkEditDraft, setChunkEditDraft] = useState(null);
@@ -213,14 +214,45 @@ export default function App() {
     ]);
   }
 
-  function finishAddCharacterByName(promptText) {
+  function finishAddCharacterByName(promptText, negativePromptText) {
     setCharacters((prev) => [
       ...prev,
-      { id: window.crypto.randomUUID(), prompt: promptText, negativePrompt: '', enabled: true },
+      {
+        id: window.crypto.randomUUID(),
+        prompt: promptText,
+        negativePrompt: negativePromptText || '',
+        enabled: true,
+      },
     ]);
     setCharNameByName('');
     setCharSeriesByName('');
     setCharNameSource('');
+    setCharNameNegativeSource('');
+  }
+
+  // Resolves a "組み合わせるチャンク／テンプレート" selector value (e.g.
+  // "chunk:<id>" / "template:<id>") to its text and passes it to onResolved.
+  // Chunks resolve synchronously; templates open the variable-input modal and
+  // resolve asynchronously once the user confirms it.
+  function resolveCombineSource(source, onResolved) {
+    if (!source) {
+      onResolved('');
+      return;
+    }
+    const [sourceType, sourceId] = source.split(':');
+    if (sourceType === 'chunk') {
+      const chunk = chunksList.items.find((c) => c.id === sourceId);
+      onResolved(chunk ? chunk.text : '');
+      return;
+    }
+    if (sourceType === 'template') {
+      const template = templatesList.items.find((t) => t.id === sourceId);
+      if (!template) {
+        onResolved('');
+        return;
+      }
+      setTemplateApplyState({ template, onApply: onResolved });
+    }
   }
 
   function handleAddByName() {
@@ -232,29 +264,11 @@ export default function App() {
     }
     const base = series ? `${name} (${series})` : name;
 
-    if (!charNameSource) {
-      finishAddCharacterByName(base);
-      return;
-    }
-
-    const [sourceType, sourceId] = charNameSource.split(':');
-    if (sourceType === 'chunk') {
-      const chunk = chunksList.items.find((c) => c.id === sourceId);
-      finishAddCharacterByName(chunk ? `${base}, ${chunk.text}` : base);
-      return;
-    }
-
-    if (sourceType === 'template') {
-      const template = templatesList.items.find((t) => t.id === sourceId);
-      if (!template) {
-        finishAddCharacterByName(base);
-        return;
-      }
-      setTemplateApplyState({
-        template,
-        onApply: (result) => finishAddCharacterByName(`${base}, ${result}`),
+    resolveCombineSource(charNameSource, (promptExtra) => {
+      resolveCombineSource(charNameNegativeSource, (negativeExtra) => {
+        finishAddCharacterByName(promptExtra ? `${base}, ${promptExtra}` : base, negativeExtra);
       });
-    }
+    });
   }
 
   async function handleSaveChunk() {
@@ -555,6 +569,8 @@ export default function App() {
           setCharSeriesByName={setCharSeriesByName}
           charNameSource={charNameSource}
           setCharNameSource={setCharNameSource}
+          charNameNegativeSource={charNameNegativeSource}
+          setCharNameNegativeSource={setCharNameNegativeSource}
           onAddByName={handleAddByName}
           nameInputRef={charNameByNameRef}
         />
