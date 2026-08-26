@@ -510,7 +510,7 @@ export default function App() {
           favArtistNameInput={favArtistNameInput}
           setFavArtistNameInput={setFavArtistNameInput}
           onSaveFavArtist={handleSaveFavArtist}
-          onInsertFavArtist={(fav) => insertIntoFocused(fav.name)}
+          onInsertFavArtist={(fav) => insertIntoFocused(`artist:${fav.name}`)}
           onEditFavArtist={(fav) => setFavArtistEditDraft({ ...fav })}
           onDeleteFavArtist={(id) => favoriteArtists.removeItem(id)}
           favChars={favoriteCharacters.items}
