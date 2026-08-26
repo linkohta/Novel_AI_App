@@ -40,6 +40,7 @@ export default function App() {
   const [steps, setSteps] = useState('28');
   const [scale, setScale] = useState('5');
   const [sampler, setSampler] = useState('k_euler_ancestral');
+  const [outputDir, setOutputDir] = useState('');
   const [characters, setCharacters] = useState([]);
   const [sectionState, setSectionState] = useState(DEFAULT_SECTION_STATE);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -111,6 +112,7 @@ export default function App() {
       if (settings.steps) setSteps(settings.steps);
       if (settings.scale) setScale(settings.scale);
       if (settings.sampler) setSampler(settings.sampler);
+      if (settings.outputDir) setOutputDir(settings.outputDir);
       if (Array.isArray(settings.characters)) setCharacters(settings.characters);
       if (settings.sectionState) {
         setSectionState((prev) => ({ ...prev, ...settings.sectionState }));
@@ -130,6 +132,7 @@ export default function App() {
       steps,
       scale,
       sampler,
+      outputDir,
       characters,
       sectionState,
     };
@@ -152,9 +155,15 @@ export default function App() {
     steps,
     scale,
     sampler,
+    outputDir,
     characters,
     sectionState,
   ]);
+
+  async function handleChooseOutputDir() {
+    const dir = await window.api.chooseOutputFolder();
+    if (dir) setOutputDir(dir);
+  }
 
   function handleSectionToggle(id, isOpen) {
     setSectionState((prev) => ({ ...prev, [id]: isOpen }));
@@ -442,6 +451,25 @@ export default function App() {
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
           />
+
+          <label>画像の保存先フォルダ</label>
+          {window.isNativeApp ? (
+            <p className="hint">
+              Android版では保存先は端末内のドキュメントフォルダに固定されています。
+            </p>
+          ) : (
+            <div className="output-dir-row">
+              <input type="text" readOnly value={outputDir || '（既定のフォルダを使用）'} />
+              <button type="button" onClick={handleChooseOutputDir}>
+                参照...
+              </button>
+              {outputDir && (
+                <button type="button" onClick={() => setOutputDir('')}>
+                  既定に戻す
+                </button>
+              )}
+            </div>
+          )}
         </Section>
 
         <PromptSection

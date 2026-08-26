@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   generateImage: (params) => ipcRenderer.invoke('generate-image', params),
   openOutputFolder: () => ipcRenderer.invoke('open-output-folder'),
+  chooseOutputFolder: () => ipcRenderer.invoke('choose-output-folder'),
   loadChunks: () => ipcRenderer.invoke('load-chunks'),
   saveChunk: (chunk) => ipcRenderer.invoke('save-chunk', chunk),
   updateChunk: (chunk) => ipcRenderer.invoke('update-chunk', chunk),
