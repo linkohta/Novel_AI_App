@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -24,8 +24,17 @@ const FAVORITE_PATHS = {
 };
 // Packaged builds install into a read-only location (e.g. Program Files), so
 // generated images must live under a writable, per-user directory instead of
-// alongside the app itself.
-const outputDir = path.join(app.getPath('documents'), 'NovelAI', 'output');
+// alongside the app itself. The user can override this via settings.outputDir
+// (set through the "保存先フォルダ" picker in the UI); an empty/missing value
+// falls back to this default.
+const defaultOutputDir = path.join(app.getPath('documents'), 'NovelAI', 'output');
+
+function getOutputDir() {
+  const settings = readJson(settingsPath, {});
+  return typeof settings.outputDir === 'string' && settings.outputDir.trim()
+    ? settings.outputDir
+    : defaultOutputDir;
+}
 
 function readJson(filePath, fallback) {
   try {
@@ -47,7 +56,7 @@ function buildMenu() {
       submenu: [
         {
           label: '保存フォルダを開く',
-          click: () => shell.openPath(outputDir),
+          click: () => shell.openPath(getOutputDir()),
         },
         { type: 'separator' },
         { role: 'quit', label: '終了' },
@@ -132,7 +141,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  fs.mkdirSync(outputDir, { recursive: true });
+  fs.mkdirSync(getOutputDir(), { recursive: true });
   buildMenu();
   createWindow();
 
@@ -232,7 +241,16 @@ ipcMain.handle('delete-favorite', (event, { kind, id }) => {
   return favorites;
 });
 
-ipcMain.handle('open-output-folder', () => shell.openPath(outputDir));
+ipcMain.handle('open-output-folder', () => shell.openPath(getOutputDir()));
+
+ipcMain.handle('choose-output-folder', async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showOpenDialog(win, {
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  if (result.canceled || !result.filePaths.length) return null;
+  return result.filePaths[0];
+});
 
 function requestImage(apiKey, body, endpoint) {
   return new Promise((resolve, reject) => {
@@ -286,6 +304,7 @@ ipcMain.handle('generate-image', async (event, params) => {
   const safeBatchFolder = params.batchFolder
     ? String(params.batchFolder).replace(/[^a-zA-Z0-9_-]/g, '')
     : '';
+  const outputDir = getOutputDir();
   const targetDir = safeBatchFolder ? path.join(outputDir, safeBatchFolder) : outputDir;
   fs.mkdirSync(targetDir, { recursive: true });
   const filePath = path.join(targetDir, fileName);

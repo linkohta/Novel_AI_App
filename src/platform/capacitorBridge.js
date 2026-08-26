@@ -168,6 +168,12 @@ if (!window.api) {
     };
   }
 
+  async function chooseOutputFolder() {
+    // Capacitor has no arbitrary directory-picker API without an extra
+    // native plugin; Android always saves under Documents/output.
+    return null;
+  }
+
   async function openOutputFolder() {
     if (!lastSavedUri) return;
     // Android has no general "open this app's folder" API for third-party apps,
@@ -187,6 +193,7 @@ if (!window.api) {
     saveSettings: (settings) => saveJson(SETTINGS_KEY, settings),
     generateImage,
     openOutputFolder,
+    chooseOutputFolder,
     loadChunks: chunksApi.load,
     saveChunk: chunksApi.save,
     updateChunk: chunksApi.update,
