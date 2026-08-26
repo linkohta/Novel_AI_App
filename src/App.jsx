@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import PromptSection from './components/PromptSection.jsx';
 import TemplatesSection from './components/TemplatesSection.jsx';
 import FavoritesSection from './components/FavoritesSection.jsx';
@@ -113,7 +113,13 @@ export default function App() {
       if (settings.scale) setScale(settings.scale);
       if (settings.sampler) setSampler(settings.sampler);
       if (settings.outputDir) setOutputDir(settings.outputDir);
-      if (Array.isArray(settings.characters)) setCharacters(settings.characters);
+      if (Array.isArray(settings.characters)) {
+        // Older saved settings predate per-character ids (used as the React
+        // list key); backfill them so existing characters get a stable key too.
+        setCharacters(
+          settings.characters.map((c) => (c.id ? c : { ...c, id: window.crypto.randomUUID() }))
+        );
+      }
       if (settings.sectionState) {
         setSectionState((prev) => ({ ...prev, ...settings.sectionState }));
       }
@@ -121,8 +127,8 @@ export default function App() {
     })();
   }, []);
 
-  function currentSettings() {
-    return {
+  const currentSettings = useCallback(
+    () => ({
       apiKey,
       prompt,
       negativePrompt,
@@ -135,8 +141,22 @@ export default function App() {
       outputDir,
       characters,
       sectionState,
-    };
-  }
+    }),
+    [
+      apiKey,
+      prompt,
+      negativePrompt,
+      model,
+      width,
+      height,
+      steps,
+      scale,
+      sampler,
+      outputDir,
+      characters,
+      sectionState,
+    ]
+  );
 
   // Debounced autosave, mirroring the old app's "save shortly after the user
   // stops editing" behavior without wiring a persist call to every field.
@@ -144,21 +164,7 @@ export default function App() {
     if (!settingsLoaded) return undefined;
     const id = setTimeout(() => window.api.saveSettings(currentSettings()), 300);
     return () => clearTimeout(id);
-  }, [
-    settingsLoaded,
-    apiKey,
-    prompt,
-    negativePrompt,
-    model,
-    width,
-    height,
-    steps,
-    scale,
-    sampler,
-    outputDir,
-    characters,
-    sectionState,
-  ]);
+  }, [settingsLoaded, currentSettings]);
 
   async function handleChooseOutputDir() {
     const dir = await window.api.chooseOutputFolder();
@@ -201,11 +207,17 @@ export default function App() {
   }
 
   function addBlankCharacter() {
-    setCharacters((prev) => [...prev, { prompt: '', negativePrompt: '', enabled: true }]);
+    setCharacters((prev) => [
+      ...prev,
+      { id: window.crypto.randomUUID(), prompt: '', negativePrompt: '', enabled: true },
+    ]);
   }
 
   function finishAddCharacterByName(promptText) {
-    setCharacters((prev) => [...prev, { prompt: promptText, negativePrompt: '', enabled: true }]);
+    setCharacters((prev) => [
+      ...prev,
+      { id: window.crypto.randomUUID(), prompt: promptText, negativePrompt: '', enabled: true },
+    ]);
     setCharNameByName('');
     setCharSeriesByName('');
     setCharNameSource('');

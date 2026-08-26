@@ -1,4 +1,5 @@
 const js = require('@eslint/js');
+const reactHooks = require('eslint-plugin-react-hooks');
 
 const commonRules = {
   'no-unused-vars': 'warn',
@@ -60,6 +61,11 @@ module.exports = [
         Event: 'readonly',
       },
     },
-    rules: commonRules,
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      ...commonRules,
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
   },
 ];
