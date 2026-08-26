@@ -4,7 +4,15 @@ const fs = require('fs');
 const https = require('https');
 const crypto = require('crypto');
 const { unzipSync } = require('fflate');
-const { buildRequestBody, NOVELAI_IMAGE_ENDPOINT } = require('./shared/novelai');
+
+// shared/novelai.mjs is a native ESM module (it's also imported directly by
+// the browser-side src/platform/capacitorBridge.js via Vite), so it can't be
+// loaded with require() from this CommonJS file — use a cached dynamic import.
+let novelaiModulePromise;
+function loadNovelaiModule() {
+  if (!novelaiModulePromise) novelaiModulePromise = import('./shared/novelai.mjs');
+  return novelaiModulePromise;
+}
 
 const userDataDir = app.getPath('userData');
 const settingsPath = path.join(userDataDir, 'settings.json');
@@ -91,13 +99,23 @@ function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
+// `npm run dev` (electron-vite dev) builds this file into out-dev/main/main.js
+// and sets ELECTRON_RENDERER_URL to the Vite dev server; the preload build
+// then lives at out-dev/preload/preload.js, one directory up. Everything else
+// (npm start, packaged builds) runs this file unbundled from the project
+// root, where __dirname/preload.js is correct and ELECTRON_RENDERER_URL is unset.
+const devServerUrl = process.env.ELECTRON_RENDERER_URL;
+const preloadPath = devServerUrl
+  ? path.join(__dirname, '../preload/preload.js')
+  : path.join(__dirname, 'preload.js');
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -106,7 +124,11 @@ function createWindow() {
     win.maximize();
     win.show();
   });
-  win.loadFile('www/index.html');
+  if (devServerUrl) {
+    win.loadURL(devServerUrl);
+  } else {
+    win.loadFile('www/index.html');
+  }
 }
 
 app.whenReady().then(() => {
@@ -212,10 +234,10 @@ ipcMain.handle('delete-favorite', (event, { kind, id }) => {
 
 ipcMain.handle('open-output-folder', () => shell.openPath(outputDir));
 
-function requestImage(apiKey, body) {
+function requestImage(apiKey, body, endpoint) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
-    const url = new URL(NOVELAI_IMAGE_ENDPOINT);
+    const url = new URL(endpoint);
     const req = https.request(
       {
         hostname: url.hostname,
@@ -251,8 +273,9 @@ ipcMain.handle('generate-image', async (event, params) => {
   if (!params.apiKey) throw new Error('APIキーを入力してください');
   if (!params.prompt) throw new Error('プロンプトを入力してください');
 
+  const { buildRequestBody, NOVELAI_IMAGE_ENDPOINT } = await loadNovelaiModule();
   const body = buildRequestBody(params);
-  const zipBuffer = await requestImage(params.apiKey, body);
+  const zipBuffer = await requestImage(params.apiKey, body, NOVELAI_IMAGE_ENDPOINT);
 
   const unzipped = unzipSync(new Uint8Array(zipBuffer));
   const entryNames = Object.keys(unzipped);

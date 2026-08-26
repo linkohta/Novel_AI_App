@@ -1,8 +1,8 @@
-function isV4Model(model) {
+export function isV4Model(model) {
   return /^nai-diffusion-[45]/.test(model);
 }
 
-function buildRequestBody(params) {
+export function buildRequestBody(params) {
   const width = Number(params.width);
   const height = Number(params.height);
   const steps = Number(params.steps);
@@ -59,6 +59,4 @@ function buildRequestBody(params) {
   };
 }
 
-const NOVELAI_IMAGE_ENDPOINT = 'https://image.novelai.net/ai/generate-image';
-
-module.exports = { isV4Model, buildRequestBody, NOVELAI_IMAGE_ENDPOINT };
+export const NOVELAI_IMAGE_ENDPOINT = 'https://image.novelai.net/ai/generate-image';

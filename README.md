@@ -1,6 +1,6 @@
 # novelai-app
 
-NovelAI の画像生成 API にプロンプトを送信し、生成された画像を保存・閲覧するアプリです。Electron によるデスクトップ版と、Capacitor による Android 版があり、UI（`www/`）とAPIリクエスト組み立て（`shared/`）のソースコードを共有しています。
+NovelAI の画像生成 API にプロンプトを送信し、生成された画像を保存・閲覧するアプリです。Electron によるデスクトップ版と、Capacitor による Android 版があり、React + Vite で書かれたUI（`src/`）とAPIリクエスト組み立て（`shared/`）のソースコードを共有しています。
 
 ## 機能
 
@@ -37,11 +37,11 @@ npm start
 Android Studio と Android SDK がインストールされたマシンで作業してください。
 
 ```
-npm run cap:sync         # www/ の内容と shared/ のロジックを Android プロジェクトへ同期
+npm run cap:sync         # src/ を vite build でビルドし、www/ の内容を Android プロジェクトへ同期
 npm run cap:open:android # Android Studio で android/ プロジェクトを開く
 ```
 
-Android Studio が開いたら、実機またはエミュレータを選択して実行してください（Run）。UI (`www/index.html` / `www/js/`) やAPIリクエスト組み立て (`shared/novelai.js`) を変更した場合は、`npm run cap:sync` を再実行してAndroidプロジェクトに反映してから実行し直してください。
+Android Studio が開いたら、実機またはエミュレータを選択して実行してください（Run）。UI (`src/`) やAPIリクエスト組み立て (`shared/novelai.mjs`) を変更した場合は、`npm run cap:sync` を再実行してAndroidプロジェクトに反映してから実行し直してください。
 
 初回のみ `npx cap add android` は実行済みです（`android/` ディレクトリがネイティブプロジェクトの実体です）。
 
@@ -81,6 +81,8 @@ NovelAIの画像生成は1回ごとにAnlas（有料トークン）を消費し�
 本アプリ自体は [Apache License 2.0](./LICENSE) のもとで公開されています。利用しているOSSライブラリのライセンス一覧は [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) を参照してください（すべてMIT等の許諾型ライセンスで、コピーレフト・ライセンスは含まれていません）。
 
 ## 開発
+
+UIを素早く確認しながら開発したい場合は `npm run dev`（[electron-vite](https://electron-vite.org/)）を使えます。`main.js`/`preload.js`/`src/`をHMR付きでビルドし、実際のElectronアプリを自動起動するため、`window.api`は本物のIPC経由で動作します（画像生成やファイル保存もそのまま試せます）。
 
 コードを変更したら、コミット前に以下でフォーマット・静的検査を行ってください。
 

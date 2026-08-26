@@ -9,13 +9,7 @@ const commonRules = {
 module.exports = [
   js.configs.recommended,
   {
-    ignores: [
-      'node_modules/**',
-      'android/**',
-      'dist/**',
-      'output/**',
-      'www/capacitor-bridge.bundle.js',
-    ],
+    ignores: ['node_modules/**', 'android/**', 'dist/**', 'output/**', 'www/**'],
   },
   {
     // Electron main process + preload + shared CommonJS logic (Node.js environment).
@@ -37,45 +31,35 @@ module.exports = [
     rules: commonRules,
   },
   {
-    // Capacitor bridge, bundled with esbuild (ESM + browser environment).
-    files: ['src/**/*.js'],
+    // Shared request-building logic: native ESM so it can be `import`ed directly
+    // by both the browser (via Vite) and main.js (via dynamic import()).
+    files: ['shared/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
+    },
+    rules: commonRules,
+  },
+  {
+    // React + Capacitor bridge source, bundled by Vite (ESM + browser environment).
+    files: ['src/**/*.js', 'src/**/*.jsx'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+      },
       globals: {
         window: 'readonly',
         document: 'readonly',
         fetch: 'readonly',
         btoa: 'readonly',
         console: 'readonly',
-      },
-    },
-    rules: commonRules,
-  },
-  {
-    // Plain browser scripts, no module system, loaded via multiple <script> tags
-    // in a fixed order (see index.html) and sharing one global scope by design.
-    // no-undef/no-unused-vars/prefer-const are disabled here because each file
-    // is linted in isolation and cannot see that a `const`/`let`/`function` it
-    // declares is read, called, or reassigned from a different www/js/*.js
-    // file — that is expected, not a bug.
-    files: ['www/**/*.js'],
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'script',
-      globals: {
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
         setTimeout: 'readonly',
+        clearTimeout: 'readonly',
         Event: 'readonly',
       },
     },
-    rules: {
-      ...commonRules,
-      'no-undef': 'off',
-      'no-unused-vars': 'off',
-      'prefer-const': 'off',
-    },
+    rules: commonRules,
   },
 ];
