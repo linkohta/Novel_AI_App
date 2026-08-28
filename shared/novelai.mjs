@@ -26,6 +26,13 @@ export function buildRequestBody(params) {
     legacy: false,
     legacy_v3_extend: false,
     cfg_rescale: 0,
+    // SMEA/SMEA DYN off, but let the site auto-enable SMEA for resolutions
+    // above 1024x1024 (its "Auto" toggle) the same way the website does —
+    // otherwise higher-resolution generations lose the anatomy/coherency
+    // correction SMEA provides and come out lower quality than the website.
+    sm: false,
+    sm_dyn: false,
+    autoSmea: true,
   };
 
   if (isV4Model(params.model)) {
