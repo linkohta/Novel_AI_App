@@ -5,6 +5,7 @@ import FavoritesSection from './components/FavoritesSection.jsx';
 import CharactersSection from './components/CharactersSection.jsx';
 import ModelSection from './components/ModelSection.jsx';
 import BatchSection from './components/BatchSection.jsx';
+import PromptQueueSection from './components/PromptQueueSection.jsx';
 import Section from './components/Section.jsx';
 import ResultPanel from './components/ResultPanel.jsx';
 import ChunkEditModal from './components/modals/ChunkEditModal.jsx';
@@ -23,7 +24,12 @@ const DEFAULT_SECTION_STATE = {
   characterSection: true,
   modelSection: true,
   batchSection: false,
+  promptQueueSection: false,
 };
+
+function makeQueueItem() {
+  return { id: window.crypto.randomUUID(), prompt: '', negativePrompt: '', count: '1' };
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -91,6 +97,8 @@ export default function App() {
 
   // Generation state.
   const [status, setStatus] = useState('');
+  const [subscriptionInfo, setSubscriptionInfo] = useState(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState('');
   const [resultImage, setResultImage] = useState(null);
   const [fileInfo, setFileInfo] = useState('');
   const [history, setHistory] = useState([]);
@@ -100,6 +108,11 @@ export default function App() {
   const [batchRunning, setBatchRunning] = useState(false);
   const [batchStatus, setBatchStatus] = useState('');
   const batchStopRef = useRef(false);
+  const [queueItems, setQueueItems] = useState([makeQueueItem()]);
+  const [queueInterval, setQueueInterval] = useState('5');
+  const [queueRunning, setQueueRunning] = useState(false);
+  const [queueStatus, setQueueStatus] = useState('');
+  const queueStopRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -172,6 +185,18 @@ export default function App() {
     if (dir) setOutputDir(dir);
   }
 
+  async function handleCheckSubscription() {
+    setSubscriptionStatus('確認中...');
+    setSubscriptionInfo(null);
+    try {
+      const info = await window.api.getSubscriptionInfo(apiKey);
+      setSubscriptionInfo(info);
+      setSubscriptionStatus('');
+    } catch (err) {
+      setSubscriptionStatus(`エラー: ${err.message}`);
+    }
+  }
+
   function handleSectionToggle(id, isOpen) {
     setSectionState((prev) => ({ ...prev, [id]: isOpen }));
   }
@@ -181,13 +206,23 @@ export default function App() {
     if (focusedFieldKey === 'negativePrompt') {
       return { value: negativePrompt, set: setNegativePrompt };
     }
-    const match = /^char:(\d+):(prompt|negativePrompt)$/.exec(focusedFieldKey);
-    if (match) {
-      const index = Number(match[1]);
-      const field = match[2];
+    const charMatch = /^char:(\d+):(prompt|negativePrompt)$/.exec(focusedFieldKey);
+    if (charMatch) {
+      const index = Number(charMatch[1]);
+      const field = charMatch[2];
       return {
         value: characters[index]?.[field] || '',
         set: (value) => updateCharacterField(index, field, value),
+      };
+    }
+    const queueMatch = /^queue:([^:]+):(prompt|negativePrompt)$/.exec(focusedFieldKey);
+    if (queueMatch) {
+      const id = queueMatch[1];
+      const field = queueMatch[2];
+      const index = queueItems.findIndex((item) => item.id === id);
+      return {
+        value: index >= 0 ? queueItems[index][field] || '' : '',
+        set: (value) => updateQueueItemField(index, field, value),
       };
     }
     return { value: prompt, set: setPrompt };
@@ -205,6 +240,30 @@ export default function App() {
 
   function removeCharacter(index) {
     setCharacters((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function updateQueueItemField(index, field, value) {
+    setQueueItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  }
+
+  function addQueueItem() {
+    setQueueItems((prev) => [...prev, makeQueueItem()]);
+  }
+
+  function removeQueueItem(index) {
+    setQueueItems((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function moveQueueItem(index, direction) {
+    const target = index + direction;
+    setQueueItems((prev) => {
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   }
 
   function addBlankCharacter() {
@@ -421,6 +480,7 @@ export default function App() {
   }
 
   async function handleStartBatch() {
+    if (queueRunning) return;
     window.api.saveSettings(currentSettings());
     const count = Math.max(1, Math.min(100, parseInt(batchCount, 10) || 1));
     const intervalSec = Math.max(1, parseInt(batchInterval, 10) || 5);
@@ -459,6 +519,75 @@ export default function App() {
     batchStopRef.current = true;
   }
 
+  async function handleStartQueue() {
+    if (batchRunning) return;
+    window.api.saveSettings(currentSettings());
+    const intervalSec = Math.max(1, parseInt(queueInterval, 10) || 5);
+    const items = queueItems
+      .map((item) => ({
+        ...item,
+        count: Math.max(1, Math.min(100, parseInt(item.count, 10) || 1)),
+      }))
+      .filter((item) => item.prompt.trim());
+    if (!items.length) return;
+    const queueFolder = `queue_${Date.now()}`;
+    const totalCount = items.reduce((sum, item) => sum + item.count, 0);
+
+    queueStopRef.current = false;
+    setQueueRunning(true);
+
+    let done = 0;
+    let stopped = false;
+    for (let itemIndex = 0; itemIndex < items.length && !stopped; itemIndex += 1) {
+      const item = items[itemIndex];
+      const itemFolder = `${queueFolder}/prompt${itemIndex + 1}`;
+      for (let i = 1; i <= item.count; i += 1) {
+        if (queueStopRef.current) {
+          stopped = true;
+          break;
+        }
+        setQueueStatus(
+          `${done}/${totalCount} 枚完了（プロンプト${itemIndex + 1}: ${i}/${item.count} 枚目を生成中...）`
+        );
+        try {
+          const result = await window.api.generateImage(
+            buildGenerateParams({
+              prompt: item.prompt,
+              negativePrompt: item.negativePrompt,
+              batchFolder: itemFolder,
+            })
+          );
+          recordResult(result);
+          done += 1;
+          setQueueStatus(`${done}/${totalCount} 枚生成しました（保存先: output/${itemFolder}）`);
+        } catch (err) {
+          setQueueStatus(`${done}/${totalCount} 枚完了後にエラー: ${err.message}（中断しました）`);
+          stopped = true;
+          break;
+        }
+        if (!(itemIndex === items.length - 1 && i === item.count) && !queueStopRef.current) {
+          for (let remaining = intervalSec; remaining > 0; remaining -= 1) {
+            if (queueStopRef.current) break;
+            setQueueStatus(`次の生成まで ${remaining} 秒待機中...（${done}/${totalCount} 枚完了）`);
+            await sleep(1000);
+          }
+        }
+      }
+    }
+
+    if (queueStopRef.current) {
+      setQueueStatus(
+        `${done}/${totalCount} 枚生成後に中断しました（保存先: output/${queueFolder}）`
+      );
+    }
+
+    setQueueRunning(false);
+  }
+
+  function handleStopQueue() {
+    queueStopRef.current = true;
+  }
+
   const openFolderLabel = window.isNativeApp ? '最新の画像を共有' : '保存フォルダを開く';
 
   return (
@@ -477,6 +606,27 @@ export default function App() {
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
           />
+          <button type="button" onClick={handleCheckSubscription}>
+            Anlas / Opus残量を確認
+          </button>
+          {subscriptionStatus && <p className="hint">{subscriptionStatus}</p>}
+          {subscriptionInfo && (
+            <p className="hint">
+              Anlas残量: {subscriptionInfo.anlas}
+              {subscriptionInfo.opusPerks.length > 0 && (
+                <>
+                  <br />
+                  Opus無料生成枠:{' '}
+                  {subscriptionInfo.opusPerks
+                    .map(
+                      (p) =>
+                        `解像度${p.resolution}以下 ${p.maxPrompts}回まで（${Math.round(p.resetAfter / 3600)}時間ごとにリセット）`
+                    )
+                    .join(' / ')}
+                </>
+              )}
+            </p>
+          )}
 
           <label>画像の保存先フォルダ</label>
           {window.isNativeApp ? (
@@ -595,7 +745,7 @@ export default function App() {
         />
 
         <div className="generate-sticky">
-          <button onClick={handleGenerate} disabled={generating || batchRunning}>
+          <button onClick={handleGenerate} disabled={generating || batchRunning || queueRunning}>
             生成する
           </button>
         </div>
@@ -611,6 +761,24 @@ export default function App() {
           onStopBatch={handleStopBatch}
           batchRunning={batchRunning}
           batchStatus={batchStatus}
+        />
+
+        <PromptQueueSection
+          open={sectionState.promptQueueSection}
+          onToggle={handleSectionToggle}
+          queueItems={queueItems}
+          onChangeItem={updateQueueItemField}
+          onRemoveItem={removeQueueItem}
+          onMoveItemUp={(index) => moveQueueItem(index, -1)}
+          onMoveItemDown={(index) => moveQueueItem(index, 1)}
+          onAddItem={addQueueItem}
+          onFocusField={setFocusedFieldKey}
+          queueInterval={queueInterval}
+          setQueueInterval={setQueueInterval}
+          onStartQueue={handleStartQueue}
+          onStopQueue={handleStopQueue}
+          queueRunning={queueRunning}
+          queueStatus={queueStatus}
         />
 
         <button className="secondary" onClick={() => window.api.openOutputFolder()}>

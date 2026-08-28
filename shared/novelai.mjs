@@ -60,3 +60,22 @@ export function buildRequestBody(params) {
 }
 
 export const NOVELAI_IMAGE_ENDPOINT = 'https://image.novelai.net/ai/generate-image';
+export const NOVELAI_SUBSCRIPTION_ENDPOINT = 'https://api.novelai.net/user/subscription';
+
+export function parseSubscriptionInfo(data) {
+  const trainingStepsLeft = data.trainingStepsLeft || {};
+  const anlas =
+    (trainingStepsLeft.fixedTrainingStepsLeft || 0) +
+    (trainingStepsLeft.purchasedTrainingStepsLeft || 0);
+  const opusPerks = Array.isArray(data.perks?.unlimitedImageGeneration)
+    ? data.perks.unlimitedImageGeneration
+    : [];
+  return {
+    anlas,
+    opusPerks: opusPerks.map((p) => ({
+      maxPrompts: p.maxPrompts,
+      resolution: p.resolution,
+      resetAfter: p.resetAfter,
+    })),
+  };
+}
