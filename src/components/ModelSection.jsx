@@ -29,6 +29,8 @@ export default function ModelSection({
   setSampler,
   seed,
   setSeed,
+  qualityToggle,
+  setQualityToggle,
 }) {
   return (
     <Section id="modelSection" title="モデル" open={open} onToggle={onToggle}>
@@ -40,6 +42,19 @@ export default function ModelSection({
           </option>
         ))}
       </select>
+
+      <label className="char-enable">
+        <input
+          type="checkbox"
+          checked={qualityToggle}
+          onChange={(e) => setQualityToggle(e.target.checked)}
+        />
+        Quality Tagsを自動追加する
+      </label>
+      <p className="hint">
+        プロンプトにQuality
+        Tagsを手動で追加済みの場合は、サーバー側での二重追加を避けるためOFFにしてください。
+      </p>
 
       <div className="row">
         <div>

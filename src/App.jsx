@@ -46,6 +46,7 @@ export default function App() {
   const [steps, setSteps] = useState('28');
   const [scale, setScale] = useState('5');
   const [sampler, setSampler] = useState('k_euler_ancestral');
+  const [qualityToggle, setQualityToggle] = useState(true);
   const [outputDir, setOutputDir] = useState('');
   const [characters, setCharacters] = useState([]);
   const [sectionState, setSectionState] = useState(DEFAULT_SECTION_STATE);
@@ -126,6 +127,7 @@ export default function App() {
       if (settings.steps) setSteps(settings.steps);
       if (settings.scale) setScale(settings.scale);
       if (settings.sampler) setSampler(settings.sampler);
+      if (typeof settings.qualityToggle === 'boolean') setQualityToggle(settings.qualityToggle);
       if (settings.outputDir) setOutputDir(settings.outputDir);
       if (Array.isArray(settings.characters)) {
         // Older saved settings predate per-character ids (used as the React
@@ -152,6 +154,7 @@ export default function App() {
       steps,
       scale,
       sampler,
+      qualityToggle,
       outputDir,
       characters,
       sectionState,
@@ -166,6 +169,7 @@ export default function App() {
       steps,
       scale,
       sampler,
+      qualityToggle,
       outputDir,
       characters,
       sectionState,
@@ -453,6 +457,7 @@ export default function App() {
       scale,
       sampler,
       seed,
+      qualityToggle,
       characterPrompts: characters.filter((c) => c.enabled !== false && c.prompt?.trim()),
       ...extra,
     };
@@ -742,6 +747,8 @@ export default function App() {
           setSampler={setSampler}
           seed={seed}
           setSeed={setSeed}
+          qualityToggle={qualityToggle}
+          setQualityToggle={setQualityToggle}
         />
 
         <div className="generate-sticky">

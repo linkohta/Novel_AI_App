@@ -19,7 +19,7 @@ export function buildRequestBody(params) {
     seed,
     n_samples: 1,
     negative_prompt: params.negativePrompt || '',
-    qualityToggle: true,
+    qualityToggle: params.qualityToggle !== false,
     params_version: 3,
   };
 
