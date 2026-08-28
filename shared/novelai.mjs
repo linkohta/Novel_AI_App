@@ -21,9 +21,23 @@ export function buildRequestBody(params) {
     negative_prompt: params.negativePrompt || '',
     qualityToggle: params.qualityToggle !== false,
     params_version: 3,
+    dynamic_thresholding: false,
+    controlnet_strength: 1,
+    legacy: false,
+    legacy_v3_extend: false,
+    cfg_rescale: 0,
   };
 
   if (isV4Model(params.model)) {
+    // Matches the official site's defaults for V4/V4.5 models (novelai-api's
+    // presets_v4/default.preset) so results line up with the website for the
+    // same prompt/seed/sampler — these change the actual diffusion sampling,
+    // not just prompt content, so omitting them yields very different images.
+    parameters.noise_schedule = 'karras';
+    parameters.deliberate_euler_ancestral_bug = false;
+    parameters.prefer_brownian = true;
+    parameters.legacy_uc = false;
+
     parameters.v4_prompt = {
       caption: {
         base_caption: params.prompt || '',
