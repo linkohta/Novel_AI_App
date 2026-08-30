@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { Share } from '@capacitor/share';
 import { unzipSync } from 'fflate';
@@ -30,6 +30,7 @@ if (!window.api) {
   const SETTINGS_KEY = 'novelai_settings';
   const CHUNKS_KEY = 'novelai_chunks';
   const TEMPLATES_KEY = 'novelai_templates';
+  const QUEUE_TEMPLATES_KEY = 'novelai_queue_templates';
   const FAVORITE_KEYS = {
     artist: 'novelai_favorite_artists',
     character: 'novelai_favorite_characters',
@@ -150,16 +151,25 @@ if (!window.api) {
 
     const imageBytes = unzipped[entryNames[0]];
     const base64 = bytesToBase64(imageBytes);
-    const fileName = `${Date.now()}_${body.parameters.seed}.png`;
+    const baseName = `${Date.now()}_${body.parameters.seed}`;
+    const fileName = `${baseName}.png`;
     const safeBatchFolder = sanitizeBatchFolder(params.batchFolder);
-    const relativePath = safeBatchFolder
-      ? `output/${safeBatchFolder}/${fileName}`
-      : `output/${fileName}`;
+    const relativeDir = safeBatchFolder ? `output/${safeBatchFolder}` : 'output';
+    const relativePath = `${relativeDir}/${fileName}`;
 
     await Filesystem.writeFile({
       path: relativePath,
       data: base64,
       directory: Directory.Documents,
+      recursive: true,
+    });
+    // Saved alongside the image so the exact prompt/parameters sent to the
+    // NovelAI API (no API key included) can be inspected outside the app too.
+    await Filesystem.writeFile({
+      path: `${relativeDir}/${baseName}.json`,
+      data: JSON.stringify(body, null, 2),
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
       recursive: true,
     });
 
@@ -215,6 +225,7 @@ if (!window.api) {
 
   const chunksApi = makeNamedListApi(CHUNKS_KEY);
   const templatesApi = makeNamedListApi(TEMPLATES_KEY);
+  const queueTemplatesApi = makeGenericListApi(QUEUE_TEMPLATES_KEY);
   const favoritesApis = {
     artist: makeGenericListApi(FAVORITE_KEYS.artist),
     character: makeGenericListApi(FAVORITE_KEYS.character),
@@ -235,6 +246,10 @@ if (!window.api) {
     saveTemplate: templatesApi.save,
     updateTemplate: templatesApi.update,
     deleteTemplate: templatesApi.remove,
+    loadQueueTemplates: queueTemplatesApi.load,
+    saveQueueTemplate: queueTemplatesApi.save,
+    updateQueueTemplate: queueTemplatesApi.update,
+    deleteQueueTemplate: queueTemplatesApi.remove,
     loadFavorites: (kind) => favoritesApis[kind].load(),
     saveFavorite: (kind, item) => favoritesApis[kind].save(item),
     updateFavorite: (kind, item) => favoritesApis[kind].update(item),

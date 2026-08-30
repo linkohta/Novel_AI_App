@@ -1,6 +1,20 @@
 import Section from './Section.jsx';
+import CharacterCard from './CharacterCard.jsx';
 
-function QueueItemCard({ index, item, onChange, onRemove, onMoveUp, onMoveDown, onFocusField }) {
+function QueueItemCard({
+  index,
+  item,
+  onChange,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+  onFocusField,
+  onAddCharacter,
+  onRemoveCharacter,
+  onChangeCharacter,
+}) {
+  const characters = item.characters || [];
+
   return (
     <div className="char-card">
       <button type="button" className="remove-char" onClick={() => onRemove(index)}>
@@ -41,6 +55,23 @@ function QueueItemCard({ index, item, onChange, onRemove, onMoveUp, onMoveDown, 
         onChange={(e) => onChange(index, 'negativePrompt', e.target.value)}
         onFocus={() => onFocusField(`queue:${item.id}:negativePrompt`)}
       />
+
+      <label>キャラクタープロンプト</label>
+      {characters.map((character, charIndex) => (
+        <details className="char-fold" key={character.id}>
+          <summary>{`キャラクター${charIndex + 1}`}</summary>
+          <CharacterCard
+            index={charIndex}
+            character={character}
+            onChange={(ci, field, value) => onChangeCharacter(index, ci, field, value)}
+            onRemove={(ci) => onRemoveCharacter(index, ci)}
+            onFocusField={(fieldKey) => onFocusField(`queue:${item.id}:${fieldKey}`)}
+          />
+        </details>
+      ))}
+      <button type="button" className="secondary" onClick={() => onAddCharacter(index)}>
+        ＋ キャラクターを追加
+      </button>
     </div>
   );
 }
@@ -54,6 +85,9 @@ export default function PromptQueueSection({
   onMoveItemUp,
   onMoveItemDown,
   onAddItem,
+  onAddItemCharacter,
+  onRemoveItemCharacter,
+  onChangeItemCharacter,
   onFocusField,
   queueInterval,
   setQueueInterval,
@@ -61,6 +95,11 @@ export default function PromptQueueSection({
   onStopQueue,
   queueRunning,
   queueStatus,
+  queueTemplates,
+  onSaveAsQueueTemplate,
+  onApplyQueueTemplate,
+  onEditQueueTemplate,
+  onDeleteQueueTemplate,
 }) {
   return (
     <Section id="promptQueueSection" title="複数プロンプト連続生成" open={open} onToggle={onToggle}>
@@ -78,12 +117,55 @@ export default function PromptQueueSection({
           onMoveUp={onMoveItemUp}
           onMoveDown={onMoveItemDown}
           onFocusField={onFocusField}
+          onAddCharacter={onAddItemCharacter}
+          onRemoveCharacter={onRemoveItemCharacter}
+          onChangeCharacter={onChangeItemCharacter}
         />
       ))}
 
       <button type="button" onClick={onAddItem} disabled={queueRunning}>
         ＋ プロンプトを追加
       </button>
+
+      <label>複数プロンプトテンプレート</label>
+      <button
+        type="button"
+        className="secondary"
+        onClick={onSaveAsQueueTemplate}
+        disabled={queueRunning}
+      >
+        現在の内容をテンプレートとして保存
+      </button>
+
+      <div id="queueTemplateList">
+        {queueTemplates.map((template) => (
+          <div className="template-chip" key={template.id}>
+            <span className="template-name">{template.name}</span>
+            <button
+              type="button"
+              className="template-apply"
+              onClick={() => onApplyQueueTemplate(template)}
+              disabled={queueRunning}
+            >
+              適用
+            </button>
+            <button
+              type="button"
+              className="template-edit"
+              onClick={() => onEditQueueTemplate(template)}
+            >
+              編集
+            </button>
+            <button
+              type="button"
+              className="template-delete"
+              onClick={() => onDeleteQueueTemplate(template.id)}
+            >
+              削除
+            </button>
+          </div>
+        ))}
+      </div>
 
       <div className="row">
         <div>

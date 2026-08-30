@@ -18,6 +18,7 @@ const userDataDir = app.getPath('userData');
 const settingsPath = path.join(userDataDir, 'settings.json');
 const chunksPath = path.join(userDataDir, 'chunks.json');
 const templatesPath = path.join(userDataDir, 'templates.json');
+const queueTemplatesPath = path.join(userDataDir, 'queue-templates.json');
 const FAVORITE_PATHS = {
   artist: path.join(userDataDir, 'favorite-artists.json'),
   character: path.join(userDataDir, 'favorite-characters.json'),
@@ -225,6 +226,32 @@ ipcMain.handle('delete-template', (event, id) => {
   return templates;
 });
 
+ipcMain.handle('load-queue-templates', () => readJson(queueTemplatesPath, []));
+
+ipcMain.handle('save-queue-template', (event, template) => {
+  const templates = readJson(queueTemplatesPath, []);
+  templates.push({ id: crypto.randomUUID(), name: template.name, rows: template.rows });
+  writeJson(queueTemplatesPath, templates);
+  return templates;
+});
+
+ipcMain.handle('update-queue-template', (event, template) => {
+  const templates = readJson(queueTemplatesPath, []);
+  const target = templates.find((t) => t.id === template.id);
+  if (target) {
+    target.name = template.name;
+    target.rows = template.rows;
+    writeJson(queueTemplatesPath, templates);
+  }
+  return templates;
+});
+
+ipcMain.handle('delete-queue-template', (event, id) => {
+  const templates = readJson(queueTemplatesPath, []).filter((t) => t.id !== id);
+  writeJson(queueTemplatesPath, templates);
+  return templates;
+});
+
 ipcMain.handle('load-favorites', (event, kind) => readJson(FAVORITE_PATHS[kind], []));
 
 ipcMain.handle('save-favorite', (event, { kind, item }) => {
@@ -354,13 +381,17 @@ ipcMain.handle('generate-image', async (event, params) => {
   if (!entryNames.length) throw new Error('画像データを取得できませんでした');
 
   const imageBuffer = Buffer.from(unzipped[entryNames[0]]);
-  const fileName = `${Date.now()}_${body.parameters.seed}.png`;
+  const baseName = `${Date.now()}_${body.parameters.seed}`;
+  const fileName = `${baseName}.png`;
   const safeBatchFolder = sanitizeBatchFolder(params.batchFolder);
   const outputDir = getOutputDir();
   const targetDir = safeBatchFolder ? path.join(outputDir, safeBatchFolder) : outputDir;
   fs.mkdirSync(targetDir, { recursive: true });
   const filePath = path.join(targetDir, fileName);
   fs.writeFileSync(filePath, imageBuffer);
+  // Saved alongside the image so the exact prompt/parameters sent to the
+  // NovelAI API (no API key included) can be inspected outside the app too.
+  writeJson(path.join(targetDir, `${baseName}.json`), body);
 
   return {
     fileName,

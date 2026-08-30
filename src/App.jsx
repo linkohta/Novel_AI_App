@@ -11,6 +11,8 @@ import ResultPanel from './components/ResultPanel.jsx';
 import ChunkEditModal from './components/modals/ChunkEditModal.jsx';
 import TemplateEditModal from './components/modals/TemplateEditModal.jsx';
 import TemplateApplyModal from './components/modals/TemplateApplyModal.jsx';
+import QueueTemplateEditModal from './components/modals/QueueTemplateEditModal.jsx';
+import QueueTemplateApplyModal from './components/modals/QueueTemplateApplyModal.jsx';
 import FavArtistEditModal from './components/modals/FavArtistEditModal.jsx';
 import FavCharEditModal from './components/modals/FavCharEditModal.jsx';
 import { useNamedList } from './hooks/useNamedList.js';
@@ -28,7 +30,13 @@ const DEFAULT_SECTION_STATE = {
 };
 
 function makeQueueItem() {
-  return { id: window.crypto.randomUUID(), prompt: '', negativePrompt: '', count: '1' };
+  return {
+    id: window.crypto.randomUUID(),
+    prompt: '',
+    negativePrompt: '',
+    count: '1',
+    characters: [],
+  };
 }
 
 function sleep(ms) {
@@ -68,6 +76,12 @@ export default function App() {
     update: window.api.updateTemplate,
     remove: window.api.deleteTemplate,
   });
+  const queueTemplatesList = useNamedList({
+    load: window.api.loadQueueTemplates,
+    save: window.api.saveQueueTemplate,
+    update: window.api.updateQueueTemplate,
+    remove: window.api.deleteQueueTemplate,
+  });
   const favoriteArtists = useFavoritesList('artist');
   const favoriteCharacters = useFavoritesList('character');
 
@@ -89,6 +103,8 @@ export default function App() {
   const [favArtistEditDraft, setFavArtistEditDraft] = useState(null);
   const [favCharEditDraft, setFavCharEditDraft] = useState(null);
   const [templateApplyState, setTemplateApplyState] = useState(null);
+  const [queueTemplateDraft, setQueueTemplateDraft] = useState(null);
+  const [queueTemplateApplyState, setQueueTemplateApplyState] = useState(null);
 
   // Which prompt-like field ("prompt" / "negativePrompt" / "char:<i>:prompt" /
   // "char:<i>:negativePrompt") a chunk/favorite/template should be inserted
@@ -136,9 +152,25 @@ export default function App() {
           settings.characters.map((c) => (c.id ? c : { ...c, id: window.crypto.randomUUID() }))
         );
       }
+      if (Array.isArray(settings.queueItems) && settings.queueItems.length > 0) {
+        // Older saved settings predate per-item/per-character ids; backfill
+        // them so existing rows get stable keys too.
+        setQueueItems(
+          settings.queueItems.map((item) => ({
+            ...item,
+            id: item.id || window.crypto.randomUUID(),
+            characters: (item.characters || []).map((c) =>
+              c.id ? c : { ...c, id: window.crypto.randomUUID() }
+            ),
+          }))
+        );
+      }
       if (settings.sectionState) {
         setSectionState((prev) => ({ ...prev, ...settings.sectionState }));
       }
+      if (settings.batchCount) setBatchCount(settings.batchCount);
+      if (settings.batchInterval) setBatchInterval(settings.batchInterval);
+      if (settings.queueInterval) setQueueInterval(settings.queueInterval);
       setSettingsLoaded(true);
     })();
   }, []);
@@ -158,6 +190,10 @@ export default function App() {
       outputDir,
       characters,
       sectionState,
+      queueItems,
+      batchCount,
+      batchInterval,
+      queueInterval,
     }),
     [
       apiKey,
@@ -173,6 +209,10 @@ export default function App() {
       outputDir,
       characters,
       sectionState,
+      queueItems,
+      batchCount,
+      batchInterval,
+      queueInterval,
     ]
   );
 
@@ -219,6 +259,19 @@ export default function App() {
         set: (value) => updateCharacterField(index, field, value),
       };
     }
+    const queueCharMatch = /^queue:([^:]+):char:(\d+):(prompt|negativePrompt)$/.exec(
+      focusedFieldKey
+    );
+    if (queueCharMatch) {
+      const id = queueCharMatch[1];
+      const charIndex = Number(queueCharMatch[2]);
+      const field = queueCharMatch[3];
+      const itemIndex = queueItems.findIndex((item) => item.id === id);
+      return {
+        value: itemIndex >= 0 ? queueItems[itemIndex].characters?.[charIndex]?.[field] || '' : '',
+        set: (value) => updateQueueItemCharacterField(itemIndex, charIndex, field, value),
+      };
+    }
     const queueMatch = /^queue:([^:]+):(prompt|negativePrompt)$/.exec(focusedFieldKey);
     if (queueMatch) {
       const id = queueMatch[1];
@@ -258,6 +311,167 @@ export default function App() {
 
   function removeQueueItem(index) {
     setQueueItems((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function updateQueueItemCharacterField(itemIndex, charIndex, field, value) {
+    setQueueItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== itemIndex) return item;
+        const characters = (item.characters || []).map((c, ci) =>
+          ci === charIndex ? { ...c, [field]: value } : c
+        );
+        return { ...item, characters };
+      })
+    );
+  }
+
+  function addQueueItemCharacter(itemIndex) {
+    setQueueItems((prev) =>
+      prev.map((item, i) =>
+        i === itemIndex
+          ? {
+              ...item,
+              characters: [
+                ...(item.characters || []),
+                { id: window.crypto.randomUUID(), prompt: '', negativePrompt: '', enabled: true },
+              ],
+            }
+          : item
+      )
+    );
+  }
+
+  function removeQueueItemCharacter(itemIndex, charIndex) {
+    setQueueItems((prev) =>
+      prev.map((item, i) =>
+        i === itemIndex
+          ? { ...item, characters: (item.characters || []).filter((_, ci) => ci !== charIndex) }
+          : item
+      )
+    );
+  }
+
+  function openQueueTemplateSaveDialog() {
+    setQueueTemplateDraft({
+      id: null,
+      name: '',
+      rows: queueItems.map((item) => ({
+        prompt: item.prompt,
+        negativePrompt: item.negativePrompt,
+        count: item.count,
+        characters: (item.characters || []).map((c) => ({
+          prompt: c.prompt || '',
+          negativePrompt: c.negativePrompt || '',
+          enabled: c.enabled !== false,
+        })),
+      })),
+    });
+  }
+
+  function openQueueTemplateEditDialog(template) {
+    setQueueTemplateDraft({ id: template.id, name: template.name, rows: template.rows });
+  }
+
+  function updateQueueTemplateDraftRow(rowIndex, field, value) {
+    setQueueTemplateDraft((prev) => ({
+      ...prev,
+      rows: prev.rows.map((row, i) => (i === rowIndex ? { ...row, [field]: value } : row)),
+    }));
+  }
+
+  function updateQueueTemplateDraftCharacter(rowIndex, charIndex, field, value) {
+    setQueueTemplateDraft((prev) => ({
+      ...prev,
+      rows: prev.rows.map((row, i) => {
+        if (i !== rowIndex) return row;
+        const characters = (row.characters || []).map((c, ci) =>
+          ci === charIndex ? { ...c, [field]: value } : c
+        );
+        return { ...row, characters };
+      }),
+    }));
+  }
+
+  function addQueueTemplateDraftRow() {
+    setQueueTemplateDraft((prev) => ({
+      ...prev,
+      rows: [...prev.rows, { prompt: '', negativePrompt: '', count: '1', characters: [] }],
+    }));
+  }
+
+  function removeQueueTemplateDraftRow(rowIndex) {
+    setQueueTemplateDraft((prev) => ({
+      ...prev,
+      rows: prev.rows.filter((_, i) => i !== rowIndex),
+    }));
+  }
+
+  function addQueueTemplateDraftCharacter(rowIndex) {
+    setQueueTemplateDraft((prev) => ({
+      ...prev,
+      rows: prev.rows.map((row, i) =>
+        i === rowIndex
+          ? {
+              ...row,
+              characters: [
+                ...(row.characters || []),
+                { prompt: '', negativePrompt: '', enabled: true },
+              ],
+            }
+          : row
+      ),
+    }));
+  }
+
+  function removeQueueTemplateDraftCharacter(rowIndex, charIndex) {
+    setQueueTemplateDraft((prev) => ({
+      ...prev,
+      rows: prev.rows.map((row, i) =>
+        i === rowIndex
+          ? { ...row, characters: (row.characters || []).filter((_, ci) => ci !== charIndex) }
+          : row
+      ),
+    }));
+  }
+
+  async function handleSaveQueueTemplate() {
+    const name = queueTemplateDraft.name.trim();
+    if (!name) {
+      setStatus('テンプレート名を入力してください');
+      return;
+    }
+    if (queueTemplateDraft.id) {
+      await queueTemplatesList.editItem({
+        id: queueTemplateDraft.id,
+        name,
+        rows: queueTemplateDraft.rows,
+      });
+    } else {
+      await queueTemplatesList.addItem({ name, rows: queueTemplateDraft.rows });
+    }
+    setQueueTemplateDraft(null);
+  }
+
+  function handleApplyQueueTemplate(template) {
+    setQueueTemplateApplyState({ template });
+  }
+
+  function handleQueueTemplateApplyConfirm(rows) {
+    setQueueItems(
+      rows.map((row) => ({
+        id: window.crypto.randomUUID(),
+        prompt: row.prompt || '',
+        negativePrompt: row.negativePrompt || '',
+        count: row.count || '1',
+        characters: (row.characters || []).map((c) => ({
+          id: window.crypto.randomUUID(),
+          prompt: c.prompt || '',
+          negativePrompt: c.negativePrompt || '',
+          enabled: c.enabled !== false,
+        })),
+      }))
+    );
+    setQueueTemplateApplyState(null);
   }
 
   function moveQueueItem(index, direction) {
@@ -559,6 +773,9 @@ export default function App() {
             buildGenerateParams({
               prompt: item.prompt,
               negativePrompt: item.negativePrompt,
+              characterPrompts: (item.characters || []).filter(
+                (c) => c.enabled !== false && c.prompt?.trim()
+              ),
               batchFolder: itemFolder,
             })
           );
@@ -779,6 +996,9 @@ export default function App() {
           onMoveItemUp={(index) => moveQueueItem(index, -1)}
           onMoveItemDown={(index) => moveQueueItem(index, 1)}
           onAddItem={addQueueItem}
+          onAddItemCharacter={addQueueItemCharacter}
+          onRemoveItemCharacter={removeQueueItemCharacter}
+          onChangeItemCharacter={updateQueueItemCharacterField}
           onFocusField={setFocusedFieldKey}
           queueInterval={queueInterval}
           setQueueInterval={setQueueInterval}
@@ -786,6 +1006,11 @@ export default function App() {
           onStopQueue={handleStopQueue}
           queueRunning={queueRunning}
           queueStatus={queueStatus}
+          queueTemplates={queueTemplatesList.items}
+          onSaveAsQueueTemplate={openQueueTemplateSaveDialog}
+          onApplyQueueTemplate={handleApplyQueueTemplate}
+          onEditQueueTemplate={openQueueTemplateEditDialog}
+          onDeleteQueueTemplate={queueTemplatesList.removeItem}
         />
 
         <button className="secondary" onClick={() => window.api.openOutputFolder()}>
@@ -820,6 +1045,23 @@ export default function App() {
         applyState={templateApplyState}
         onCancel={() => setTemplateApplyState(null)}
         onConfirm={handleTemplateApplyConfirm}
+      />
+      <QueueTemplateEditModal
+        draft={queueTemplateDraft}
+        onChange={setQueueTemplateDraft}
+        onChangeRow={updateQueueTemplateDraftRow}
+        onChangeCharacter={updateQueueTemplateDraftCharacter}
+        onAddRow={addQueueTemplateDraftRow}
+        onRemoveRow={removeQueueTemplateDraftRow}
+        onAddCharacter={addQueueTemplateDraftCharacter}
+        onRemoveCharacter={removeQueueTemplateDraftCharacter}
+        onCancel={() => setQueueTemplateDraft(null)}
+        onSave={handleSaveQueueTemplate}
+      />
+      <QueueTemplateApplyModal
+        applyState={queueTemplateApplyState}
+        onCancel={() => setQueueTemplateApplyState(null)}
+        onConfirm={handleQueueTemplateApplyConfirm}
       />
       <FavArtistEditModal
         draft={favArtistEditDraft}
