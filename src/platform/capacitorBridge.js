@@ -6,6 +6,7 @@ import { unzipSync } from 'fflate';
 import {
   buildRequestBody,
   parseSubscriptionInfo,
+  sanitizeBatchFolder,
   NOVELAI_IMAGE_ENDPOINT,
   NOVELAI_SUBSCRIPTION_ENDPOINT,
 } from '../../shared/novelai.mjs';
@@ -14,18 +15,6 @@ import {
 // any page script runs, so this bridge only activates for Capacitor/web.
 // Importing this module (from main.jsx, before rendering <App />) is what
 // triggers the setup below — it must run before App can call window.api.
-// Sanitizes a batch-folder path made of one or more "/"-separated segments
-// (e.g. "queue_123/prompt1"), stripping unsafe characters from each segment
-// individually so nested subfolders keep working.
-function sanitizeBatchFolder(batchFolder) {
-  if (!batchFolder) return '';
-  return String(batchFolder)
-    .split('/')
-    .map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ''))
-    .filter(Boolean)
-    .join('/');
-}
-
 if (!window.api) {
   const SETTINGS_KEY = 'novelai_settings';
   const CHUNKS_KEY = 'novelai_chunks';
