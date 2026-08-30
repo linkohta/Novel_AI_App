@@ -381,13 +381,17 @@ ipcMain.handle('generate-image', async (event, params) => {
   if (!entryNames.length) throw new Error('画像データを取得できませんでした');
 
   const imageBuffer = Buffer.from(unzipped[entryNames[0]]);
-  const fileName = `${Date.now()}_${body.parameters.seed}.png`;
+  const baseName = `${Date.now()}_${body.parameters.seed}`;
+  const fileName = `${baseName}.png`;
   const safeBatchFolder = sanitizeBatchFolder(params.batchFolder);
   const outputDir = getOutputDir();
   const targetDir = safeBatchFolder ? path.join(outputDir, safeBatchFolder) : outputDir;
   fs.mkdirSync(targetDir, { recursive: true });
   const filePath = path.join(targetDir, fileName);
   fs.writeFileSync(filePath, imageBuffer);
+  // Saved alongside the image so the exact prompt/parameters sent to the
+  // NovelAI API (no API key included) can be inspected outside the app too.
+  writeJson(path.join(targetDir, `${baseName}.json`), body);
 
   return {
     fileName,

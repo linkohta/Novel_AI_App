@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { Share } from '@capacitor/share';
 import { unzipSync } from 'fflate';
@@ -151,16 +151,25 @@ if (!window.api) {
 
     const imageBytes = unzipped[entryNames[0]];
     const base64 = bytesToBase64(imageBytes);
-    const fileName = `${Date.now()}_${body.parameters.seed}.png`;
+    const baseName = `${Date.now()}_${body.parameters.seed}`;
+    const fileName = `${baseName}.png`;
     const safeBatchFolder = sanitizeBatchFolder(params.batchFolder);
-    const relativePath = safeBatchFolder
-      ? `output/${safeBatchFolder}/${fileName}`
-      : `output/${fileName}`;
+    const relativeDir = safeBatchFolder ? `output/${safeBatchFolder}` : 'output';
+    const relativePath = `${relativeDir}/${fileName}`;
 
     await Filesystem.writeFile({
       path: relativePath,
       data: base64,
       directory: Directory.Documents,
+      recursive: true,
+    });
+    // Saved alongside the image so the exact prompt/parameters sent to the
+    // NovelAI API (no API key included) can be inspected outside the app too.
+    await Filesystem.writeFile({
+      path: `${relativeDir}/${baseName}.json`,
+      data: JSON.stringify(body, null, 2),
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
       recursive: true,
     });
 
