@@ -10,7 +10,7 @@ export default function TemplateEditModal({ draft, onChange, onCancel, onSave })
         value={draft?.name || ''}
         onChange={(e) => onChange({ ...draft, name: e.target.value })}
       />
-      <label>テンプレート本文（変数は (変数名) の形式）</label>
+      <label>テンプレート本文（変数は "変数名" の形式）</label>
       <textarea
         value={draft?.text || ''}
         onChange={(e) => onChange({ ...draft, text: e.target.value })}

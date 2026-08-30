@@ -81,7 +81,7 @@ export default function QueueTemplateEditModal({
     <ModalOverlay open={!!draft}>
       <h2>{draft?.id ? '複数プロンプトテンプレートを編集' : '複数プロンプトテンプレートを保存'}</h2>
       <p className="hint">
-        プロンプト行を追加・編集し、変数にしたい箇所を (変数名)
+        プロンプト行を追加・編集し、変数にしたい箇所を "変数名"
         の形式で置き換えてから保存してください。
       </p>
       <label>テンプレート名</label>

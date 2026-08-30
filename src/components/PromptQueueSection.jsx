@@ -58,14 +58,16 @@ function QueueItemCard({
 
       <label>キャラクタープロンプト</label>
       {characters.map((character, charIndex) => (
-        <CharacterCard
-          key={character.id}
-          index={charIndex}
-          character={character}
-          onChange={(ci, field, value) => onChangeCharacter(index, ci, field, value)}
-          onRemove={(ci) => onRemoveCharacter(index, ci)}
-          onFocusField={(fieldKey) => onFocusField(`queue:${item.id}:${fieldKey}`)}
-        />
+        <details className="char-fold" key={character.id}>
+          <summary>{`キャラクター${charIndex + 1}`}</summary>
+          <CharacterCard
+            index={charIndex}
+            character={character}
+            onChange={(ci, field, value) => onChangeCharacter(index, ci, field, value)}
+            onRemove={(ci) => onRemoveCharacter(index, ci)}
+            onFocusField={(fieldKey) => onFocusField(`queue:${item.id}:${fieldKey}`)}
+          />
+        </details>
       ))}
       <button type="button" className="secondary" onClick={() => onAddCharacter(index)}>
         ＋ キャラクターを追加

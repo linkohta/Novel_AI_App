@@ -22,9 +22,9 @@ export default function TemplatesSection({
         value={templateNameInput}
         onChange={(e) => setTemplateNameInput(e.target.value)}
       />
-      <label>テンプレート本文（変数は (変数名) の形式で任意個数指定可能）</label>
+      <label>テンプレート本文（変数は "変数名" の形式で任意個数指定可能）</label>
       <textarea
-        placeholder="1girl, (hair_color) hair, (pose), masterpiece"
+        placeholder='1girl, "hair_color" hair, "pose", masterpiece'
         value={templateTextInput}
         onChange={(e) => setTemplateTextInput(e.target.value)}
       />

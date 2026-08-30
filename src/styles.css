@@ -193,6 +193,17 @@ button.secondary {
   font-weight: 600;
   color: #e8e8ea;
 }
+.char-fold {
+  margin-top: 8px;
+}
+.char-fold > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #e8e8ea;
+}
+.char-fold .char-card {
+  margin-top: 4px;
+}
 .char-card textarea:disabled {
   cursor: not-allowed;
 }
