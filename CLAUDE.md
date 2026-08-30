@@ -41,12 +41,20 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
 - **UI (`src/`)** — Electron・Android共通の画面本体（React）。
   - `src/index.html` — Viteのエントリーテンプレート。`<div id="root">` と `src/main.jsx` へのモジュールスクリプトのみを持つ。
   - `src/main.jsx` — エントリーポイント。`./platform/capacitorBridge` を**最初に**副作用importしてから（Electronの`preload.js`が既に`window.api`を用意している場合はここで何もしない）、`<App />` を `#root` にマウントする。
-  - `src/App.jsx` — アプリ全体の状態（`apiKey`/`prompt`/`characters`/`sectionState`等）とすべてのイベントハンドラを持つトップレベルコンポーネント。設定の読み込み・デバウンス保存（変更後300ms）、キャラクター配列の更新、テンプレート変数モーダルの開閉、連続生成ループなどはすべてここに集約している。複数プロンプト連続生成のリスト自体のstate/CRUDは `src/hooks/useQueueItems.js` に、そのテンプレート機能（保存・編集ダイアログのドラフトと適用状態、および関連ハンドラ）は `src/hooks/useQueueTemplateDraft.js` にそれぞれ切り出しており、App.jsxからは通常のフックとして呼び出すだけになっている（他のstateと違い、この2つだけAppから独立したファイルに分かれているのは、複数プロンプト連続生成まわりのロジックがApp.jsx内で特に肥大化していたため）。連続生成（`handleStartBatch`/`handleStartQueue`等、`buildGenerateParams`や`recordResult`など生成フロー全体に関わるもの）はApp.jsxに残している。
-    - フォーカス中のプロンプト系フィールド（チャンク/お気に入り挿入・テンプレート反映の対象）は `focusedFieldKey`（`'prompt'` / `'negativePrompt'` / `` `char:${index}:prompt` `` 等の文字列）で管理し、`resolveFocusedField()` で都度その時点の最新値・setterを解決する。DOM要素への直接アクセスは行わない。
+  - `src/App.jsx` — トップレベルコンポーネント。左パネルの各セクションへ渡すpropsの組み立てとJSXの構成、および他のどのフックにも属さない少数の横断的な状態・処理（`apiKey`/`model`/`width`等の単純な入力値、設定の読み込み・デバウンス保存、`buildGenerateParams`/`recordResult`/`handleGenerate`など生成リクエスト全体の組み立て）に絞っている。機能ごとにまとまった状態・ハンドラは以下のカスタムフックへ切り出し、App.jsxからは戻り値を分割代入して使うだけになっている（元々1000行超あったApp.jsxを段階的に分割した結果の構成）。
+    - `src/hooks/useCharacters.js` — 左パネル「キャラクタープロンプト」セクションのキャラクター一覧と、「キャラクター名で追加」フォーム（名前・作品名・組み合わせるチャンク／テンプレート）。
+    - `src/hooks/useFocusedField.js` — フォーカス中のプロンプト系フィールド（チャンク/お気に入り挿入・テンプレート反映の対象）を`focusedFieldKey`（`'prompt'` / `'negativePrompt'` / `` `char:${index}:prompt` `` / `` `queue:${id}:prompt` `` 等の文字列）で管理し、`resolveFocusedField()`で都度その時点の最新値・setterを解決する`insertIntoFocused()`/`resolveFocusedField()`を提供する。DOM要素への直接アクセスは行わない。
+    - `src/hooks/usePromptLibrary.js` — 「プロンプトチャンク」「プロンプトテンプレート」セクションの保存・編集・適用ハンドラ。
+    - `src/hooks/useFavoritesHandlers.js` — 「お気に入り」セクションの保存・編集ハンドラ。
+    - `src/hooks/useQueueItems.js` — 複数プロンプト連続生成のリスト自体のstate/CRUD。
+    - `src/hooks/useQueueTemplateDraft.js` — 複数プロンプトテンプレートの保存・編集ダイアログのドラフトと適用状態、および関連ハンドラ。
+    - `src/hooks/useBatchGeneration.js` / `src/hooks/useQueueGeneration.js` — それぞれ連続生成・複数プロンプト連続生成の実行ループ（進捗ステータス・中断フラグ・待機処理）。両者は「もう片方が実行中なら開始しない」という相互ガードがあるため、それぞれの`running`フラグ自体（`batchRunning`/`queueRunning`）と、`currentSettings()`が参照する`batchCount`/`batchInterval`/`queueInterval`はフック化せずApp.jsx側に残し、フックには値と相手側の`running`フラグ・自分の`setRunning`を渡すだけにしている（双方をフック内部の状態にすると互いのフックが循環参照になるため）。
+    - 上記いずれの機能領域にも当てはまらない一枚岩の状態（`templateApplyState`等）は、複数のフックから共有される場合に限りApp.jsx側で保持し、フックには値とsetterを渡す。
   - `src/components/*.jsx` — 機能ごとのプレゼンテーションコンポーネント（`Section`, `PromptSection`, `TemplatesSection`, `FavoritesSection`, `CharactersSection`/`CharacterCard`, `ModelSection`, `BatchSection`, `PromptQueueSection`, `ResultPanel`）。状態は持たず、props経由でApp.jsxの状態とハンドラを受け取る。
   - `src/components/modals/*.jsx` — 編集・適用モーダル（`ChunkEditModal`, `TemplateEditModal`, `TemplateApplyModal`, `QueueTemplateEditModal`, `QueueTemplateApplyModal`, `FavArtistEditModal`, `FavCharEditModal`）。共通の `ModalOverlay` は `open` が falsy なら何も描画しない（旧実装のような `.open` クラス切り替えではなく、条件付きレンダリングで開閉する）。
   - `src/hooks/useNamedList.js` — チャンク・テンプレート・お気に入り・複数プロンプトテンプレートに共通する「読み込み→追加→編集→削除のたびにサーバー側の最新リストで置き換える」パターンを提供するフック。`src/hooks/useFavoritesList.js` はこれを`kind`（`'artist'`/`'character'`）でラップしてお気に入りに使う。
   - `src/utils/templateVariables.js` — `"変数名"` プレースホルダーの抽出・置換ロジック（純粋関数、Reactに依存しない）。
+  - `src/utils/sleep.js` — `useBatchGeneration`/`useQueueGeneration`が生成間隔の待機に使う共通の`sleep(ms)`。
   - `src/styles.css` — 全体のスタイル（旧 `www/index.html` の `<style>` をそのまま移植）。折りたたみセクションは `<details className="section">` をReactの `open`/`onToggle` で制御しており、CSSの矢印回転等はHTML版と同じ仕組み。**`#root { display: flex; height: 100vh; }` は必須**（旧HTML版では`body`が`.left`/`.right`の直接の親でこのスタイルを持っていたが、Reactは`#root`配下にマウントするため、`body`ではなく`#root`にflexレイアウトを持たせる必要がある。これを外すと`.left`/`.right`が横並びでなく縦積みになり、`.left`が高さの制約を失って`.generate-sticky`の固定表示や生成画像の表示位置が壊れる）。
   - `src/platform/capacitorBridge.js` — 旧 `src/capacitor-bridge.js` と同内容（後述）。
 - **共有ロジック (`shared/`)**
