@@ -188,6 +188,11 @@ button.secondary {
 .char-card.char-disabled {
   opacity: 0.55;
 }
+.char-card > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #e8e8ea;
+}
 .char-card textarea:disabled {
   cursor: not-allowed;
 }
@@ -257,6 +262,8 @@ button.secondary {
   border-radius: 8px;
   padding: 20px;
   width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 .modal h2 {
   margin-top: 0;

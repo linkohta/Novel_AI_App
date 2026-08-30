@@ -27,7 +27,8 @@ function QueueTemplateRowFields({
       />
 
       {(row.characters || []).map((character, charIndex) => (
-        <div className="char-card" key={charIndex}>
+        <details className="char-card" key={charIndex}>
+          <summary>{`キャラクター${charIndex + 1}`}</summary>
           <button
             type="button"
             className="remove-char"
@@ -55,7 +56,7 @@ function QueueTemplateRowFields({
               onChangeCharacter(rowIndex, charIndex, 'negativePrompt', e.target.value)
             }
           />
-        </div>
+        </details>
       ))}
       <button type="button" className="secondary" onClick={() => onAddCharacter(rowIndex)}>
         ＋ キャラクターを追加
