@@ -3,12 +3,29 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { Share } from '@capacitor/share';
 import { unzipSync } from 'fflate';
-import { buildRequestBody, NOVELAI_IMAGE_ENDPOINT } from '../../shared/novelai.mjs';
+import {
+  buildRequestBody,
+  parseSubscriptionInfo,
+  NOVELAI_IMAGE_ENDPOINT,
+  NOVELAI_SUBSCRIPTION_ENDPOINT,
+} from '../../shared/novelai.mjs';
 
 // Electron already defines window.api via preload.js's contextBridge before
 // any page script runs, so this bridge only activates for Capacitor/web.
 // Importing this module (from main.jsx, before rendering <App />) is what
 // triggers the setup below — it must run before App can call window.api.
+// Sanitizes a batch-folder path made of one or more "/"-separated segments
+// (e.g. "queue_123/prompt1"), stripping unsafe characters from each segment
+// individually so nested subfolders keep working.
+function sanitizeBatchFolder(batchFolder) {
+  if (!batchFolder) return '';
+  return String(batchFolder)
+    .split('/')
+    .map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ''))
+    .filter(Boolean)
+    .join('/');
+}
+
 if (!window.api) {
   const SETTINGS_KEY = 'novelai_settings';
   const CHUNKS_KEY = 'novelai_chunks';
@@ -134,9 +151,7 @@ if (!window.api) {
     const imageBytes = unzipped[entryNames[0]];
     const base64 = bytesToBase64(imageBytes);
     const fileName = `${Date.now()}_${body.parameters.seed}.png`;
-    const safeBatchFolder = params.batchFolder
-      ? String(params.batchFolder).replace(/[^a-zA-Z0-9_-]/g, '')
-      : '';
+    const safeBatchFolder = sanitizeBatchFolder(params.batchFolder);
     const relativePath = safeBatchFolder
       ? `output/${safeBatchFolder}/${fileName}`
       : `output/${fileName}`;
@@ -168,6 +183,23 @@ if (!window.api) {
     };
   }
 
+  async function getSubscriptionInfo(apiKey) {
+    if (!apiKey) throw new Error('APIキーを入力してください');
+    const res = await fetch(NOVELAI_SUBSCRIPTION_ENDPOINT, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`API エラー (${res.status}): ${text}`);
+    }
+    const data = await res.json();
+    return parseSubscriptionInfo(data);
+  }
+
   async function chooseOutputFolder() {
     // Capacitor has no arbitrary directory-picker API without an extra
     // native plugin; Android always saves under Documents/output.
@@ -192,6 +224,7 @@ if (!window.api) {
     loadSettings: () => loadJson(SETTINGS_KEY, {}),
     saveSettings: (settings) => saveJson(SETTINGS_KEY, settings),
     generateImage,
+    getSubscriptionInfo,
     openOutputFolder,
     chooseOutputFolder,
     loadChunks: chunksApi.load,

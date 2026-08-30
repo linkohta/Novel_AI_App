@@ -36,6 +36,18 @@ function getOutputDir() {
     : defaultOutputDir;
 }
 
+// Sanitizes a batch-folder path made of one or more "/"-separated segments
+// (e.g. "queue_123/prompt1"), stripping unsafe characters from each segment
+// individually so nested subfolders keep working.
+function sanitizeBatchFolder(batchFolder) {
+  if (!batchFolder) return '';
+  return String(batchFolder)
+    .split('/')
+    .map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ''))
+    .filter(Boolean)
+    .join('/');
+}
+
 function readJson(filePath, fallback) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
@@ -287,6 +299,48 @@ function requestImage(apiKey, body, endpoint) {
   });
 }
 
+function requestSubscriptionInfo(apiKey, endpoint) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(endpoint);
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        path: url.pathname,
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: 'application/json',
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          if (res.statusCode !== 200) {
+            reject(new Error(`API エラー (${res.statusCode}): ${buffer.toString('utf-8')}`));
+            return;
+          }
+          try {
+            resolve(JSON.parse(buffer.toString('utf-8')));
+          } catch {
+            reject(new Error('残量情報の解析に失敗しました'));
+          }
+        });
+      }
+    );
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+ipcMain.handle('get-subscription-info', async (event, apiKey) => {
+  if (!apiKey) throw new Error('APIキーを入力してください');
+  const { parseSubscriptionInfo, NOVELAI_SUBSCRIPTION_ENDPOINT } = await loadNovelaiModule();
+  const data = await requestSubscriptionInfo(apiKey, NOVELAI_SUBSCRIPTION_ENDPOINT);
+  return parseSubscriptionInfo(data);
+});
+
 ipcMain.handle('generate-image', async (event, params) => {
   if (!params.apiKey) throw new Error('APIキーを入力してください');
   if (!params.prompt) throw new Error('プロンプトを入力してください');
@@ -301,9 +355,7 @@ ipcMain.handle('generate-image', async (event, params) => {
 
   const imageBuffer = Buffer.from(unzipped[entryNames[0]]);
   const fileName = `${Date.now()}_${body.parameters.seed}.png`;
-  const safeBatchFolder = params.batchFolder
-    ? String(params.batchFolder).replace(/[^a-zA-Z0-9_-]/g, '')
-    : '';
+  const safeBatchFolder = sanitizeBatchFolder(params.batchFolder);
   const outputDir = getOutputDir();
   const targetDir = safeBatchFolder ? path.join(outputDir, safeBatchFolder) : outputDir;
   fs.mkdirSync(targetDir, { recursive: true });

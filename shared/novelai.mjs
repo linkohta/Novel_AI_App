@@ -19,11 +19,32 @@ export function buildRequestBody(params) {
     seed,
     n_samples: 1,
     negative_prompt: params.negativePrompt || '',
-    qualityToggle: true,
+    qualityToggle: params.qualityToggle !== false,
     params_version: 3,
+    dynamic_thresholding: false,
+    controlnet_strength: 1,
+    legacy: false,
+    legacy_v3_extend: false,
+    cfg_rescale: 0,
+    // SMEA/SMEA DYN off, but let the site auto-enable SMEA for resolutions
+    // above 1024x1024 (its "Auto" toggle) the same way the website does —
+    // otherwise higher-resolution generations lose the anatomy/coherency
+    // correction SMEA provides and come out lower quality than the website.
+    sm: false,
+    sm_dyn: false,
+    autoSmea: true,
   };
 
   if (isV4Model(params.model)) {
+    // Matches the official site's defaults for V4/V4.5 models (novelai-api's
+    // presets_v4/default.preset) so results line up with the website for the
+    // same prompt/seed/sampler — these change the actual diffusion sampling,
+    // not just prompt content, so omitting them yields very different images.
+    parameters.noise_schedule = 'karras';
+    parameters.deliberate_euler_ancestral_bug = false;
+    parameters.prefer_brownian = true;
+    parameters.legacy_uc = false;
+
     parameters.v4_prompt = {
       caption: {
         base_caption: params.prompt || '',
@@ -60,3 +81,22 @@ export function buildRequestBody(params) {
 }
 
 export const NOVELAI_IMAGE_ENDPOINT = 'https://image.novelai.net/ai/generate-image';
+export const NOVELAI_SUBSCRIPTION_ENDPOINT = 'https://api.novelai.net/user/subscription';
+
+export function parseSubscriptionInfo(data) {
+  const trainingStepsLeft = data.trainingStepsLeft || {};
+  const anlas =
+    (trainingStepsLeft.fixedTrainingStepsLeft || 0) +
+    (trainingStepsLeft.purchasedTrainingStepsLeft || 0);
+  const opusPerks = Array.isArray(data.perks?.unlimitedImageGeneration)
+    ? data.perks.unlimitedImageGeneration
+    : [];
+  return {
+    anlas,
+    opusPerks: opusPerks.map((p) => ({
+      maxPrompts: p.maxPrompts,
+      resolution: p.resolution,
+      resetAfter: p.resetAfter,
+    })),
+  };
+}

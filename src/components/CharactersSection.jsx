@@ -1,6 +1,35 @@
 import Section from './Section.jsx';
 import CharacterCard from './CharacterCard.jsx';
 
+function CombineSourceSelect({ label, chunks, templates, value, onChange }) {
+  return (
+    <>
+      <label>{label}</label>
+      <select value={value} onChange={onChange}>
+        <option value="">なし</option>
+        {chunks.length > 0 && (
+          <optgroup label="プロンプトチャンク">
+            {chunks.map((chunk) => (
+              <option key={chunk.id} value={`chunk:${chunk.id}`}>
+                {chunk.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        {templates.length > 0 && (
+          <optgroup label="プロンプトテンプレート">
+            {templates.map((template) => (
+              <option key={template.id} value={`template:${template.id}`}>
+                {template.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
+      </select>
+    </>
+  );
+}
+
 export default function CharactersSection({
   open,
   onToggle,
@@ -17,6 +46,8 @@ export default function CharactersSection({
   setCharSeriesByName,
   charNameSource,
   setCharNameSource,
+  charNameNegativeSource,
+  setCharNameNegativeSource,
   onAddByName,
   nameInputRef,
 }) {
@@ -44,28 +75,20 @@ export default function CharactersSection({
         </div>
       </div>
 
-      <label>組み合わせるチャンク／テンプレート（任意）</label>
-      <select value={charNameSource} onChange={(e) => setCharNameSource(e.target.value)}>
-        <option value="">なし</option>
-        {chunks.length > 0 && (
-          <optgroup label="プロンプトチャンク">
-            {chunks.map((chunk) => (
-              <option key={chunk.id} value={`chunk:${chunk.id}`}>
-                {chunk.name}
-              </option>
-            ))}
-          </optgroup>
-        )}
-        {templates.length > 0 && (
-          <optgroup label="プロンプトテンプレート">
-            {templates.map((template) => (
-              <option key={template.id} value={`template:${template.id}`}>
-                {template.name}
-              </option>
-            ))}
-          </optgroup>
-        )}
-      </select>
+      <CombineSourceSelect
+        label="組み合わせるチャンク／テンプレート（任意）"
+        chunks={chunks}
+        templates={templates}
+        value={charNameSource}
+        onChange={(e) => setCharNameSource(e.target.value)}
+      />
+      <CombineSourceSelect
+        label="組み合わせるチャンク／テンプレート（ネガティブプロンプト、任意）"
+        chunks={chunks}
+        templates={templates}
+        value={charNameNegativeSource}
+        onChange={(e) => setCharNameNegativeSource(e.target.value)}
+      />
       <button type="button" className="secondary" onClick={onAddByName}>
         キャラクター名で追加
       </button>
