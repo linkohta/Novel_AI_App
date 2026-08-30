@@ -37,18 +37,6 @@ function getOutputDir() {
     : defaultOutputDir;
 }
 
-// Sanitizes a batch-folder path made of one or more "/"-separated segments
-// (e.g. "queue_123/prompt1"), stripping unsafe characters from each segment
-// individually so nested subfolders keep working.
-function sanitizeBatchFolder(batchFolder) {
-  if (!batchFolder) return '';
-  return String(batchFolder)
-    .split('/')
-    .map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ''))
-    .filter(Boolean)
-    .join('/');
-}
-
 function readJson(filePath, fallback) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
@@ -174,83 +162,43 @@ ipcMain.handle('save-settings', (event, settings) => {
   return true;
 });
 
-ipcMain.handle('load-chunks', () => readJson(chunksPath, []));
+// Registers the load/save/update/delete IPC handlers shared by every
+// "named list" persisted as its own JSON file (chunks, templates, queue
+// templates): each item gets a generated id, and save/update only ever
+// persist the fields named in `fields` (mirroring the previous explicit
+// per-collection handlers) rather than blindly spreading the whole payload.
+function registerListHandlers(prefix, filePath, fields) {
+  const pick = (item) => Object.fromEntries(fields.map((field) => [field, item[field]]));
 
-ipcMain.handle('save-chunk', (event, chunk) => {
-  const chunks = readJson(chunksPath, []);
-  chunks.push({ id: crypto.randomUUID(), name: chunk.name, text: chunk.text });
-  writeJson(chunksPath, chunks);
-  return chunks;
-});
+  ipcMain.handle(`load-${prefix}`, () => readJson(filePath, []));
 
-ipcMain.handle('update-chunk', (event, chunk) => {
-  const chunks = readJson(chunksPath, []);
-  const target = chunks.find((c) => c.id === chunk.id);
-  if (target) {
-    target.name = chunk.name;
-    target.text = chunk.text;
-    writeJson(chunksPath, chunks);
-  }
-  return chunks;
-});
+  ipcMain.handle(`save-${prefix}`, (event, item) => {
+    const list = readJson(filePath, []);
+    list.push({ id: crypto.randomUUID(), ...pick(item) });
+    writeJson(filePath, list);
+    return list;
+  });
 
-ipcMain.handle('delete-chunk', (event, id) => {
-  const chunks = readJson(chunksPath, []).filter((c) => c.id !== id);
-  writeJson(chunksPath, chunks);
-  return chunks;
-});
+  ipcMain.handle(`update-${prefix}`, (event, item) => {
+    const list = readJson(filePath, []);
+    const target = list.find((i) => i.id === item.id);
+    if (target) {
+      Object.assign(target, pick(item));
+      writeJson(filePath, list);
+    }
+    return list;
+  });
 
-ipcMain.handle('load-templates', () => readJson(templatesPath, []));
+  ipcMain.handle(`delete-${prefix}`, (event, id) => {
+    const list = readJson(filePath, []).filter((i) => i.id !== id);
+    writeJson(filePath, list);
+    return list;
+  });
+}
 
-ipcMain.handle('save-template', (event, template) => {
-  const templates = readJson(templatesPath, []);
-  templates.push({ id: crypto.randomUUID(), name: template.name, text: template.text });
-  writeJson(templatesPath, templates);
-  return templates;
-});
-
-ipcMain.handle('update-template', (event, template) => {
-  const templates = readJson(templatesPath, []);
-  const target = templates.find((t) => t.id === template.id);
-  if (target) {
-    target.name = template.name;
-    target.text = template.text;
-    writeJson(templatesPath, templates);
-  }
-  return templates;
-});
-
-ipcMain.handle('delete-template', (event, id) => {
-  const templates = readJson(templatesPath, []).filter((t) => t.id !== id);
-  writeJson(templatesPath, templates);
-  return templates;
-});
-
-ipcMain.handle('load-queue-templates', () => readJson(queueTemplatesPath, []));
-
-ipcMain.handle('save-queue-template', (event, template) => {
-  const templates = readJson(queueTemplatesPath, []);
-  templates.push({ id: crypto.randomUUID(), name: template.name, rows: template.rows });
-  writeJson(queueTemplatesPath, templates);
-  return templates;
-});
-
-ipcMain.handle('update-queue-template', (event, template) => {
-  const templates = readJson(queueTemplatesPath, []);
-  const target = templates.find((t) => t.id === template.id);
-  if (target) {
-    target.name = template.name;
-    target.rows = template.rows;
-    writeJson(queueTemplatesPath, templates);
-  }
-  return templates;
-});
-
-ipcMain.handle('delete-queue-template', (event, id) => {
-  const templates = readJson(queueTemplatesPath, []).filter((t) => t.id !== id);
-  writeJson(queueTemplatesPath, templates);
-  return templates;
-});
+registerListHandlers('chunk', chunksPath, ['name', 'text']);
+registerListHandlers('template', templatesPath, ['name', 'text']);
+registerListHandlers('queue-template', queueTemplatesPath, ['name', 'rows']);
 
 ipcMain.handle('load-favorites', (event, kind) => readJson(FAVORITE_PATHS[kind], []));
 
@@ -372,7 +320,8 @@ ipcMain.handle('generate-image', async (event, params) => {
   if (!params.apiKey) throw new Error('APIキーを入力してください');
   if (!params.prompt) throw new Error('プロンプトを入力してください');
 
-  const { buildRequestBody, NOVELAI_IMAGE_ENDPOINT } = await loadNovelaiModule();
+  const { buildRequestBody, sanitizeBatchFolder, NOVELAI_IMAGE_ENDPOINT } =
+    await loadNovelaiModule();
   const body = buildRequestBody(params);
   const zipBuffer = await requestImage(params.apiKey, body, NOVELAI_IMAGE_ENDPOINT);
 

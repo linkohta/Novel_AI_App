@@ -17,6 +17,8 @@ import FavArtistEditModal from './components/modals/FavArtistEditModal.jsx';
 import FavCharEditModal from './components/modals/FavCharEditModal.jsx';
 import { useNamedList } from './hooks/useNamedList.js';
 import { useFavoritesList } from './hooks/useFavoritesList.js';
+import { useQueueItems } from './hooks/useQueueItems.js';
+import { useQueueTemplateDraft } from './hooks/useQueueTemplateDraft.js';
 
 const DEFAULT_SECTION_STATE = {
   settingsSection: true,
@@ -28,16 +30,6 @@ const DEFAULT_SECTION_STATE = {
   batchSection: false,
   promptQueueSection: false,
 };
-
-function makeQueueItem() {
-  return {
-    id: window.crypto.randomUUID(),
-    prompt: '',
-    negativePrompt: '',
-    count: '1',
-    characters: [],
-  };
-}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -103,8 +95,6 @@ export default function App() {
   const [favArtistEditDraft, setFavArtistEditDraft] = useState(null);
   const [favCharEditDraft, setFavCharEditDraft] = useState(null);
   const [templateApplyState, setTemplateApplyState] = useState(null);
-  const [queueTemplateDraft, setQueueTemplateDraft] = useState(null);
-  const [queueTemplateApplyState, setQueueTemplateApplyState] = useState(null);
 
   // Which prompt-like field ("prompt" / "negativePrompt" / "char:<i>:prompt" /
   // "char:<i>:negativePrompt") a chunk/favorite/template should be inserted
@@ -125,11 +115,38 @@ export default function App() {
   const [batchRunning, setBatchRunning] = useState(false);
   const [batchStatus, setBatchStatus] = useState('');
   const batchStopRef = useRef(false);
-  const [queueItems, setQueueItems] = useState([makeQueueItem()]);
+  const {
+    queueItems,
+    setQueueItems,
+    updateQueueItemField,
+    addQueueItem,
+    removeQueueItem,
+    moveQueueItem,
+    updateQueueItemCharacterField,
+    addQueueItemCharacter,
+    removeQueueItemCharacter,
+  } = useQueueItems();
   const [queueInterval, setQueueInterval] = useState('5');
   const [queueRunning, setQueueRunning] = useState(false);
   const [queueStatus, setQueueStatus] = useState('');
   const queueStopRef = useRef(false);
+  const {
+    queueTemplateDraft,
+    setQueueTemplateDraft,
+    queueTemplateApplyState,
+    setQueueTemplateApplyState,
+    openQueueTemplateSaveDialog,
+    openQueueTemplateEditDialog,
+    updateQueueTemplateDraftRow,
+    updateQueueTemplateDraftCharacter,
+    addQueueTemplateDraftRow,
+    removeQueueTemplateDraftRow,
+    addQueueTemplateDraftCharacter,
+    removeQueueTemplateDraftCharacter,
+    handleSaveQueueTemplate,
+    handleApplyQueueTemplate,
+    handleQueueTemplateApplyConfirm,
+  } = useQueueTemplateDraft({ queueItems, setQueueItems, queueTemplatesList, setStatus });
 
   useEffect(() => {
     (async () => {
@@ -173,7 +190,7 @@ export default function App() {
       if (settings.queueInterval) setQueueInterval(settings.queueInterval);
       setSettingsLoaded(true);
     })();
-  }, []);
+  }, [setQueueItems]);
 
   const currentSettings = useCallback(
     () => ({
@@ -297,191 +314,6 @@ export default function App() {
 
   function removeCharacter(index) {
     setCharacters((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  function updateQueueItemField(index, field, value) {
-    setQueueItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-    );
-  }
-
-  function addQueueItem() {
-    setQueueItems((prev) => [...prev, makeQueueItem()]);
-  }
-
-  function removeQueueItem(index) {
-    setQueueItems((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  function updateQueueItemCharacterField(itemIndex, charIndex, field, value) {
-    setQueueItems((prev) =>
-      prev.map((item, i) => {
-        if (i !== itemIndex) return item;
-        const characters = (item.characters || []).map((c, ci) =>
-          ci === charIndex ? { ...c, [field]: value } : c
-        );
-        return { ...item, characters };
-      })
-    );
-  }
-
-  function addQueueItemCharacter(itemIndex) {
-    setQueueItems((prev) =>
-      prev.map((item, i) =>
-        i === itemIndex
-          ? {
-              ...item,
-              characters: [
-                ...(item.characters || []),
-                { id: window.crypto.randomUUID(), prompt: '', negativePrompt: '', enabled: true },
-              ],
-            }
-          : item
-      )
-    );
-  }
-
-  function removeQueueItemCharacter(itemIndex, charIndex) {
-    setQueueItems((prev) =>
-      prev.map((item, i) =>
-        i === itemIndex
-          ? { ...item, characters: (item.characters || []).filter((_, ci) => ci !== charIndex) }
-          : item
-      )
-    );
-  }
-
-  function openQueueTemplateSaveDialog() {
-    setQueueTemplateDraft({
-      id: null,
-      name: '',
-      rows: queueItems.map((item) => ({
-        prompt: item.prompt,
-        negativePrompt: item.negativePrompt,
-        count: item.count,
-        characters: (item.characters || []).map((c) => ({
-          prompt: c.prompt || '',
-          negativePrompt: c.negativePrompt || '',
-          enabled: c.enabled !== false,
-        })),
-      })),
-    });
-  }
-
-  function openQueueTemplateEditDialog(template) {
-    setQueueTemplateDraft({ id: template.id, name: template.name, rows: template.rows });
-  }
-
-  function updateQueueTemplateDraftRow(rowIndex, field, value) {
-    setQueueTemplateDraft((prev) => ({
-      ...prev,
-      rows: prev.rows.map((row, i) => (i === rowIndex ? { ...row, [field]: value } : row)),
-    }));
-  }
-
-  function updateQueueTemplateDraftCharacter(rowIndex, charIndex, field, value) {
-    setQueueTemplateDraft((prev) => ({
-      ...prev,
-      rows: prev.rows.map((row, i) => {
-        if (i !== rowIndex) return row;
-        const characters = (row.characters || []).map((c, ci) =>
-          ci === charIndex ? { ...c, [field]: value } : c
-        );
-        return { ...row, characters };
-      }),
-    }));
-  }
-
-  function addQueueTemplateDraftRow() {
-    setQueueTemplateDraft((prev) => ({
-      ...prev,
-      rows: [...prev.rows, { prompt: '', negativePrompt: '', count: '1', characters: [] }],
-    }));
-  }
-
-  function removeQueueTemplateDraftRow(rowIndex) {
-    setQueueTemplateDraft((prev) => ({
-      ...prev,
-      rows: prev.rows.filter((_, i) => i !== rowIndex),
-    }));
-  }
-
-  function addQueueTemplateDraftCharacter(rowIndex) {
-    setQueueTemplateDraft((prev) => ({
-      ...prev,
-      rows: prev.rows.map((row, i) =>
-        i === rowIndex
-          ? {
-              ...row,
-              characters: [
-                ...(row.characters || []),
-                { prompt: '', negativePrompt: '', enabled: true },
-              ],
-            }
-          : row
-      ),
-    }));
-  }
-
-  function removeQueueTemplateDraftCharacter(rowIndex, charIndex) {
-    setQueueTemplateDraft((prev) => ({
-      ...prev,
-      rows: prev.rows.map((row, i) =>
-        i === rowIndex
-          ? { ...row, characters: (row.characters || []).filter((_, ci) => ci !== charIndex) }
-          : row
-      ),
-    }));
-  }
-
-  async function handleSaveQueueTemplate() {
-    const name = queueTemplateDraft.name.trim();
-    if (!name) {
-      setStatus('テンプレート名を入力してください');
-      return;
-    }
-    if (queueTemplateDraft.id) {
-      await queueTemplatesList.editItem({
-        id: queueTemplateDraft.id,
-        name,
-        rows: queueTemplateDraft.rows,
-      });
-    } else {
-      await queueTemplatesList.addItem({ name, rows: queueTemplateDraft.rows });
-    }
-    setQueueTemplateDraft(null);
-  }
-
-  function handleApplyQueueTemplate(template) {
-    setQueueTemplateApplyState({ template });
-  }
-
-  function handleQueueTemplateApplyConfirm(rows) {
-    setQueueItems(
-      rows.map((row) => ({
-        id: window.crypto.randomUUID(),
-        prompt: row.prompt || '',
-        negativePrompt: row.negativePrompt || '',
-        count: row.count || '1',
-        characters: (row.characters || []).map((c) => ({
-          id: window.crypto.randomUUID(),
-          prompt: c.prompt || '',
-          negativePrompt: c.negativePrompt || '',
-          enabled: c.enabled !== false,
-        })),
-      }))
-    );
-    setQueueTemplateApplyState(null);
-  }
-
-  function moveQueueItem(index, direction) {
-    const target = index + direction;
-    setQueueItems((prev) => {
-      if (target < 0 || target >= prev.length) return prev;
-      const next = [...prev];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
   }
 
   function addBlankCharacter() {

@@ -2,6 +2,20 @@ export function isV4Model(model) {
   return /^nai-diffusion-[45]/.test(model);
 }
 
+// Sanitizes a batch-folder path made of one or more "/"-separated segments
+// (e.g. "queue_123/prompt1"), stripping unsafe characters from each segment
+// individually so nested subfolders keep working. Shared by main.js (Electron)
+// and capacitorBridge.js (Android), which both write generated images under
+// an optional batch/queue subfolder of the output directory.
+export function sanitizeBatchFolder(batchFolder) {
+  if (!batchFolder) return '';
+  return String(batchFolder)
+    .split('/')
+    .map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ''))
+    .filter(Boolean)
+    .join('/');
+}
+
 export function buildRequestBody(params) {
   const width = Number(params.width);
   const height = Number(params.height);
