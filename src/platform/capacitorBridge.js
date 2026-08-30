@@ -30,6 +30,7 @@ if (!window.api) {
   const SETTINGS_KEY = 'novelai_settings';
   const CHUNKS_KEY = 'novelai_chunks';
   const TEMPLATES_KEY = 'novelai_templates';
+  const QUEUE_TEMPLATES_KEY = 'novelai_queue_templates';
   const FAVORITE_KEYS = {
     artist: 'novelai_favorite_artists',
     character: 'novelai_favorite_characters',
@@ -215,6 +216,7 @@ if (!window.api) {
 
   const chunksApi = makeNamedListApi(CHUNKS_KEY);
   const templatesApi = makeNamedListApi(TEMPLATES_KEY);
+  const queueTemplatesApi = makeGenericListApi(QUEUE_TEMPLATES_KEY);
   const favoritesApis = {
     artist: makeGenericListApi(FAVORITE_KEYS.artist),
     character: makeGenericListApi(FAVORITE_KEYS.character),
@@ -235,6 +237,10 @@ if (!window.api) {
     saveTemplate: templatesApi.save,
     updateTemplate: templatesApi.update,
     deleteTemplate: templatesApi.remove,
+    loadQueueTemplates: queueTemplatesApi.load,
+    saveQueueTemplate: queueTemplatesApi.save,
+    updateQueueTemplate: queueTemplatesApi.update,
+    deleteQueueTemplate: queueTemplatesApi.remove,
     loadFavorites: (kind) => favoritesApis[kind].load(),
     saveFavorite: (kind, item) => favoritesApis[kind].save(item),
     updateFavorite: (kind, item) => favoritesApis[kind].update(item),

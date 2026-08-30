@@ -18,6 +18,7 @@ const userDataDir = app.getPath('userData');
 const settingsPath = path.join(userDataDir, 'settings.json');
 const chunksPath = path.join(userDataDir, 'chunks.json');
 const templatesPath = path.join(userDataDir, 'templates.json');
+const queueTemplatesPath = path.join(userDataDir, 'queue-templates.json');
 const FAVORITE_PATHS = {
   artist: path.join(userDataDir, 'favorite-artists.json'),
   character: path.join(userDataDir, 'favorite-characters.json'),
@@ -222,6 +223,32 @@ ipcMain.handle('update-template', (event, template) => {
 ipcMain.handle('delete-template', (event, id) => {
   const templates = readJson(templatesPath, []).filter((t) => t.id !== id);
   writeJson(templatesPath, templates);
+  return templates;
+});
+
+ipcMain.handle('load-queue-templates', () => readJson(queueTemplatesPath, []));
+
+ipcMain.handle('save-queue-template', (event, template) => {
+  const templates = readJson(queueTemplatesPath, []);
+  templates.push({ id: crypto.randomUUID(), name: template.name, rows: template.rows });
+  writeJson(queueTemplatesPath, templates);
+  return templates;
+});
+
+ipcMain.handle('update-queue-template', (event, template) => {
+  const templates = readJson(queueTemplatesPath, []);
+  const target = templates.find((t) => t.id === template.id);
+  if (target) {
+    target.name = template.name;
+    target.rows = template.rows;
+    writeJson(queueTemplatesPath, templates);
+  }
+  return templates;
+});
+
+ipcMain.handle('delete-queue-template', (event, id) => {
+  const templates = readJson(queueTemplatesPath, []).filter((t) => t.id !== id);
+  writeJson(queueTemplatesPath, templates);
   return templates;
 });
 

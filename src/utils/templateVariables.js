@@ -21,3 +21,30 @@ export function substituteTemplateVariables(text, values) {
   });
   return result;
 }
+
+// A queue template's "text" is spread across every row's prompt/negativePrompt
+// and each row's character prompts/negativePrompts, so variables must be
+// collected from all of them combined before showing a single input per name.
+export function extractQueueTemplateVariables(rows) {
+  const combined = (rows || [])
+    .flatMap((row) => [
+      row.prompt,
+      row.negativePrompt,
+      ...(row.characters || []).flatMap((c) => [c.prompt, c.negativePrompt]),
+    ])
+    .join('\n');
+  return extractTemplateVariables(combined);
+}
+
+export function substituteQueueTemplateRows(rows, values) {
+  return (rows || []).map((row) => ({
+    ...row,
+    prompt: substituteTemplateVariables(row.prompt || '', values),
+    negativePrompt: substituteTemplateVariables(row.negativePrompt || '', values),
+    characters: (row.characters || []).map((c) => ({
+      ...c,
+      prompt: substituteTemplateVariables(c.prompt || '', values),
+      negativePrompt: substituteTemplateVariables(c.negativePrompt || '', values),
+    })),
+  }));
+}
