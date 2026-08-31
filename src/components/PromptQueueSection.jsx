@@ -12,6 +12,7 @@ function QueueItemCard({
   onAddCharacter,
   onRemoveCharacter,
   onChangeCharacter,
+  onLoadImageMetadata,
 }) {
   const characters = item.characters || [];
 
@@ -41,6 +42,12 @@ function QueueItemCard({
           />
         </div>
       </div>
+
+      <label>画像から読み込み</label>
+      <p className="hint">
+        NovelAIで生成されたPNG画像を選択すると、この行のプロンプト・ネガティブプロンプト・キャラクタープロンプトを読み込んだ内容で置き換えます。
+      </p>
+      <input type="file" accept="image/png" onChange={(e) => onLoadImageMetadata(index, e)} />
 
       <label>{`${index + 1}. プロンプト`}</label>
       <textarea
@@ -88,6 +95,7 @@ export default function PromptQueueSection({
   onAddItemCharacter,
   onRemoveItemCharacter,
   onChangeItemCharacter,
+  onLoadItemImageMetadata,
   onFocusField,
   queueInterval,
   setQueueInterval,
@@ -120,6 +128,7 @@ export default function PromptQueueSection({
           onAddCharacter={onAddItemCharacter}
           onRemoveCharacter={onRemoveItemCharacter}
           onChangeCharacter={onChangeItemCharacter}
+          onLoadImageMetadata={onLoadItemImageMetadata}
         />
       ))}
 
