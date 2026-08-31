@@ -25,6 +25,7 @@ import { usePromptLibrary } from './hooks/usePromptLibrary.js';
 import { useFavoritesHandlers } from './hooks/useFavoritesHandlers.js';
 import { useBatchGeneration } from './hooks/useBatchGeneration.js';
 import { useQueueGeneration } from './hooks/useQueueGeneration.js';
+import { extractNovelAiMetadata } from './utils/pngMetadata.js';
 
 const DEFAULT_SECTION_STATE = {
   settingsSection: true,
@@ -332,6 +333,48 @@ export default function App() {
     setSectionState((prev) => ({ ...prev, [id]: isOpen }));
   }
 
+  async function handleLoadImageMetadata(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file next time
+    if (!file) return;
+    try {
+      const meta = await extractNovelAiMetadata(file);
+      if (!meta) {
+        setStatus('この画像からNovelAIの生成情報を読み取れませんでした');
+        return;
+      }
+      setPrompt(meta.prompt);
+      setNegativePrompt(meta.negativePrompt);
+      if (meta.steps) setSteps(meta.steps);
+      if (meta.scale) setScale(meta.scale);
+      if (meta.sampler) setSampler(meta.sampler);
+      if (meta.seed) setSeed(meta.seed);
+      if (meta.width) setWidth(meta.width);
+      if (meta.height) setHeight(meta.height);
+      // The extracted prompt/negative prompt are what was actually sent for
+      // generation, which already includes any auto-added Quality Tags — turn
+      // the toggle off so a re-generation doesn't add them a second time.
+      setQualityToggle(false);
+      if (meta.characters.length > 0) {
+        setCharacters(
+          meta.characters.map((c) => ({
+            id: window.crypto.randomUUID(),
+            prompt: c.prompt,
+            negativePrompt: c.negativePrompt,
+            enabled: true,
+          }))
+        );
+      }
+      setStatus(
+        meta.sourceInfo
+          ? `画像からプロンプト情報を読み込みました（元モデル情報: ${meta.sourceInfo}。モデルの種類はこの情報からは正確に判別できないため、必要に応じて「モデル」セクションで選び直してください）`
+          : '画像からプロンプト情報を読み込みました'
+      );
+    } catch (err) {
+      setStatus(`画像の読み込みに失敗しました: ${err.message}`);
+    }
+  }
+
   function buildGenerateParams(extra) {
     return {
       apiKey,
@@ -451,6 +494,12 @@ export default function App() {
               )}
             </div>
           )}
+
+          <label>画像からプロンプトを読み込む</label>
+          <p className="hint">
+            NovelAIで生成されたPNG画像を選択すると、埋め込まれた生成情報（プロンプト・ネガティブプロンプト・サイズ・ステップ数・スケール・サンプラー・シード・キャラクタープロンプト）を読み取って自動入力します。
+          </p>
+          <input type="file" accept="image/png" onChange={handleLoadImageMetadata} />
         </Section>
 
         <PromptSection
