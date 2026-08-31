@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { sleep } from '../utils/sleep.js';
+import { waitWithCountdown } from '../utils/sleep.js';
 
 // The "連続生成" loop: generates `batchCount` images of the same prompt with
 // a wait between each, saving all of them under one `batch_<timestamp>/`
@@ -43,11 +43,11 @@ export function useBatchGeneration({
         break;
       }
       if (i < count && !batchStopRef.current) {
-        for (let remaining = intervalSec; remaining > 0; remaining -= 1) {
-          if (batchStopRef.current) break;
-          setBatchStatus(`次の生成まで ${remaining} 秒待機中...（${i}/${count} 枚完了）`);
-          await sleep(1000);
-        }
+        await waitWithCountdown(intervalSec, {
+          shouldStop: () => batchStopRef.current,
+          onTick: (remaining) =>
+            setBatchStatus(`次の生成まで ${remaining} 秒待機中...（${i}/${count} 枚完了）`),
+        });
       }
     }
 

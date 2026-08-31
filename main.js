@@ -128,6 +128,12 @@ function createWindow() {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
+      // 連続生成・複数プロンプト連続生成の待機カウントダウンはレンダラー側の
+      // setTimeoutに依存しているため、既定のtrue（ウィンドウが最小化/非表示
+      // の間タイマーを大幅に間引く）のままだと非アクティブ時にカウントが
+      // 進まなくなる。バックグラウンドでも生成ループを正常に進行させるため
+      // 無効化する。
+      backgroundThrottling: false,
     },
   });
   win.once('ready-to-show', () => {

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { sleep } from '../utils/sleep.js';
+import { waitWithCountdown } from '../utils/sleep.js';
 
 // The "複数プロンプト連続生成" loop: walks the queue-items list top to
 // bottom, generating each row's prompt `count` times with a wait between
@@ -68,11 +68,13 @@ export function useQueueGeneration({
           break;
         }
         if (!(itemIndex === items.length - 1 && i === item.count) && !queueStopRef.current) {
-          for (let remaining = intervalSec; remaining > 0; remaining -= 1) {
-            if (queueStopRef.current) break;
-            setQueueStatus(`次の生成まで ${remaining} 秒待機中...（${done}/${totalCount} 枚完了）`);
-            await sleep(1000);
-          }
+          await waitWithCountdown(intervalSec, {
+            shouldStop: () => queueStopRef.current,
+            onTick: (remaining) =>
+              setQueueStatus(
+                `次の生成まで ${remaining} 秒待機中...（${done}/${totalCount} 枚完了）`
+              ),
+          });
         }
       }
     }
