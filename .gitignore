@@ -10,6 +10,10 @@ www/
 # electron-vite dev-mode build output (regenerate via `npm run dev`)
 out-dev/
 
+# tsc build output for main.ts/preload.ts/electron/shared (regenerate via `npm run build:electron`)
+electron-dist/
+*.tsbuildinfo
+
 # Android build artifacts (regenerate via `npx cap sync`)
 android/app/build/
 android/build/

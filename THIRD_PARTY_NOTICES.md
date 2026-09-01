@@ -19,8 +19,14 @@
 | `electron` | MIT | デスクトップ版のランタイム（devDependency） |
 | `electron-builder` | MIT | デスクトップ版の単独アプリ化・インストーラー生成（devDependency） |
 | `@capacitor/cli` | MIT | Androidプロジェクトの同期用CLI（devDependency） |
+| `typescript` | Apache-2.0 | TypeScriptコンパイラ（devDependency） |
+| `@types/react` | MIT | Reactの型定義（devDependency） |
+| `@types/react-dom` | MIT | react-domの型定義（devDependency） |
+| `@types/node` | MIT | Node.js組み込みAPIの型定義（devDependency） |
+| `@typescript-eslint/parser` | MIT | ESLintでTypeScriptを解析するためのパーサー（devDependency） |
+| `@typescript-eslint/eslint-plugin` | MIT | TypeScript向けESLintルール（devDependency） |
 
-すべてMITライセンスであり、商用・私的利用を含め改変・再配布が許可されています（著作権表示の保持が条件）。
+`typescript` のみApache-2.0、それ以外はすべてMITライセンスであり、いずれも商用・私的利用を含め改変・再配布が許可されています（著作権表示の保持が条件）。
 
 ## 依存関係全体（間接依存を含む）
 

@@ -1,6 +1,6 @@
 # novelai-app
 
-NovelAI の画像生成 API にプロンプトを送信し、生成された画像を保存・閲覧するアプリです。Electron によるデスクトップ版と、Capacitor による Android 版があり、React + Vite で書かれたUI（`src/`）とAPIリクエスト組み立て（`shared/`）のソースコードを共有しています。
+NovelAI の画像生成 API にプロンプトを送信し、生成された画像を保存・閲覧するアプリです。Electron によるデスクトップ版と、Capacitor による Android 版があり、React + Vite で書かれたUI（`src/`）とAPIリクエスト組み立て（`shared/`）のソースコードを共有しています。全体を TypeScript（strict）で記述しています。
 
 ## 機能
 
@@ -43,7 +43,7 @@ npm run cap:sync         # src/ を vite build でビルドし、www/ の内容�
 npm run cap:open:android # Android Studio で android/ プロジェクトを開く
 ```
 
-Android Studio が開いたら、実機またはエミュレータを選択して実行してください（Run）。UI (`src/`) やAPIリクエスト組み立て (`shared/novelai.mjs`) を変更した場合は、`npm run cap:sync` を再実行してAndroidプロジェクトに反映してから実行し直してください。
+Android Studio が開いたら、実機またはエミュレータを選択して実行してください（Run）。UI (`src/`) やAPIリクエスト組み立て (`shared/novelai.mts`) を変更した場合は、`npm run cap:sync` を再実行してAndroidプロジェクトに反映してから実行し直してください。
 
 初回のみ `npx cap add android` は実行済みです（`android/` ディレクトリがネイティブプロジェクトの実体です）。
 
@@ -83,13 +83,16 @@ NovelAIの画像生成は1回ごとにAnlas（有料トークン）を消費し�
 
 ## 開発
 
-UIを素早く確認しながら開発したい場合は `npm run dev`（[electron-vite](https://electron-vite.org/)）を使えます。`main.js`/`preload.js`/`src/`をHMR付きでビルドし、実際のElectronアプリを自動起動するため、`window.api`は本物のIPC経由で動作します（画像生成やファイル保存もそのまま試せます）。
+UIを素早く確認しながら開発したい場合は `npm run dev`（[electron-vite](https://electron-vite.org/)）を使えます。`main.ts`/`preload.ts`/`src/`をHMR付きでビルドし、実際のElectronアプリを自動起動するため、`window.api`は本物のIPC経由で動作します（画像生成やファイル保存もそのまま試せます）。
 
-コードを変更したら、コミット前に以下でフォーマット・静的検査を行ってください。
+`npm start` / `npm run dist` 等の本番パイプラインでは、`vite build`（`src/` → `www/`）に加えて `tsc -p tsconfig.electron.json`（`main.ts`/`preload.ts`/`electron/**/*.ts`/`shared/novelai.mts` → `electron-dist/`）が実行されます（`npm run build:electron` で単独実行も可能）。Electronは `package.json` の `main` フィールドが指す `electron-dist/main.js`（コンパイル後のJS）を読み込むため、TypeScriptソースを直接実行することはありません。
+
+コードを変更したら、コミット前に以下で型検査・フォーマット・静的検査を行ってください。
 
 ```
-npm run format  # Prettier で自動整形
-npm run lint    # ESLint で検査
+npm run typecheck    # tsc --noEmit でsrc/・electron/双方を型検査
+npm run format        # Prettier で自動整形
+npm run lint           # ESLint で検査
 ```
 
 詳細な開発ルールや内部構成は [CLAUDE.md](./CLAUDE.md) を参照してください。
