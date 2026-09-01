@@ -14,7 +14,7 @@ module.exports = [
   },
   {
     // Electron main process + preload + shared CommonJS logic (Node.js environment).
-    files: ['main.js', 'preload.js', 'shared/**/*.js'],
+    files: ['main.js', 'preload.js', 'electron/**/*.js', 'shared/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',

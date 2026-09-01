@@ -42,7 +42,7 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
 - **UI (`src/`)** — Electron・Android共通の画面本体（React）。
   - `src/index.html` — Viteのエントリーテンプレート。`<div id="root">` と `src/main.jsx` へのモジュールスクリプトのみを持つ。
   - `src/main.jsx` — エントリーポイント。`./platform/capacitorBridge` を**最初に**副作用importしてから（Electronの`preload.js`が既に`window.api`を用意している場合はここで何もしない）、`<App />` を `#root` にマウントする。
-  - `src/App.jsx` — トップレベルコンポーネント。左パネルの各セクションへ渡すpropsの組み立てとJSXの構成、および他のどのフックにも属さない少数の横断的な状態・処理（`apiKey`/`model`/`width`等の単純な入力値、設定の読み込み・デバウンス保存、`buildGenerateParams`/`recordResult`/`handleGenerate`など生成リクエスト全体の組み立て）に絞っている。機能ごとにまとまった状態・ハンドラは以下のカスタムフックへ切り出し、App.jsxからは戻り値を分割代入して使うだけになっている（元々1000行超あったApp.jsxを段階的に分割した結果の構成）。
+  - `src/App.jsx` — トップレベルコンポーネント。左パネルの各セクションへ渡すpropsの組み立てとJSXの構成、および他のどのフックにも属さない少数の横断的な状態・処理（`apiKey`/`model`/`width`等の単純な入力値、`buildGenerateParams`/`recordResult`/`handleGenerate`など生成リクエスト全体の組み立て）に絞っている。機能ごとにまとまった状態・ハンドラは以下のカスタムフックへ切り出し、App.jsxからは戻り値を分割代入して使うだけになっている（元々1000行超あったApp.jsxを段階的に分割した結果の構成）。
     - `src/hooks/useCharacters.js` — 左パネル「キャラクタープロンプト」セクションのキャラクター一覧と、「キャラクター名で追加」フォーム（名前・作品名・組み合わせるチャンク／テンプレート）。
     - `src/hooks/useFocusedField.js` — フォーカス中のプロンプト系フィールド（チャンク/お気に入り挿入・テンプレート反映の対象）を`focusedFieldKey`（`'prompt'` / `'negativePrompt'` / `` `char:${index}:prompt` `` / `` `queue:${id}:prompt` `` 等の文字列）で管理し、`resolveFocusedField()`で都度その時点の最新値・setterを解決する`insertIntoFocused()`/`resolveFocusedField()`を提供する。DOM要素への直接アクセスは行わない。
     - `src/hooks/usePromptLibrary.js` — 「プロンプトチャンク」「プロンプトテンプレート」セクションの保存・編集・適用ハンドラ。
@@ -50,8 +50,10 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
     - `src/hooks/useQueueItems.js` — 複数プロンプト連続生成のリスト自体のstate/CRUD。
     - `src/hooks/useQueueTemplateDraft.js` — 複数プロンプトテンプレートの保存・編集ダイアログのドラフトと適用状態、および関連ハンドラ。
     - `src/hooks/useBatchGeneration.js` / `src/hooks/useQueueGeneration.js` — それぞれ連続生成・複数プロンプト連続生成の実行ループ（進捗ステータス・中断フラグ・待機処理）。両者は「もう片方が実行中なら開始しない」という相互ガードがあるため、それぞれの`running`フラグ自体（`batchRunning`/`queueRunning`）と、`currentSettings()`が参照する`batchCount`/`batchInterval`/`queueInterval`はフック化せずApp.jsx側に残し、フックには値と相手側の`running`フラグ・自分の`setRunning`を渡すだけにしている（双方をフック内部の状態にすると互いのフックが循環参照になるため）。
+    - `src/hooks/useSettingsPersistence.js` — 画面上のフォーム入力全般の起動時読み込み・デバウンス自動保存・`currentSettings()`の組み立てと、「保存先フォルダ」の変更ハンドラ。永続化すべき入力欄を追加する際は、このフック内の起動時読み込み処理と`currentSettings`（および依存配列）の両方に追加する必要がある（前掲の「設定の永続化」の節を参照）。
+    - `src/hooks/useImageMetadataLoader.js` — 「画像からプロンプトを読み込む」機能の2つのハンドラ（単一プロンプト用・複数プロンプト連続生成の行用）。いずれも`src/utils/pngMetadata.js`で抽出した値を対応するsetterへ反映するだけの自己完結した処理のため、他のフックの状態を必要としない。
     - 上記いずれの機能領域にも当てはまらない一枚岩の状態（`templateApplyState`等）は、複数のフックから共有される場合に限りApp.jsx側で保持し、フックには値とsetterを渡す。
-  - `src/components/*.jsx` — 機能ごとのプレゼンテーションコンポーネント（`Section`, `PromptSection`, `TemplatesSection`, `FavoritesSection`, `CharactersSection`/`CharacterCard`, `ModelSection`, `BatchSection`, `PromptQueueSection`, `ResultPanel`）。状態は持たず、props経由でApp.jsxの状態とハンドラを受け取る。
+  - `src/components/*.jsx` — 機能ごとのプレゼンテーションコンポーネント（`Section`, `PromptSection`, `TemplatesSection`, `FavoritesSection`, `CharactersSection`/`CharacterCard`, `ModelSection`, `BatchSection`, `PromptQueueSection`, `ResultPanel`）。状態は持たず、props経由でApp.jsxの状態とハンドラを受け取る。`AppModals.jsx`は編集・適用系モーダル7種（下記`src/components/modals/*.jsx`）をまとめてレンダリングするだけの束ね役で、App.jsxのJSXから独立させている。
   - `src/components/modals/*.jsx` — 編集・適用モーダル（`ChunkEditModal`, `TemplateEditModal`, `TemplateApplyModal`, `QueueTemplateEditModal`, `QueueTemplateApplyModal`, `FavArtistEditModal`, `FavCharEditModal`）。共通の `ModalOverlay` は `open` が falsy なら何も描画しない（旧実装のような `.open` クラス切り替えではなく、条件付きレンダリングで開閉する）。
   - `src/hooks/useNamedList.js` — チャンク・テンプレート・お気に入り・複数プロンプトテンプレートに共通する「読み込み→追加→編集→削除のたびにサーバー側の最新リストで置き換える」パターンを提供するフック。`src/hooks/useFavoritesList.js` はこれを`kind`（`'artist'`/`'character'`）でラップしてお気に入りに使う。
   - `src/utils/templateVariables.js` — `"変数名"` プレースホルダーの抽出・置換ロジック（純粋関数、Reactに依存しない）。
@@ -63,7 +65,16 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
     - **`shared/novelai.mjs` を CommonJS (`module.exports`) に戻さないこと。** `main.js`からの`require()`では動くが、Viteの開発サーバー（`npm run dev`）はローカルの相対パスファイルに対してCJS→ESM変換を行わないため、ブラウザ側で `module is not defined` エラーになり起動できなくなる（`vite build`によるプロダクションビルドはRollupが変換するため気づきにくいので注意）。
 - **Electron側 (`window.api` の実装 = preload.js + main.js)**
   - `preload.js` — `contextBridge` で `window.api` を公開する preload スクリプト（`loadSettings` / `saveSettings` / `generateImage` / `savePromptInfo` / `getSubscriptionInfo` / `openOutputFolder` / `chooseOutputFolder` / `loadChunks` / `saveChunk` / `updateChunk` / `deleteChunk` / `loadTemplates` / `saveTemplate` / `updateTemplate` / `deleteTemplate` / `loadQueueTemplates` / `saveQueueTemplate` / `updateQueueTemplate` / `deleteQueueTemplate` / `loadFavorites` / `saveFavorite` / `updateFavorite` / `deleteFavorite`）。`loadFavorites`等は第一引数に `kind`（`'artist'` または `'character'`）を取る。ページの他のスクリプトより先に実行されるため、Capacitor側のブリッジは「`window.api` が未定義の場合のみ」自身を定義するガードを持つ。
-  - `main.js` — メインプロセスのエントリーポイント（`package.json` の `main` フィールドで指定）。通常は `www/index.html`（Viteのビルド成果物）を読み込むが、`process.env.ELECTRON_RENDERER_URL`（`electron-vite dev` が設定する）がある場合はその開発サーバーURLを`loadURL`する。`BrowserWindow`の`webPreferences`は`backgroundThrottling: false`を指定しており（Electronの既定はtrue）、ウィンドウが最小化・非アクティブの間もレンダラー側の`setTimeout`が間引かれないようにしている。これは連続生成・複数プロンプト連続生成の待機カウントダウン（`src/utils/sleep.js`の`waitWithCountdown`）がレンダラーのタイマーに依存しているため、既定のままだと非アクティブ時に待機カウントがほとんど進まなくなる不具合があったための対応。同様にpreloadのパスも `devServerUrl` の有無で `preload.js`（プロジェクト直下、通常時）と `out-dev/preload/preload.js`（`electron-vite dev`がビルドした場所、開発時）を切り替える。起動時に最大化して表示するウィンドウ生成、日本語化した `Menu`、上記IPCハンドラの実装、NovelAI API呼び出し（`https`モジュール）、ZIPレスポンスの展開（`fflate`）とファイル保存を行う。お気に入りは `kind` ごとに `FAVORITE_PATHS` で切り替えたJSONファイルに保存する共通ハンドラ（`load-favorites` / `save-favorite` / `update-favorite` / `delete-favorite`）で実装。プロンプトチャンク・プロンプトテンプレート・複数プロンプトテンプレートの `load-*`/`save-*`/`update-*`/`delete-*` IPCハンドラは、対象JSONファイルのパスと保存するフィールド名（チャンク/テンプレートなら`['name', 'text']`、複数プロンプトテンプレートなら`['name', 'rows']`）だけを渡す共通ヘルパー `registerListHandlers(prefix, filePath, fields)` で登録しており、3コレクションでほぼ同一だったCRUDロジックの重複を排除している（`update`は`fields`に列挙したプロパティだけを対象アイテムへ反映し、`kind`ベースのお気に入りハンドラのような任意フィールドの丸ごとマージは行わない）。
+  - `main.js` — メインプロセスのエントリーポイント（`package.json` の `main` フィールドで指定）。`app.whenReady()`でのウィンドウ生成・メニュー構築・IPCハンドラ登録の呼び出しのみに絞っており、実装本体は以下の`electron/`配下の各モジュールに切り出している（元々1つのファイルに全IPCハンドラ・メニュー定義・API呼び出しが集中していたものを段階的に分割した結果の構成）。
+  - `electron/` — Electronメインプロセス側の実装本体（すべてCommonJS）。
+    - `electron/settings-store.js` — `settings.json`等の永続化ファイルパス（`settingsPath`/`chunksPath`/`templatesPath`/`queueTemplatesPath`/`FAVORITE_PATHS`）と、その読み書きに使う`readJson`/`writeJson`、および保存先フォルダを解決する`getOutputDir()`をまとめたモジュール。他の`electron/*.js`すべてがこれに依存する土台。生成画像の保存先は既定で `app.getPath('documents')/NovelAI/output/` 配下（**`__dirname` 配下ではない**）。パッケージ化した配布版はインストール先（`Program Files` 等）が読み取り専用になるため、必ずユーザー領域である `documents` を書き込み先にすること。ユーザーが「設定」セクションから保存先フォルダを変更した場合は `settings.outputDir`（絶対パス文字列）が優先され、`getOutputDir()` が `settings.json` を都度読み直して解決する（空文字列・未設定時は既定値にフォールバック）。
+    - `electron/menu.js` — 日本語化した `Menu`（ファイル／編集／表示／ウィンドウ／ヘルプ）の構築。
+    - `electron/window.js` — `BrowserWindow`の生成。通常は `www/index.html`（Viteのビルド成果物）を読み込むが、`process.env.ELECTRON_RENDERER_URL`（`electron-vite dev` が設定する）がある場合はその開発サーバーURLを`loadURL`する。`webPreferences`は`backgroundThrottling: false`を指定しており（Electronの既定はtrue）、ウィンドウが最小化・非アクティブの間もレンダラー側の`setTimeout`が間引かれないようにしている。これは連続生成・複数プロンプト連続生成の待機カウントダウン（`src/utils/sleep.js`の`waitWithCountdown`）がレンダラーのタイマーに依存しているため、既定のままだと非アクティブ時に待機カウントがほとんど進まなくなる不具合があったための対応。preloadのパスも `devServerUrl` の有無で `preload.js`（プロジェクト直下、通常時）と `out-dev/preload/preload.js`（`electron-vite dev`がビルドした場所、開発時）を切り替える。**`electron-vite dev`はmain.js/electron/配下を1ファイルにバンドルするため、バンドル後は`__dirname`がどのソースファイル由来のコードからでもバンドル出力先（`out-dev/main/`）を指す**（`electron/`配下に分割する前と`__dirname`の相対パス計算を変える必要がなかった理由）。
+    - `electron/settings-handlers.js` — `load-settings`/`save-settings`と、`open-output-folder`/`choose-output-folder`（`dialog.showOpenDialog`によるフォルダ選択ダイアログ）のIPCハンドラ。
+    - `electron/list-handlers.js` — プロンプトチャンク・プロンプトテンプレート・複数プロンプトテンプレートの `load-*`/`save-*`/`update-*`/`delete-*` IPCハンドラを、対象JSONファイルのパスと保存するフィールド名（チャンク/テンプレートなら`['name', 'text']`、複数プロンプトテンプレートなら`['name', 'rows']`）だけを渡す共通ヘルパー `registerListHandlers(prefix, filePath, fields)` で登録する。3コレクションでほぼ同一だったCRUDロジックの重複を排除している（`update`は`fields`に列挙したプロパティだけを対象アイテムへ反映し、`kind`ベースのお気に入りハンドラのような任意フィールドの丸ごとマージは行わない）。
+    - `electron/favorite-handlers.js` — お気に入りは `kind` ごとに `FAVORITE_PATHS` で切り替えたJSONファイルに保存する専用ハンドラ（`load-favorites` / `save-favorite` / `update-favorite` / `delete-favorite`）で実装。
+    - `electron/novelai-client.js` — NovelAI API呼び出し（`https`モジュールを使った`requestImage`/`requestSubscriptionInfo`）と、`shared/novelai.mjs`を動的`import()`で読み込む`loadNovelaiModule()`（初回呼び出し時にPromiseをキャッシュ）。
+    - `electron/generation-handlers.js` — `get-subscription-info`/`generate-image`/`save-prompt-info`のIPCハンドラ。ZIPレスポンスの展開（`fflate`）とファイル保存もここで行う。
   - `electron.vite.config.js` — `npm run dev`（`electron-vite dev`）専用の設定。`main.js`/`preload.js`をwatchビルドしつつ、`src/`のVite開発サーバーを起動し、実際のElectronアプリを自動起動する（HMR付き、`window.api`は本物のpreload経由IPC）。ビルド出力は `out-dev/`（gitignore対象、`main`は`out-dev/main/main.js`、`preload`は`out-dev/preload/preload.js`、`renderer`は`out-dev/renderer/`）。**本番パイプライン（`npm start` / `npm run build:web` / `npm run cap:sync` / `npm run dist`）はこの設定を使わず、引き続き `vite.config.js` による通常の `vite build` → `www/` の流れのまま**（`electron.vite.config.js`は開発時の起動体験を改善するためだけに追加したもので、パッケージング方式自体は変更していない）。
   - 生成画像の保存先は既定で `app.getPath('documents')/NovelAI/output/` 配下（**`__dirname` 配下ではない**）。パッケージ化した配布版はインストール先（`Program Files` 等）が読み取り専用になるため、必ずユーザー領域である `documents` を書き込み先にすること。開発時（`npm start`）も同じパスが使われる。ユーザーが「設定」セクションから保存先フォルダを変更した場合は `settings.outputDir`（絶対パス文字列）が優先され、`main.js` の `getOutputDir()` が `settings.json` を都度読み直して解決する（空文字列・未設定時は既定値にフォールバック）。`choose-output-folder` IPC は `dialog.showOpenDialog` でフォルダ選択ダイアログを表示し、選択されたパス（またはキャンセル時は`null`）を返すのみで、`settings.outputDir` への保存自体はレンダラー側の通常の設定保存フロー（`save-settings`）が行う。
   - 設定 (`settings.json`)、プロンプトチャンク (`chunks.json`)、プロンプトテンプレート (`templates.json`)、複数プロンプトテンプレート (`queue-templates.json`)、お気に入りアーティスト (`favorite-artists.json`)、お気に入りキャラクター (`favorite-characters.json`) は `app.getPath('userData')` 配下に保存される（リポジトリには含まれない）。
@@ -112,7 +123,7 @@ Android実機/エミュレータでの実行・APKビルドには Android Studio
 Prettier / ESLint を導入済み。コードを変更したら次のコマンドで整形・検査すること（CIはまだ無いため、コミット前に手動実行が必須）。
 
 ```
-npm run format        # main.js / preload.js / shared / src を Prettier で自動整形
+npm run format        # main.js / preload.js / electron / shared / src を Prettier で自動整形
 npm run format:check  # 整形が必要な差分がないかチェックのみ行う
 npm run lint           # 上記対象を ESLint で検査（eslint.config.js。src/**/*.jsx には eslint-plugin-react-hooks の rules-of-hooks（error）/ exhaustive-deps（warn）を適用）
 ```
@@ -121,7 +132,7 @@ npm run lint           # 上記対象を ESLint で検査（eslint.config.js。s
 - **命名規則**:
   - 変数・関数は `camelCase`、変更されない設定値の定数は `UPPER_SNAKE_CASE`（例: `NOVELAI_IMAGE_ENDPOINT`, `FAVORITE_KEYS`）。
   - Reactコンポーネントは `PascalCase` のファイル名・関数名（例: `CharactersSection.jsx`）、hooksは `useXxx` 命名（例: `useNamedList.js`）。
-  - `main.js`/`preload.js`/`shared/`側のファイル名は `kebab-case`。
+  - `main.js`/`preload.js`/`electron/`/`shared/`側のファイル名は `kebab-case`。
 - **モジュール形式の使い分け**:
   - `main.js` / `preload.js` / `shared/*.js` — CommonJS（`require` / `module.exports`）。
   - `src/**/*.{js,jsx}` — ESM（`import` / `export`）。Vite（`vite build`）で `www/` にバンドルされる。JSXの自動ランタイムを使うため、コンポーネントファイルで `import React from 'react'` は不要。
