@@ -1,0 +1,30 @@
+import { contextBridge, ipcRenderer } from 'electron';
+import type { WindowApi } from './src/types/window-api';
+
+const api: WindowApi = {
+  loadSettings: () => ipcRenderer.invoke('load-settings'),
+  saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
+  generateImage: (params) => ipcRenderer.invoke('generate-image', params),
+  savePromptInfo: (params) => ipcRenderer.invoke('save-prompt-info', params),
+  getSubscriptionInfo: (apiKey) => ipcRenderer.invoke('get-subscription-info', apiKey),
+  openOutputFolder: () => ipcRenderer.invoke('open-output-folder'),
+  chooseOutputFolder: () => ipcRenderer.invoke('choose-output-folder'),
+  loadChunks: () => ipcRenderer.invoke('load-chunk'),
+  saveChunk: (chunk) => ipcRenderer.invoke('save-chunk', chunk),
+  updateChunk: (chunk) => ipcRenderer.invoke('update-chunk', chunk),
+  deleteChunk: (id) => ipcRenderer.invoke('delete-chunk', id),
+  loadTemplates: () => ipcRenderer.invoke('load-template'),
+  saveTemplate: (template) => ipcRenderer.invoke('save-template', template),
+  updateTemplate: (template) => ipcRenderer.invoke('update-template', template),
+  deleteTemplate: (id) => ipcRenderer.invoke('delete-template', id),
+  loadQueueTemplates: () => ipcRenderer.invoke('load-queue-template'),
+  saveQueueTemplate: (template) => ipcRenderer.invoke('save-queue-template', template),
+  updateQueueTemplate: (template) => ipcRenderer.invoke('update-queue-template', template),
+  deleteQueueTemplate: (id) => ipcRenderer.invoke('delete-queue-template', id),
+  loadFavorites: (kind) => ipcRenderer.invoke('load-favorites', kind),
+  saveFavorite: (kind, item) => ipcRenderer.invoke('save-favorite', { kind, item }),
+  updateFavorite: (kind, item) => ipcRenderer.invoke('update-favorite', { kind, item }),
+  deleteFavorite: (kind, id) => ipcRenderer.invoke('delete-favorite', { kind, id }),
+};
+
+contextBridge.exposeInMainWorld('api', api);
