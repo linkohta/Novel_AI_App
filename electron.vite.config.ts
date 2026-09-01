@@ -1,6 +1,13 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 
+// electron-vite dev はElectronの起動時、常にpackage.jsonの"main"フィールド
+// （本番用のelectron-dist/main.js、tsc未実行だと存在しない）をエントリとして
+// 検証・起動しようとする。本ファイルのbuild.outDirはあえて本番と異なる
+// out-dev/main を使っているため、ELECTRON_ENTRYで明示的に上書きし、
+// package.jsonのmainを見ずにout-dev/main/main.jsを起動させる。
+process.env.ELECTRON_ENTRY = 'out-dev/main/main.js';
+
 // `npm run dev`（electron-vite dev）専用: main.tsとpreload.tsをビルド+watchし、
 // src/ 用のVite開発サーバーを起動して、それを指すElectronを起動する。
 // 本番パイプライン（npm start / npm run build:web / npm run cap:sync）は
