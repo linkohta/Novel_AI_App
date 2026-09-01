@@ -12,7 +12,6 @@ export function loadNovelaiModule(): Promise<NovelaiModule> {
   return novelaiModulePromise;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function requestImage(apiKey: string, body: any, endpoint: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
@@ -48,7 +47,6 @@ export function requestImage(apiKey: string, body: any, endpoint: string): Promi
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function requestSubscriptionInfo(apiKey: string, endpoint: string): Promise<any> {
   return new Promise((resolve, reject) => {
     const url = new URL(endpoint);

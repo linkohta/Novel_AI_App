@@ -26,7 +26,6 @@ export interface NamedItem {
   text: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type JsonValue = any;
 
 export interface FavoriteArtist {
@@ -75,6 +74,13 @@ export interface QueueTemplateDraft {
 
 export interface QueueTemplateApplyState {
   template: QueueTemplate;
+}
+
+export interface HistoryItem {
+  fileName: string;
+  filePath: string;
+  seed: number;
+  dataUrl: string;
 }
 
 export interface TemplateApplyState {

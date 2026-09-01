@@ -1,4 +1,22 @@
-import Section from './Section.jsx';
+import Section from './Section';
+import type { NamedItem } from '../types/domain';
+
+interface PromptSectionProps {
+  open: boolean;
+  onToggle: (id: string, open: boolean) => void;
+  prompt: string;
+  setPrompt: (value: string) => void;
+  negativePrompt: string;
+  setNegativePrompt: (value: string) => void;
+  onFocusField: (key: string) => void;
+  chunks: NamedItem[];
+  chunkNameInput: string;
+  setChunkNameInput: (value: string) => void;
+  onSaveChunk: () => void;
+  onInsertChunk: (chunk: NamedItem) => void;
+  onEditChunk: (chunk: NamedItem) => void;
+  onDeleteChunk: (id: string) => void;
+}
 
 export default function PromptSection({
   open,
@@ -15,7 +33,7 @@ export default function PromptSection({
   onInsertChunk,
   onEditChunk,
   onDeleteChunk,
-}) {
+}: PromptSectionProps) {
   return (
     <Section id="promptSection" title="プロンプト" open={open} onToggle={onToggle}>
       <label>プロンプト</label>

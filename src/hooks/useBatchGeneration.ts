@@ -7,9 +7,7 @@ interface UseBatchGenerationParams {
   batchInterval: string;
   setBatchRunning: Dispatch<SetStateAction<boolean>>;
   queueRunning: boolean;
-  buildGenerateParams: (
-    extra?: Partial<GenerateImageParams>
-  ) => GenerateImageParams;
+  buildGenerateParams: (extra?: Partial<GenerateImageParams>) => GenerateImageParams;
   recordResult: (result: GenerateImageResult) => void;
   currentSettings: () => Settings;
 }

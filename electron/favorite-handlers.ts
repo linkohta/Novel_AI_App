@@ -2,7 +2,6 @@ import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import crypto from 'crypto';
 import { readJson, writeJson, FAVORITE_PATHS, FavoriteKind } from './settings-store';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FavoriteItem = { id: string; [key: string]: any };
 
 // お気に入りアーティスト／お気に入りキャラクターは項目形式が異なるため、

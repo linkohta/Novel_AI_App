@@ -12,7 +12,9 @@ async function inflateZlib(bytes: Uint8Array): Promise<Uint8Array> {
   // PNGのzTXt／圧縮iTXtのペイロードはzlibストリーム（RFC 1950）であり、これは
   // Streams APIの'deflate'というフォーマット名が指すものにあたる（zlibヘッダの
   // 無いRFC 1951である'deflate-raw'とは異なる）。
-  const stream = new Blob([bytes as BlobPart]).stream().pipeThrough(new DecompressionStream('deflate'));
+  const stream = new Blob([bytes as BlobPart])
+    .stream()
+    .pipeThrough(new DecompressionStream('deflate'));
   const buf = await new Response(stream).arrayBuffer();
   return new Uint8Array(buf);
 }
@@ -120,7 +122,6 @@ export interface ExtractedNovelAiMetadata {
   characters: ExtractedCharacterPrompt[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CommentJson = any;
 
 // PNGのFile/BlobからNovelAIの生成パラメータを抽出する。画像がNovelAIの

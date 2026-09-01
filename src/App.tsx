@@ -1,28 +1,41 @@
 import { useRef, useState } from 'react';
-import PromptSection from './components/PromptSection.jsx';
-import TemplatesSection from './components/TemplatesSection.jsx';
-import FavoritesSection from './components/FavoritesSection.jsx';
-import CharactersSection from './components/CharactersSection.jsx';
-import ModelSection from './components/ModelSection.jsx';
-import BatchSection from './components/BatchSection.jsx';
-import PromptQueueSection from './components/PromptQueueSection.jsx';
-import Section from './components/Section.jsx';
-import ResultPanel from './components/ResultPanel.jsx';
-import AppModals from './components/AppModals.jsx';
-import { useNamedList } from './hooks/useNamedList.js';
-import { useFavoritesList } from './hooks/useFavoritesList.js';
-import { useQueueItems } from './hooks/useQueueItems.js';
-import { useQueueTemplateDraft } from './hooks/useQueueTemplateDraft.js';
-import { useCharacters } from './hooks/useCharacters.js';
-import { useFocusedField } from './hooks/useFocusedField.js';
-import { usePromptLibrary } from './hooks/usePromptLibrary.js';
-import { useFavoritesHandlers } from './hooks/useFavoritesHandlers.js';
-import { useBatchGeneration } from './hooks/useBatchGeneration.js';
-import { useQueueGeneration } from './hooks/useQueueGeneration.js';
-import { useSettingsPersistence } from './hooks/useSettingsPersistence.js';
-import { useImageMetadataLoader } from './hooks/useImageMetadataLoader.js';
+import PromptSection from './components/PromptSection';
+import TemplatesSection from './components/TemplatesSection';
+import FavoritesSection from './components/FavoritesSection';
+import CharactersSection from './components/CharactersSection';
+import ModelSection from './components/ModelSection';
+import BatchSection from './components/BatchSection';
+import PromptQueueSection from './components/PromptQueueSection';
+import Section from './components/Section';
+import ResultPanel from './components/ResultPanel';
+import AppModals from './components/AppModals';
+import { useNamedList } from './hooks/useNamedList';
+import { useFavoritesList } from './hooks/useFavoritesList';
+import { useQueueItems } from './hooks/useQueueItems';
+import { useQueueTemplateDraft } from './hooks/useQueueTemplateDraft';
+import { useCharacters } from './hooks/useCharacters';
+import { useFocusedField } from './hooks/useFocusedField';
+import { usePromptLibrary } from './hooks/usePromptLibrary';
+import { useFavoritesHandlers } from './hooks/useFavoritesHandlers';
+import { useBatchGeneration } from './hooks/useBatchGeneration';
+import { useQueueGeneration } from './hooks/useQueueGeneration';
+import { useSettingsPersistence } from './hooks/useSettingsPersistence';
+import { useImageMetadataLoader } from './hooks/useImageMetadataLoader';
+import type {
+  FavoriteArtist,
+  FavoriteCharacter,
+  HistoryItem,
+  NamedItem,
+  SectionState,
+  TemplateApplyState,
+} from './types/domain';
+import type {
+  GenerateImageParams,
+  GenerateImageResult,
+  SubscriptionInfo,
+} from './types/window-api';
 
-const DEFAULT_SECTION_STATE = {
+const DEFAULT_SECTION_STATE: SectionState = {
   settingsSection: true,
   promptSection: true,
   templateSection: false,
@@ -46,40 +59,41 @@ export default function App() {
   const [sampler, setSampler] = useState('k_euler_ancestral');
   const [qualityToggle, setQualityToggle] = useState(true);
   const [outputDir, setOutputDir] = useState('');
-  const [sectionState, setSectionState] = useState(DEFAULT_SECTION_STATE);
+  const [sectionState, setSectionState] = useState<SectionState>(DEFAULT_SECTION_STATE);
 
   // 永続化しない（旧アプリと同様、シードは常に0/ランダムから開始する）。
   const [seed, setSeed] = useState('0');
 
   // プロンプトチャンク／テンプレート／お気に入りのリスト。
-  const chunksList = useNamedList({
+  const chunksList = useNamedList<NamedItem, { name: string; text: string }>({
     load: window.api.loadChunks,
     save: window.api.saveChunk,
     update: window.api.updateChunk,
     remove: window.api.deleteChunk,
   });
-  const templatesList = useNamedList({
+  const templatesList = useNamedList<NamedItem, { name: string; text: string }>({
     load: window.api.loadTemplates,
     save: window.api.saveTemplate,
     update: window.api.updateTemplate,
     remove: window.api.deleteTemplate,
   });
-  const queueTemplatesList = useNamedList({
+
+  const queueTemplatesList = useNamedList<any, { name: string; rows: unknown }>({
     load: window.api.loadQueueTemplates,
     save: window.api.saveQueueTemplate,
     update: window.api.updateQueueTemplate,
     remove: window.api.deleteQueueTemplate,
   });
-  const favoriteArtists = useFavoritesList('artist');
-  const favoriteCharacters = useFavoritesList('character');
+  const favoriteArtists = useFavoritesList<FavoriteArtist>('artist');
+  const favoriteCharacters = useFavoritesList<FavoriteCharacter>('character');
 
   // 生成の状態。
   const [status, setStatus] = useState('');
-  const [subscriptionInfo, setSubscriptionInfo] = useState(null);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
-  const [resultImage, setResultImage] = useState(null);
+  const [resultImage, setResultImage] = useState<string | null>(null);
   const [fileInfo, setFileInfo] = useState('');
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [generating, setGenerating] = useState(false);
 
   // 単純で永続化される値は（以下の生成用フックの中ではなく）ここに保持
@@ -131,7 +145,7 @@ export default function App() {
   // usePromptLibrary（プロンプトテンプレートの適用）の両方で共有される——
   // どちらも同じ変数入力モーダルを開くため、この1つの状態はどちらかの
   // フックではなくApp側が保持することで、両者の間の循環依存を避けている。
-  const [templateApplyState, setTemplateApplyState] = useState(null);
+  const [templateApplyState, setTemplateApplyState] = useState<TemplateApplyState | null>(null);
 
   const {
     characters,
@@ -189,7 +203,7 @@ export default function App() {
     setStatus,
   });
 
-  const charNameByNameRef = useRef(null);
+  const charNameByNameRef = useRef<HTMLInputElement>(null);
 
   const {
     favArtistNameInput,
@@ -277,15 +291,15 @@ export default function App() {
       setSubscriptionInfo(info);
       setSubscriptionStatus('');
     } catch (err) {
-      setSubscriptionStatus(`エラー: ${err.message}`);
+      setSubscriptionStatus(`エラー: ${(err as Error).message}`);
     }
   }
 
-  function handleSectionToggle(id, isOpen) {
+  function handleSectionToggle(id: string, isOpen: boolean) {
     setSectionState((prev) => ({ ...prev, [id]: isOpen }));
   }
 
-  function buildGenerateParams(extra) {
+  function buildGenerateParams(extra?: Partial<GenerateImageParams>): GenerateImageParams {
     return {
       apiKey,
       prompt,
@@ -303,10 +317,13 @@ export default function App() {
     };
   }
 
-  function recordResult(result) {
+  function recordResult(result: GenerateImageResult) {
     setResultImage(result.dataUrl);
     setFileInfo(`${result.fileName} (seed: ${result.seed})`);
-    setHistory((prev) => [{ dataUrl: result.dataUrl, fileName: result.fileName }, ...prev]);
+    setHistory((prev) => [
+      { ...result, dataUrl: result.dataUrl, fileName: result.fileName },
+      ...prev,
+    ]);
   }
 
   async function handleGenerate() {
@@ -318,7 +335,7 @@ export default function App() {
       recordResult(result);
       setStatus(`保存しました: ${result.filePath}`);
     } catch (err) {
-      setStatus(`エラー: ${err.message}`);
+      setStatus(`エラー: ${(err as Error).message}`);
     } finally {
       setGenerating(false);
     }
@@ -327,7 +344,6 @@ export default function App() {
   const { batchStatus, handleStartBatch, handleStopBatch } = useBatchGeneration({
     batchCount,
     batchInterval,
-    batchRunning,
     setBatchRunning,
     queueRunning,
     buildGenerateParams,
@@ -338,7 +354,6 @@ export default function App() {
   const { queueStatus, handleStartQueue, handleStopQueue } = useQueueGeneration({
     queueItems,
     queueInterval,
-    queueRunning,
     setQueueRunning,
     batchRunning,
     buildGenerateParams,
@@ -354,7 +369,7 @@ export default function App() {
         <Section
           id="settingsSection"
           title="設定"
-          open={sectionState.settingsSection}
+          open={!!sectionState.settingsSection}
           onToggle={handleSectionToggle}
         >
           <label>NovelAI API キー (persistent token)</label>
@@ -413,7 +428,7 @@ export default function App() {
         </Section>
 
         <PromptSection
-          open={sectionState.promptSection}
+          open={!!sectionState.promptSection}
           onToggle={handleSectionToggle}
           prompt={prompt}
           setPrompt={setPrompt}
@@ -430,7 +445,7 @@ export default function App() {
         />
 
         <TemplatesSection
-          open={sectionState.templateSection}
+          open={!!sectionState.templateSection}
           onToggle={handleSectionToggle}
           templates={templatesList.items}
           templateNameInput={templateNameInput}
@@ -444,7 +459,7 @@ export default function App() {
         />
 
         <FavoritesSection
-          open={sectionState.favoritesSection}
+          open={!!sectionState.favoritesSection}
           onToggle={handleSectionToggle}
           favArtists={favoriteArtists.items}
           favArtistNameInput={favArtistNameInput}
@@ -468,7 +483,7 @@ export default function App() {
         />
 
         <CharactersSection
-          open={sectionState.characterSection}
+          open={!!sectionState.characterSection}
           onToggle={handleSectionToggle}
           characters={characters}
           onChangeCharacter={updateCharacterField}
@@ -490,7 +505,7 @@ export default function App() {
         />
 
         <ModelSection
-          open={sectionState.modelSection}
+          open={!!sectionState.modelSection}
           onToggle={handleSectionToggle}
           model={model}
           setModel={setModel}
@@ -517,7 +532,7 @@ export default function App() {
         </div>
 
         <BatchSection
-          open={sectionState.batchSection}
+          open={!!sectionState.batchSection}
           onToggle={handleSectionToggle}
           batchCount={batchCount}
           setBatchCount={setBatchCount}
@@ -530,7 +545,7 @@ export default function App() {
         />
 
         <PromptQueueSection
-          open={sectionState.promptQueueSection}
+          open={!!sectionState.promptQueueSection}
           onToggle={handleSectionToggle}
           queueItems={queueItems}
           bulkCount={bulkCount}
@@ -566,7 +581,7 @@ export default function App() {
       </div>
 
       <ResultPanel
-        resultImage={resultImage}
+        resultImage={resultImage || ''}
         fileInfo={fileInfo}
         history={history}
         onSelectHistory={(item) => {

@@ -1,4 +1,18 @@
-export default function ResultPanel({ resultImage, fileInfo, history, onSelectHistory }) {
+import type { HistoryItem } from '../types/domain';
+
+interface ResultPanelProps {
+  resultImage: string;
+  fileInfo: string;
+  history: HistoryItem[];
+  onSelectHistory: (item: HistoryItem) => void;
+}
+
+export default function ResultPanel({
+  resultImage,
+  fileInfo,
+  history,
+  onSelectHistory,
+}: ResultPanelProps) {
   return (
     <div className="panel right">
       {resultImage && <img id="result-image" className="visible" src={resultImage} />}

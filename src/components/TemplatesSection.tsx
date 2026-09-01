@@ -1,4 +1,19 @@
-import Section from './Section.jsx';
+import Section from './Section';
+import type { NamedItem } from '../types/domain';
+
+interface TemplatesSectionProps {
+  open: boolean;
+  onToggle: (id: string, open: boolean) => void;
+  templates: NamedItem[];
+  templateNameInput: string;
+  setTemplateNameInput: (value: string) => void;
+  templateTextInput: string;
+  setTemplateTextInput: (value: string) => void;
+  onSaveTemplate: () => void;
+  onApplyTemplate: (template: NamedItem) => void;
+  onEditTemplate: (template: NamedItem) => void;
+  onDeleteTemplate: (id: string) => void;
+}
 
 export default function TemplatesSection({
   open,
@@ -12,7 +27,7 @@ export default function TemplatesSection({
   onApplyTemplate,
   onEditTemplate,
   onDeleteTemplate,
-}) {
+}: TemplatesSectionProps) {
   return (
     <Section id="templateSection" title="プロンプトテンプレート" open={open} onToggle={onToggle}>
       <label>テンプレート名</label>

@@ -55,7 +55,7 @@ export function useQueueTemplateDraft({
     setQueueTemplateDraft({
       id: template.id,
       name: template.name,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       rows: template.rows as any,
     });
   }
@@ -169,7 +169,6 @@ export function useQueueTemplateDraft({
     setQueueTemplateApplyState({ template });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function handleQueueTemplateApplyConfirm(rows: any[]) {
     setQueueItems(
       rows.map((row) => ({
@@ -177,7 +176,7 @@ export function useQueueTemplateDraft({
         prompt: row.prompt || '',
         negativePrompt: row.negativePrompt || '',
         count: row.count || '1',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         characters: (row.characters || []).map((c: any) => ({
           id: window.crypto.randomUUID(),
           prompt: c.prompt || '',

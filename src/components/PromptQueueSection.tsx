@@ -1,5 +1,26 @@
-import Section from './Section.jsx';
-import CharacterCard from './CharacterCard.jsx';
+import type { ChangeEvent } from 'react';
+import Section from './Section';
+import CharacterCard from './CharacterCard';
+import type { QueueCharacter, QueueItem, QueueTemplate } from '../types/domain';
+
+interface QueueItemCardProps {
+  index: number;
+  item: QueueItem;
+  onChange: (index: number, field: 'prompt' | 'negativePrompt' | 'count', value: string) => void;
+  onRemove: (index: number) => void;
+  onMoveUp: (index: number) => void;
+  onMoveDown: (index: number) => void;
+  onFocusField: (key: string) => void;
+  onAddCharacter: (index: number) => void;
+  onRemoveCharacter: (index: number, charIndex: number) => void;
+  onChangeCharacter: (
+    index: number,
+    charIndex: number,
+    field: keyof QueueCharacter,
+    value: string | boolean
+  ) => void;
+  onLoadImageMetadata: (index: number, e: ChangeEvent<HTMLInputElement>) => void;
+}
 
 function QueueItemCard({
   index,
@@ -13,7 +34,7 @@ function QueueItemCard({
   onRemoveCharacter,
   onChangeCharacter,
   onLoadImageMetadata,
-}) {
+}: QueueItemCardProps) {
   const characters = item.characters || [];
 
   return (
@@ -83,6 +104,36 @@ function QueueItemCard({
   );
 }
 
+interface PromptQueueSectionProps {
+  open: boolean;
+  onToggle: (id: string, open: boolean) => void;
+  queueItems: QueueItem[];
+  bulkCount: string;
+  setBulkCount: (value: string) => void;
+  onApplyBulkCount: () => void;
+  onChangeItem: QueueItemCardProps['onChange'];
+  onRemoveItem: (index: number) => void;
+  onMoveItemUp: (index: number) => void;
+  onMoveItemDown: (index: number) => void;
+  onAddItem: () => void;
+  onAddItemCharacter: (index: number) => void;
+  onRemoveItemCharacter: (index: number, charIndex: number) => void;
+  onChangeItemCharacter: QueueItemCardProps['onChangeCharacter'];
+  onLoadItemImageMetadata: QueueItemCardProps['onLoadImageMetadata'];
+  onFocusField: (key: string) => void;
+  queueInterval: string;
+  setQueueInterval: (value: string) => void;
+  onStartQueue: () => void;
+  onStopQueue: () => void;
+  queueRunning: boolean;
+  queueStatus: string;
+  queueTemplates: QueueTemplate[];
+  onSaveAsQueueTemplate: () => void;
+  onApplyQueueTemplate: (template: QueueTemplate) => void;
+  onEditQueueTemplate: (template: QueueTemplate) => void;
+  onDeleteQueueTemplate: (id: string) => void;
+}
+
 export default function PromptQueueSection({
   open,
   onToggle,
@@ -111,7 +162,7 @@ export default function PromptQueueSection({
   onApplyQueueTemplate,
   onEditQueueTemplate,
   onDeleteQueueTemplate,
-}) {
+}: PromptQueueSectionProps) {
   return (
     <Section id="promptQueueSection" title="複数プロンプト連続生成" open={open} onToggle={onToggle}>
       <p className="hint">

@@ -1,7 +1,23 @@
-import Section from './Section.jsx';
-import CharacterCard from './CharacterCard.jsx';
+import type { ChangeEvent, ReactNode, RefObject } from 'react';
+import Section from './Section';
+import CharacterCard from './CharacterCard';
+import type { Character, NamedItem } from '../types/domain';
 
-function CombineSourceSelect({ label, chunks, templates, value, onChange }) {
+interface CombineSourceSelectProps {
+  label: string;
+  chunks: NamedItem[];
+  templates: NamedItem[];
+  value: string;
+  onChange: (e: ChangeEvent<HTMLSelectElement>) => void;
+}
+
+function CombineSourceSelect({
+  label,
+  chunks,
+  templates,
+  value,
+  onChange,
+}: CombineSourceSelectProps): ReactNode {
   return (
     <>
       <label>{label}</label>
@@ -30,6 +46,28 @@ function CombineSourceSelect({ label, chunks, templates, value, onChange }) {
   );
 }
 
+interface CharactersSectionProps {
+  open: boolean;
+  onToggle: (id: string, open: boolean) => void;
+  characters: Character[];
+  onChangeCharacter: (index: number, field: keyof Character, value: string | boolean) => void;
+  onRemoveCharacter: (index: number) => void;
+  onAddBlankCharacter: () => void;
+  onFocusField: (key: string) => void;
+  chunks: NamedItem[];
+  templates: NamedItem[];
+  charNameByName: string;
+  setCharNameByName: (value: string) => void;
+  charSeriesByName: string;
+  setCharSeriesByName: (value: string) => void;
+  charNameSource: string;
+  setCharNameSource: (value: string) => void;
+  charNameNegativeSource: string;
+  setCharNameNegativeSource: (value: string) => void;
+  onAddByName: () => void;
+  nameInputRef: RefObject<HTMLInputElement | null>;
+}
+
 export default function CharactersSection({
   open,
   onToggle,
@@ -50,7 +88,7 @@ export default function CharactersSection({
   setCharNameNegativeSource,
   onAddByName,
   nameInputRef,
-}) {
+}: CharactersSectionProps) {
   return (
     <Section id="characterSection" title="キャラクタープロンプト" open={open} onToggle={onToggle}>
       <div className="row">

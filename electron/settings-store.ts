@@ -31,7 +31,6 @@ export function readJson<T>(filePath: string, fallback: T): T {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function writeJson(filePath: string, data: any): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');

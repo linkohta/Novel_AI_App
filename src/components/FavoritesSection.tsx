@@ -1,4 +1,27 @@
-import Section from './Section.jsx';
+import Section from './Section';
+import type { FavoriteArtist, FavoriteCharacter } from '../types/domain';
+
+interface FavoritesSectionProps {
+  open: boolean;
+  onToggle: (id: string, open: boolean) => void;
+  favArtists: FavoriteArtist[];
+  favArtistNameInput: string;
+  setFavArtistNameInput: (value: string) => void;
+  onSaveFavArtist: () => void;
+  onInsertFavArtist: (favorite: FavoriteArtist) => void;
+  onEditFavArtist: (favorite: FavoriteArtist) => void;
+  onDeleteFavArtist: (id: string) => void;
+  favChars: FavoriteCharacter[];
+  favCharNameInput: string;
+  setFavCharNameInput: (value: string) => void;
+  favCharSeriesInput: string;
+  setFavCharSeriesInput: (value: string) => void;
+  onSaveFavChar: () => void;
+  onInsertFavChar: (favorite: FavoriteCharacter) => void;
+  onToTemplateFavChar: (favorite: FavoriteCharacter) => void;
+  onEditFavChar: (favorite: FavoriteCharacter) => void;
+  onDeleteFavChar: (id: string) => void;
+}
 
 export default function FavoritesSection({
   open,
@@ -20,7 +43,7 @@ export default function FavoritesSection({
   onToTemplateFavChar,
   onEditFavChar,
   onDeleteFavChar,
-}) {
+}: FavoritesSectionProps) {
   return (
     <Section id="favoritesSection" title="お気に入り" open={open} onToggle={onToggle}>
       <label>お気に入りアーティスト</label>

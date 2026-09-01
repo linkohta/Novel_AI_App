@@ -1,13 +1,20 @@
 import { useState } from 'react';
-import ModalOverlay from './ModalOverlay.jsx';
+import ModalOverlay from './ModalOverlay';
 import {
   extractTemplateVariables,
   substituteTemplateVariables,
-} from '../../utils/templateVariables.js';
+} from '../../utils/templateVariables';
+import type { NamedItem, TemplateApplyState } from '../../types/domain';
 
-function TemplateApplyFields({ template, onCancel, onConfirm }) {
+interface TemplateApplyFieldsProps {
+  template: NamedItem;
+  onCancel: () => void;
+  onConfirm: (result: string) => void;
+}
+
+function TemplateApplyFields({ template, onCancel, onConfirm }: TemplateApplyFieldsProps) {
   const variables = extractTemplateVariables(template.text);
-  const [values, setValues] = useState(() =>
+  const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(variables.map((name) => [name, '']))
   );
 
@@ -45,7 +52,17 @@ function TemplateApplyFields({ template, onCancel, onConfirm }) {
   );
 }
 
-export default function TemplateApplyModal({ applyState, onCancel, onConfirm }) {
+interface TemplateApplyModalProps {
+  applyState: TemplateApplyState | null;
+  onCancel: () => void;
+  onConfirm: (result: string) => void;
+}
+
+export default function TemplateApplyModal({
+  applyState,
+  onCancel,
+  onConfirm,
+}: TemplateApplyModalProps) {
   return (
     <ModalOverlay open={!!applyState}>
       {applyState && (

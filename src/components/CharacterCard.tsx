@@ -1,4 +1,20 @@
-export default function CharacterCard({ index, character, onChange, onRemove, onFocusField }) {
+import type { Character } from '../types/domain';
+
+interface CharacterCardProps {
+  index: number;
+  character: Character;
+  onChange: (index: number, field: keyof Character, value: string | boolean) => void;
+  onRemove: (index: number) => void;
+  onFocusField: (key: string) => void;
+}
+
+export default function CharacterCard({
+  index,
+  character,
+  onChange,
+  onRemove,
+  onFocusField,
+}: CharacterCardProps) {
   const enabled = character.enabled !== false;
 
   return (

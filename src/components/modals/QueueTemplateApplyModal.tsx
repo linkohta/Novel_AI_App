@@ -1,13 +1,24 @@
 import { useState } from 'react';
-import ModalOverlay from './ModalOverlay.jsx';
+import ModalOverlay from './ModalOverlay';
 import {
   extractQueueTemplateVariables,
   substituteQueueTemplateRows,
-} from '../../utils/templateVariables.js';
+} from '../../utils/templateVariables';
+import type { QueueTemplate, QueueTemplateApplyState, QueueTemplateRow } from '../../types/domain';
 
-function QueueTemplateApplyFields({ template, onCancel, onConfirm }) {
+interface QueueTemplateApplyFieldsProps {
+  template: QueueTemplate;
+  onCancel: () => void;
+  onConfirm: (rows: QueueTemplateRow[]) => void;
+}
+
+function QueueTemplateApplyFields({
+  template,
+  onCancel,
+  onConfirm,
+}: QueueTemplateApplyFieldsProps) {
   const variables = extractQueueTemplateVariables(template.rows);
-  const [values, setValues] = useState(() =>
+  const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(variables.map((name) => [name, '']))
   );
 
@@ -45,7 +56,17 @@ function QueueTemplateApplyFields({ template, onCancel, onConfirm }) {
   );
 }
 
-export default function QueueTemplateApplyModal({ applyState, onCancel, onConfirm }) {
+interface QueueTemplateApplyModalProps {
+  applyState: QueueTemplateApplyState | null;
+  onCancel: () => void;
+  onConfirm: (rows: QueueTemplateRow[]) => void;
+}
+
+export default function QueueTemplateApplyModal({
+  applyState,
+  onCancel,
+  onConfirm,
+}: QueueTemplateApplyModalProps) {
   return (
     <ModalOverlay open={!!applyState}>
       {applyState && (

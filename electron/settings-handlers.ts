@@ -5,7 +5,6 @@ import { shell } from 'electron';
 export function registerSettingsHandlers(): void {
   ipcMain.handle('load-settings', () => readJson(settingsPath, {}));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ipcMain.handle('save-settings', (event: IpcMainInvokeEvent, settings: any) => {
     writeJson(settingsPath, settings);
     return true;

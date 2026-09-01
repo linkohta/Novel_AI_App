@@ -1,4 +1,17 @@
-import Section from './Section.jsx';
+import Section from './Section';
+
+interface BatchSectionProps {
+  open: boolean;
+  onToggle: (id: string, open: boolean) => void;
+  batchCount: string;
+  setBatchCount: (value: string) => void;
+  batchInterval: string;
+  setBatchInterval: (value: string) => void;
+  onStartBatch: () => void;
+  onStopBatch: () => void;
+  batchRunning: boolean;
+  batchStatus: string;
+}
 
 export default function BatchSection({
   open,
@@ -11,7 +24,7 @@ export default function BatchSection({
   onStopBatch,
   batchRunning,
   batchStatus,
-}) {
+}: BatchSectionProps) {
   return (
     <Section id="batchSection" title="連続生成" open={open} onToggle={onToggle}>
       <div className="row">

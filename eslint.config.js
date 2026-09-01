@@ -16,6 +16,13 @@ const tsRules = {
   'prefer-const': 'error',
 };
 
+// TypeScriptファイルでは`no-undef`（ESLint組み込みルール）が、
+// HTMLInputElement等のDOM lib型やTSの型のみの位置（type-only import等）を
+// 未定義の変数と誤検知するため、各TSブロックで個別にoffにしている
+// （型として存在しない識別子の検出自体は`tsc`の役割であり、ESLintの
+// no-undefに任せる必要はない——TypeScript公式・@typescript-eslintの
+// 推奨設定に倣った）。
+
 module.exports = [
   js.configs.recommended,
   {
@@ -51,7 +58,7 @@ module.exports = [
       },
     },
     plugins: { '@typescript-eslint': tsPlugin },
-    rules: tsRules,
+    rules: { ...tsRules, 'no-undef': 'off' },
   },
   {
     // React + Capacitorブリッジのソース。Viteでバンドルされる（ESM + ブラウザ環境、TypeScript）。
@@ -82,6 +89,7 @@ module.exports = [
     plugins: { 'react-hooks': reactHooks, '@typescript-eslint': tsPlugin },
     rules: {
       ...tsRules,
+      'no-undef': 'off',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
     },
@@ -100,6 +108,6 @@ module.exports = [
       },
     },
     plugins: { '@typescript-eslint': tsPlugin },
-    rules: tsRules,
+    rules: { ...tsRules, 'no-undef': 'off' },
   },
 ];

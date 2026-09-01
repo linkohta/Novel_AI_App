@@ -1,6 +1,19 @@
-import ModalOverlay from './ModalOverlay.jsx';
+import ModalOverlay from './ModalOverlay';
+import type { FavoriteArtist } from '../../types/domain';
 
-export default function FavArtistEditModal({ draft, onChange, onCancel, onSave }) {
+interface FavArtistEditModalProps {
+  draft: FavoriteArtist | null;
+  onChange: (draft: FavoriteArtist) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}
+
+export default function FavArtistEditModal({
+  draft,
+  onChange,
+  onCancel,
+  onSave,
+}: FavArtistEditModalProps) {
   return (
     <ModalOverlay open={!!draft}>
       <h2>お気に入りアーティストを編集</h2>
@@ -8,7 +21,7 @@ export default function FavArtistEditModal({ draft, onChange, onCancel, onSave }
       <input
         type="text"
         value={draft?.name || ''}
-        onChange={(e) => onChange({ ...draft, name: e.target.value })}
+        onChange={(e) => onChange({ ...(draft as FavoriteArtist), name: e.target.value })}
       />
       <div className="modal-buttons">
         <button type="button" className="secondary" onClick={onCancel}>

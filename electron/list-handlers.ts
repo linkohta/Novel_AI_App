@@ -2,7 +2,6 @@ import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import crypto from 'crypto';
 import { readJson, writeJson } from './settings-store';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ListItem = { id: string; [key: string]: any };
 
 // 個別のJSONファイルとして永続化される「名前付きリスト」（チャンク、
@@ -12,7 +11,6 @@ type ListItem = { id: string; [key: string]: any };
 // 明示的なハンドラと同様に）ペイロード全体を無条件に展開するのではなく、
 // `fields` に列挙されたフィールドだけを永続化する。
 export function registerListHandlers(prefix: string, filePath: string, fields: string[]): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pick = (item: ListItem): Record<string, any> =>
     Object.fromEntries(fields.map((field) => [field, item[field]]));
 

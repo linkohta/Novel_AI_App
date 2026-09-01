@@ -3,7 +3,6 @@
 // main.js側のIPCハンドラの戻り値と一致させる（IPC境界のため、細部は
 // 意図的に緩め=anyを許容している箇所がある）。
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type JsonValue = any;
 
 export interface Settings {

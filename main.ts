@@ -1,6 +1,11 @@
 import { app, BrowserWindow } from 'electron';
 import fs from 'fs';
-import { getOutputDir, chunksPath, templatesPath, queueTemplatesPath } from './electron/settings-store';
+import {
+  getOutputDir,
+  chunksPath,
+  templatesPath,
+  queueTemplatesPath,
+} from './electron/settings-store';
 import { buildMenu } from './electron/menu';
 import { createWindow } from './electron/window';
 import { registerListHandlers } from './electron/list-handlers';

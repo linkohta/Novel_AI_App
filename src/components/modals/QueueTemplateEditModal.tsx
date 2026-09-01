@@ -1,4 +1,27 @@
-import ModalOverlay from './ModalOverlay.jsx';
+import ModalOverlay from './ModalOverlay';
+import type {
+  QueueTemplateDraft,
+  QueueTemplateDraftCharacter,
+  QueueTemplateDraftRow,
+} from '../../types/domain';
+
+type RowField = 'prompt' | 'negativePrompt';
+type CharacterField = keyof QueueTemplateDraftCharacter;
+
+interface QueueTemplateRowFieldsProps {
+  row: QueueTemplateDraftRow;
+  rowIndex: number;
+  onChangeRow: (rowIndex: number, field: RowField, value: string) => void;
+  onRemoveRow: (rowIndex: number) => void;
+  onChangeCharacter: (
+    rowIndex: number,
+    charIndex: number,
+    field: CharacterField,
+    value: string | boolean
+  ) => void;
+  onAddCharacter: (rowIndex: number) => void;
+  onRemoveCharacter: (rowIndex: number, charIndex: number) => void;
+}
 
 function QueueTemplateRowFields({
   row,
@@ -8,7 +31,7 @@ function QueueTemplateRowFields({
   onChangeCharacter,
   onAddCharacter,
   onRemoveCharacter,
-}) {
+}: QueueTemplateRowFieldsProps) {
   return (
     <div className="char-card">
       <button type="button" className="remove-char" onClick={() => onRemoveRow(rowIndex)}>
@@ -65,6 +88,19 @@ function QueueTemplateRowFields({
   );
 }
 
+interface QueueTemplateEditModalProps {
+  draft: QueueTemplateDraft | null;
+  onChange: (draft: QueueTemplateDraft) => void;
+  onChangeRow: QueueTemplateRowFieldsProps['onChangeRow'];
+  onRemoveRow: QueueTemplateRowFieldsProps['onRemoveRow'];
+  onChangeCharacter: QueueTemplateRowFieldsProps['onChangeCharacter'];
+  onAddRow: () => void;
+  onAddCharacter: QueueTemplateRowFieldsProps['onAddCharacter'];
+  onRemoveCharacter: QueueTemplateRowFieldsProps['onRemoveCharacter'];
+  onCancel: () => void;
+  onSave: () => void;
+}
+
 export default function QueueTemplateEditModal({
   draft,
   onChange,
@@ -76,7 +112,7 @@ export default function QueueTemplateEditModal({
   onRemoveCharacter,
   onCancel,
   onSave,
-}) {
+}: QueueTemplateEditModalProps) {
   return (
     <ModalOverlay open={!!draft}>
       <h2>{draft?.id ? '複数プロンプトテンプレートを編集' : '複数プロンプトテンプレートを保存'}</h2>
@@ -88,7 +124,7 @@ export default function QueueTemplateEditModal({
       <input
         type="text"
         value={draft?.name || ''}
-        onChange={(e) => onChange({ ...draft, name: e.target.value })}
+        onChange={(e) => onChange({ ...(draft as QueueTemplateDraft), name: e.target.value })}
       />
       {(draft?.rows || []).map((row, rowIndex) => (
         <QueueTemplateRowFields

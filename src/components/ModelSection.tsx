@@ -1,4 +1,4 @@
-import Section from './Section.jsx';
+import Section from './Section';
 
 const MODEL_OPTIONS = [
   'nai-diffusion-3',
@@ -11,6 +11,27 @@ const MODEL_OPTIONS = [
 ];
 
 const SAMPLER_OPTIONS = ['k_euler_ancestral', 'k_euler', 'k_dpmpp_2s_ancestral', 'k_dpmpp_2m'];
+
+interface ModelSectionProps {
+  open: boolean;
+  onToggle: (id: string, open: boolean) => void;
+  model: string;
+  setModel: (value: string) => void;
+  width: string;
+  setWidth: (value: string) => void;
+  height: string;
+  setHeight: (value: string) => void;
+  steps: string;
+  setSteps: (value: string) => void;
+  scale: string;
+  setScale: (value: string) => void;
+  sampler: string;
+  setSampler: (value: string) => void;
+  seed: string;
+  setSeed: (value: string) => void;
+  qualityToggle: boolean;
+  setQualityToggle: (value: boolean) => void;
+}
 
 export default function ModelSection({
   open,
@@ -31,7 +52,7 @@ export default function ModelSection({
   setSeed,
   qualityToggle,
   setQualityToggle,
-}) {
+}: ModelSectionProps) {
   return (
     <Section id="modelSection" title="モデル" open={open} onToggle={onToggle}>
       <label>モデル</label>

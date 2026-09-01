@@ -1,5 +1,10 @@
 import { Dispatch, MutableRefObject, SetStateAction, useState } from 'react';
-import type { FavoriteArtist, FavoriteCharacter, NamedListApi, SectionState } from '../types/domain';
+import type {
+  FavoriteArtist,
+  FavoriteCharacter,
+  NamedListApi,
+  SectionState,
+} from '../types/domain';
 
 interface UseFavoritesHandlersParams {
   favoriteArtists: NamedListApi<FavoriteArtist, { name: string }>;
@@ -78,7 +83,12 @@ export function useFavoritesHandlers({
       setStatus('キャラクター名を入力してください');
       return;
     }
-    await favoriteCharacters.editItem({ ...favCharEditDraft, id: favCharEditDraft.id, name, series });
+    await favoriteCharacters.editItem({
+      ...favCharEditDraft,
+      id: favCharEditDraft.id,
+      name,
+      series,
+    });
     setFavCharEditDraft(null);
   }
 
