@@ -128,6 +128,12 @@ function createWindow() {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
+      // 連続生成・複数プロンプト連続生成の待機カウントダウンはレンダラー側の
+      // setTimeoutに依存しているため、既定のtrue（ウィンドウが最小化/非表示
+      // の間タイマーを大幅に間引く）のままだと非アクティブ時にカウントが
+      // 進まなくなる。バックグラウンドでも生成ループを正常に進行させるため
+      // 無効化する。
+      backgroundThrottling: false,
     },
   });
   win.once('ready-to-show', () => {
@@ -338,9 +344,13 @@ ipcMain.handle('generate-image', async (event, params) => {
   fs.mkdirSync(targetDir, { recursive: true });
   const filePath = path.join(targetDir, fileName);
   fs.writeFileSync(filePath, imageBuffer);
-  // Saved alongside the image so the exact prompt/parameters sent to the
-  // NovelAI API (no API key included) can be inspected outside the app too.
-  writeJson(path.join(targetDir, `${baseName}.json`), body);
+  // 単発生成では画像1枚がそのままプロンプト1件に対応するため、ここでリクエ
+  // スト内容を保存する。連続生成・複数プロンプト連続生成はプロンプト単位で
+  // まとめて `save-prompt-info` 経由で1個だけ保存するため、それらの呼び出し
+  // では params.skipJsonOutput が立てられ、ここでは保存しない。
+  if (!params.skipJsonOutput) {
+    writeJson(path.join(targetDir, `${baseName}.json`), body);
+  }
 
   return {
     fileName,
@@ -348,4 +358,21 @@ ipcMain.handle('generate-image', async (event, params) => {
     seed: body.parameters.seed,
     dataUrl: `data:image/png;base64,${imageBuffer.toString('base64')}`,
   };
+});
+
+// 連続生成・複数プロンプト連続生成が、同じプロンプトで複数枚生成する前後に
+// 1回だけ呼び出し、そのプロンプトのリクエスト内容をプロンプト単位で1つの
+// JSONファイルとして保存する（画像ごとには保存しない）。生成される各画像の
+// 実際のシード値は毎回異なりうるため、ここでは元のリクエストで指定した値
+// （未指定/0なら0のまま）を記録し、個々の画像の実際のシードは記録しない。
+ipcMain.handle('save-prompt-info', async (event, params) => {
+  const { buildRequestBody, sanitizeBatchFolder } = await loadNovelaiModule();
+  const body = buildRequestBody(params);
+  body.parameters.seed = Number(params.seed) > 0 ? Number(params.seed) : 0;
+  const safeBatchFolder = sanitizeBatchFolder(params.batchFolder);
+  const outputDir = getOutputDir();
+  const targetDir = safeBatchFolder ? path.join(outputDir, safeBatchFolder) : outputDir;
+  fs.mkdirSync(targetDir, { recursive: true });
+  writeJson(path.join(targetDir, `${params.fileName}.json`), body);
+  return true;
 });

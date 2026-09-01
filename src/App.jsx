@@ -25,6 +25,7 @@ import { usePromptLibrary } from './hooks/usePromptLibrary.js';
 import { useFavoritesHandlers } from './hooks/useFavoritesHandlers.js';
 import { useBatchGeneration } from './hooks/useBatchGeneration.js';
 import { useQueueGeneration } from './hooks/useQueueGeneration.js';
+import { extractNovelAiMetadata } from './utils/pngMetadata.js';
 
 const DEFAULT_SECTION_STATE = {
   settingsSection: true,
@@ -101,6 +102,9 @@ export default function App() {
   const {
     queueItems,
     setQueueItems,
+    bulkCount,
+    setBulkCount,
+    applyBulkCount,
     updateQueueItemField,
     addQueueItem,
     removeQueueItem,
@@ -332,6 +336,89 @@ export default function App() {
     setSectionState((prev) => ({ ...prev, [id]: isOpen }));
   }
 
+  async function handleLoadImageMetadata(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file next time
+    if (!file) return;
+    try {
+      const meta = await extractNovelAiMetadata(file);
+      if (!meta) {
+        setStatus('この画像からNovelAIの生成情報を読み取れませんでした');
+        return;
+      }
+      setPrompt(meta.prompt);
+      setNegativePrompt(meta.negativePrompt);
+      if (meta.steps) setSteps(meta.steps);
+      if (meta.scale) setScale(meta.scale);
+      if (meta.sampler) setSampler(meta.sampler);
+      if (meta.seed) setSeed(meta.seed);
+      if (meta.width) setWidth(meta.width);
+      if (meta.height) setHeight(meta.height);
+      // The extracted prompt/negative prompt are what was actually sent for
+      // generation, which already includes any auto-added Quality Tags — turn
+      // the toggle off so a re-generation doesn't add them a second time.
+      setQualityToggle(false);
+      if (meta.characters.length > 0) {
+        setCharacters(
+          meta.characters.map((c) => ({
+            id: window.crypto.randomUUID(),
+            prompt: c.prompt,
+            negativePrompt: c.negativePrompt,
+            enabled: true,
+          }))
+        );
+      }
+      setStatus(
+        meta.sourceInfo
+          ? `画像からプロンプト情報を読み込みました（元モデル情報: ${meta.sourceInfo}。モデルの種類はこの情報からは正確に判別できないため、必要に応じて「モデル」セクションで選び直してください）`
+          : '画像からプロンプト情報を読み込みました'
+      );
+    } catch (err) {
+      setStatus(`画像の読み込みに失敗しました: ${err.message}`);
+    }
+  }
+
+  async function handleLoadQueueItemImageMetadata(index, e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file next time
+    if (!file) return;
+    try {
+      const meta = await extractNovelAiMetadata(file);
+      if (!meta) {
+        setStatus('この画像からNovelAIの生成情報を読み取れませんでした');
+        return;
+      }
+      setQueueItems((prev) =>
+        prev.map((item, i) =>
+          i === index
+            ? {
+                ...item,
+                prompt: meta.prompt,
+                negativePrompt: meta.negativePrompt,
+                characters: meta.characters.map((c) => ({
+                  id: window.crypto.randomUUID(),
+                  prompt: c.prompt,
+                  negativePrompt: c.negativePrompt,
+                  enabled: true,
+                })),
+              }
+            : item
+        )
+      );
+      // モデル・サイズ・Quality Tagsの自動追加設定は行ごとではなく共通設定
+      // （左パネルの「モデル」セクション）を使うため、単一プロンプト用の読み
+      // 込みと同様にここでもQuality Tagsの自動追加をOFFにしておく。
+      setQualityToggle(false);
+      setStatus(
+        meta.sourceInfo
+          ? `${index + 1}行目に画像からプロンプト情報を読み込みました（元モデル情報: ${meta.sourceInfo}。モデルの種類はこの情報からは正確に判別できないため、必要に応じて「モデル」セクションで選び直してください）`
+          : `${index + 1}行目に画像からプロンプト情報を読み込みました`
+      );
+    } catch (err) {
+      setStatus(`画像の読み込みに失敗しました: ${err.message}`);
+    }
+  }
+
   function buildGenerateParams(extra) {
     return {
       apiKey,
@@ -451,6 +538,12 @@ export default function App() {
               )}
             </div>
           )}
+
+          <label>画像からプロンプトを読み込む</label>
+          <p className="hint">
+            NovelAIで生成されたPNG画像を選択すると、埋め込まれた生成情報（プロンプト・ネガティブプロンプト・サイズ・ステップ数・スケール・サンプラー・シード・キャラクタープロンプト）を読み取って自動入力します。
+          </p>
+          <input type="file" accept="image/png" onChange={handleLoadImageMetadata} />
         </Section>
 
         <PromptSection
@@ -574,6 +667,9 @@ export default function App() {
           open={sectionState.promptQueueSection}
           onToggle={handleSectionToggle}
           queueItems={queueItems}
+          bulkCount={bulkCount}
+          setBulkCount={setBulkCount}
+          onApplyBulkCount={applyBulkCount}
           onChangeItem={updateQueueItemField}
           onRemoveItem={removeQueueItem}
           onMoveItemUp={(index) => moveQueueItem(index, -1)}
@@ -582,6 +678,7 @@ export default function App() {
           onAddItemCharacter={addQueueItemCharacter}
           onRemoveItemCharacter={removeQueueItemCharacter}
           onChangeItemCharacter={updateQueueItemCharacterField}
+          onLoadItemImageMetadata={handleLoadQueueItemImageMetadata}
           onFocusField={setFocusedFieldKey}
           queueInterval={queueInterval}
           setQueueInterval={setQueueInterval}

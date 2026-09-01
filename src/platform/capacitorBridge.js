@@ -152,15 +152,19 @@ if (!window.api) {
       directory: Directory.Documents,
       recursive: true,
     });
-    // Saved alongside the image so the exact prompt/parameters sent to the
-    // NovelAI API (no API key included) can be inspected outside the app too.
-    await Filesystem.writeFile({
-      path: `${relativeDir}/${baseName}.json`,
-      data: JSON.stringify(body, null, 2),
-      directory: Directory.Documents,
-      encoding: Encoding.UTF8,
-      recursive: true,
-    });
+    // 単発生成では画像1枚がそのままプロンプト1件に対応するため、ここでリク
+    // エスト内容を保存する。連続生成・複数プロンプト連続生成はプロンプト単位
+    // でまとめて savePromptInfo 経由で1個だけ保存するため、それらの呼び出し
+    // では params.skipJsonOutput が立てられ、ここでは保存しない。
+    if (!params.skipJsonOutput) {
+      await Filesystem.writeFile({
+        path: `${relativeDir}/${baseName}.json`,
+        data: JSON.stringify(body, null, 2),
+        directory: Directory.Documents,
+        encoding: Encoding.UTF8,
+        recursive: true,
+      });
+    }
 
     let filePath = relativePath;
     try {
@@ -180,6 +184,26 @@ if (!window.api) {
       seed: body.parameters.seed,
       dataUrl: `data:image/png;base64,${base64}`,
     };
+  }
+
+  // 連続生成・複数プロンプト連続生成が、同じプロンプトで複数枚生成する前後
+  // に1回だけ呼び出し、そのプロンプトのリクエスト内容をプロンプト単位で1つ
+  // のJSONファイルとして保存する（main.jsのsave-prompt-infoハンドラと同じ
+  // 役割）。生成される各画像の実際のシード値は毎回異なりうるため、ここでは
+  // 元のリクエストで指定した値（未指定/0なら0のまま）を記録する。
+  async function savePromptInfo(params) {
+    const body = buildRequestBody(params);
+    body.parameters.seed = Number(params.seed) > 0 ? Number(params.seed) : 0;
+    const safeBatchFolder = sanitizeBatchFolder(params.batchFolder);
+    const relativeDir = safeBatchFolder ? `output/${safeBatchFolder}` : 'output';
+    await Filesystem.writeFile({
+      path: `${relativeDir}/${params.fileName}.json`,
+      data: JSON.stringify(body, null, 2),
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+      recursive: true,
+    });
+    return true;
   }
 
   async function getSubscriptionInfo(apiKey) {
@@ -224,6 +248,7 @@ if (!window.api) {
     loadSettings: () => loadJson(SETTINGS_KEY, {}),
     saveSettings: (settings) => saveJson(SETTINGS_KEY, settings),
     generateImage,
+    savePromptInfo,
     getSubscriptionInfo,
     openOutputFolder,
     chooseOutputFolder,
