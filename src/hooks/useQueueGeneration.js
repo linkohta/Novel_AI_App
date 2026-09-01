@@ -3,9 +3,9 @@ import { waitWithCountdown } from '../utils/sleep.js';
 
 // The "複数プロンプト連続生成" loop: walks the queue-items list top to
 // bottom, generating each row's prompt `count` times with a wait between
-// generations, saving everything under `queue_<timestamp>/prompt<n>/`
-// folders. Guards against running at the same time as the single-prompt
-// batch generation loop (see useBatchGeneration.js).
+// generations, saving every image (across all rows) under one shared
+// `queue_<timestamp>/` folder. Guards against running at the same time as the
+// single-prompt batch generation loop (see useBatchGeneration.js).
 export function useQueueGeneration({
   queueItems,
   queueInterval,
@@ -39,7 +39,28 @@ export function useQueueGeneration({
     let stopped = false;
     for (let itemIndex = 0; itemIndex < items.length && !stopped; itemIndex += 1) {
       const item = items[itemIndex];
-      const itemFolder = `${queueFolder}/prompt${itemIndex + 1}`;
+      const itemCharacterPrompts = (item.characters || []).filter(
+        (c) => c.enabled !== false && c.prompt?.trim()
+      );
+
+      try {
+        // 画像ごとではなく、この行のプロンプト1件について1つだけリクエスト
+        // 内容を保存する（各画像の実際のシード値は保存対象に含めない）。
+        await window.api.savePromptInfo(
+          buildGenerateParams({
+            prompt: item.prompt,
+            negativePrompt: item.negativePrompt,
+            characterPrompts: itemCharacterPrompts,
+            batchFolder: queueFolder,
+            fileName: `prompt${itemIndex + 1}`,
+          })
+        );
+      } catch (err) {
+        setQueueStatus(`プロンプト情報の保存でエラー: ${err.message}（中断しました）`);
+        stopped = true;
+        continue;
+      }
+
       for (let i = 1; i <= item.count; i += 1) {
         if (queueStopRef.current) {
           stopped = true;
@@ -53,15 +74,14 @@ export function useQueueGeneration({
             buildGenerateParams({
               prompt: item.prompt,
               negativePrompt: item.negativePrompt,
-              characterPrompts: (item.characters || []).filter(
-                (c) => c.enabled !== false && c.prompt?.trim()
-              ),
-              batchFolder: itemFolder,
+              characterPrompts: itemCharacterPrompts,
+              batchFolder: queueFolder,
+              skipJsonOutput: true,
             })
           );
           recordResult(result);
           done += 1;
-          setQueueStatus(`${done}/${totalCount} 枚生成しました（保存先: output/${itemFolder}）`);
+          setQueueStatus(`${done}/${totalCount} 枚生成しました（保存先: output/${queueFolder}）`);
         } catch (err) {
           setQueueStatus(`${done}/${totalCount} 枚完了後にエラー: ${err.message}（中断しました）`);
           stopped = true;

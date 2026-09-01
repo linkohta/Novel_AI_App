@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('api', {
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   generateImage: (params) => ipcRenderer.invoke('generate-image', params),
+  savePromptInfo: (params) => ipcRenderer.invoke('save-prompt-info', params),
   getSubscriptionInfo: (apiKey) => ipcRenderer.invoke('get-subscription-info', apiKey),
   openOutputFolder: () => ipcRenderer.invoke('open-output-folder'),
   chooseOutputFolder: () => ipcRenderer.invoke('choose-output-folder'),

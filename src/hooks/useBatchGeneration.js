@@ -28,6 +28,16 @@ export function useBatchGeneration({
     batchStopRef.current = false;
     setBatchRunning(true);
 
+    try {
+      // 画像ごとではなく、このプロンプト1件について1つだけリクエスト内容を
+      // 保存する（各画像の実際のシード値は保存対象に含めない）。
+      await window.api.savePromptInfo(buildGenerateParams({ batchFolder, fileName: 'prompt' }));
+    } catch (err) {
+      setBatchStatus(`プロンプト情報の保存でエラー: ${err.message}（中断しました）`);
+      setBatchRunning(false);
+      return;
+    }
+
     for (let i = 1; i <= count; i += 1) {
       if (batchStopRef.current) {
         setBatchStatus(`${i - 1}/${count} 枚生成後に中断しました（保存先: output/${batchFolder}）`);
@@ -35,7 +45,9 @@ export function useBatchGeneration({
       }
       setBatchStatus(`${i}/${count} 枚目を生成中...`);
       try {
-        const result = await window.api.generateImage(buildGenerateParams({ batchFolder }));
+        const result = await window.api.generateImage(
+          buildGenerateParams({ batchFolder, skipJsonOutput: true })
+        );
         recordResult(result);
         setBatchStatus(`${i}/${count} 枚生成しました（保存先: output/${batchFolder}）`);
       } catch (err) {

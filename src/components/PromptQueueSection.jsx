@@ -87,6 +87,9 @@ export default function PromptQueueSection({
   open,
   onToggle,
   queueItems,
+  bulkCount,
+  setBulkCount,
+  onApplyBulkCount,
   onChangeItem,
   onRemoveItem,
   onMoveItemUp,
@@ -114,6 +117,24 @@ export default function PromptQueueSection({
       <p className="hint">
         指定した順番でプロンプトを切り替えながら、それぞれ指定した枚数だけ連続生成します。
       </p>
+
+      <div className="row">
+        <div>
+          <label>生成枚数を全行にまとめて指定</label>
+          <input
+            type="number"
+            min="1"
+            max="100"
+            value={bulkCount}
+            onChange={(e) => setBulkCount(e.target.value)}
+          />
+        </div>
+        <div>
+          <button type="button" className="secondary" onClick={onApplyBulkCount}>
+            全行に反映
+          </button>
+        </div>
+      </div>
 
       {queueItems.map((item, index) => (
         <QueueItemCard

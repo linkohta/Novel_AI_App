@@ -102,6 +102,9 @@ export default function App() {
   const {
     queueItems,
     setQueueItems,
+    bulkCount,
+    setBulkCount,
+    applyBulkCount,
     updateQueueItemField,
     addQueueItem,
     removeQueueItem,
@@ -664,6 +667,9 @@ export default function App() {
           open={sectionState.promptQueueSection}
           onToggle={handleSectionToggle}
           queueItems={queueItems}
+          bulkCount={bulkCount}
+          setBulkCount={setBulkCount}
+          onApplyBulkCount={applyBulkCount}
           onChangeItem={updateQueueItemField}
           onRemoveItem={removeQueueItem}
           onMoveItemUp={(index) => moveQueueItem(index, -1)}

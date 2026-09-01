@@ -11,11 +11,18 @@ function makeQueueItem() {
 }
 
 // State + CRUD for the 複数プロンプト連続生成 (queue) list: each row's
-// prompt/negativePrompt/count plus its own set of character prompts.
+// prompt/negativePrompt/count plus its own set of character prompts, plus
+// `bulkCount`/`applyBulkCount` for setting every row's count at once.
 // Extracted out of App.jsx since it's a self-contained slice of state that
 // doesn't need any of App's other state to update itself.
 export function useQueueItems() {
   const [queueItems, setQueueItems] = useState([makeQueueItem()]);
+  const [bulkCount, setBulkCount] = useState('1');
+
+  function applyBulkCount() {
+    const clamped = String(Math.max(1, Math.min(100, parseInt(bulkCount, 10) || 1)));
+    setQueueItems((prev) => prev.map((item) => ({ ...item, count: clamped })));
+  }
 
   function updateQueueItemField(index, field, value) {
     setQueueItems((prev) =>
@@ -82,6 +89,9 @@ export function useQueueItems() {
   return {
     queueItems,
     setQueueItems,
+    bulkCount,
+    setBulkCount,
+    applyBulkCount,
     updateQueueItemField,
     addQueueItem,
     removeQueueItem,
