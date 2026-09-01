@@ -1,11 +1,10 @@
 import { useState } from 'react';
 
-// Tracks which prompt-like field ("prompt" / "negativePrompt" /
-// "char:<i>:prompt" / `queue:<id>:prompt` / `queue:<id>:char:<i>:prompt` etc.)
-// a chunk/favorite/template should be inserted into or replaced, and resolves
-// that key to the field's current value + setter on demand (so it always
-// reflects the latest value rather than a stale snapshot from when focus
-// happened).
+// チャンク／お気に入り／テンプレートの挿入・置換先となる、プロンプト系
+// フィールド（"prompt" / "negativePrompt" / "char:<i>:prompt" /
+// `queue:<id>:prompt` / `queue:<id>:char:<i>:prompt` 等）のキーを追跡し、
+// そのキーをその都度フィールドの現在値＋setterに解決する（フォーカスした
+// 時点の古いスナップショットではなく、常に最新の値を反映するため）。
 export function useFocusedField({
   prompt,
   setPrompt,

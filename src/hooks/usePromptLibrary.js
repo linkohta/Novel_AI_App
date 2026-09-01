@@ -1,13 +1,13 @@
 import { useState } from 'react';
 
-// Handlers for the "プロンプトチャンク" and "プロンプトテンプレート" sections:
-// saving the current prompt as a chunk, editing/saving chunk and template
-// drafts, and applying a template (which opens a variable-input modal and,
-// once confirmed, writes the result into whichever field currently has
-// focus via resolveFocusedField). `templateApplyState`/`setTemplateApplyState`
-// are owned by App.jsx rather than this hook because useCharacters' "テンプレ
-// ートで組み合わせる" combine source also opens the same modal — see
-// useCharacters.js for why that state isn't owned by either hook.
+// 「プロンプトチャンク」「プロンプトテンプレート」セクションのハンドラ:
+// 現在のプロンプトをチャンクとして保存する処理、チャンク／テンプレートの
+// 編集・保存ドラフト、およびテンプレートの適用（変数入力モーダルを開き、
+// 確定後にresolveFocusedField経由でその時点でフォーカスされているフィールド
+// へ結果を書き込む）。`templateApplyState`/`setTemplateApplyState` はこの
+// フックではなくApp.jsxが所有している。useCharacters側の「テンプレ
+// ートで組み合わせる」の組み合わせ元も同じモーダルを開くため——この状態が
+// どちらのフックにも属さない理由についてはuseCharacters.jsを参照。
 export function usePromptLibrary({
   prompt,
   chunksList,

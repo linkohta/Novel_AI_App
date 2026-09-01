@@ -13,7 +13,7 @@ module.exports = [
     ignores: ['node_modules/**', 'android/**', 'dist/**', 'output/**', 'www/**'],
   },
   {
-    // Electron main process + preload + shared CommonJS logic (Node.js environment).
+    // Electronメインプロセス + preload + 共有CommonJSロジック（Node.js環境）。
     files: ['main.js', 'preload.js', 'electron/**/*.js', 'shared/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
@@ -32,8 +32,8 @@ module.exports = [
     rules: commonRules,
   },
   {
-    // Shared request-building logic: native ESM so it can be `import`ed directly
-    // by both the browser (via Vite) and main.js (via dynamic import()).
+    // 共有のリクエスト組み立てロジック: ネイティブESMとして書かれており、
+    // ブラウザ側（Vite経由）とmain.js（動的import()経由）の両方から直接importできる。
     files: ['shared/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
@@ -42,7 +42,7 @@ module.exports = [
     rules: commonRules,
   },
   {
-    // React + Capacitor bridge source, bundled by Vite (ESM + browser environment).
+    // React + Capacitorブリッジのソース。Viteでバンドルされる（ESM + ブラウザ環境）。
     files: ['src/**/*.js', 'src/**/*.jsx'],
     languageOptions: {
       ecmaVersion: 2022,

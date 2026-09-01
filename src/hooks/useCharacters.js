@@ -1,13 +1,13 @@
 import { useState } from 'react';
 
-// State + handlers for the main "キャラクタープロンプト" section: the
-// character list itself, and the "キャラクター名で追加" form (name/series
-// inputs plus optional chunk/template combine sources). Depends on
-// chunksList/templatesList (to resolve a combine source) and on
-// setTemplateApplyState so a template combine source can open the same
-// variable-input modal usePromptLibrary uses — that piece of state is owned
-// by App.jsx (not by this hook or usePromptLibrary) specifically to avoid a
-// circular dependency between the two.
+// メインの「キャラクタープロンプト」セクションのstate＋ハンドラ：
+// キャラクター一覧そのものと、「キャラクター名で追加」フォーム（名前・作品名
+// の入力欄に加え、任意の組み合わせるチャンク／テンプレートのソース）。
+// chunksList/templatesList（組み合わせるソースを解決するため）と
+// setTemplateApplyStateに依存しており、これによって組み合わせるテンプレート
+// ソースがusePromptLibraryと同じ変数入力モーダルを開けるようにしている——
+// このstateはApp.jsxが持つ（このフックにもusePromptLibraryにも持たせない）
+// のは、両者の間で循環依存になるのを避けるためである。
 export function useCharacters({ chunksList, templatesList, setTemplateApplyState, setStatus }) {
   const [characters, setCharacters] = useState([]);
   const [charNameByName, setCharNameByName] = useState('');
@@ -46,10 +46,10 @@ export function useCharacters({ chunksList, templatesList, setTemplateApplyState
     setCharNameNegativeSource('');
   }
 
-  // Resolves a "組み合わせるチャンク／テンプレート" selector value (e.g.
-  // "chunk:<id>" / "template:<id>") to its text and passes it to onResolved.
-  // Chunks resolve synchronously; templates open the variable-input modal and
-  // resolve asynchronously once the user confirms it.
+  // 「組み合わせるチャンク／テンプレート」セレクターの値（例:
+  // "chunk:<id>" / "template:<id>"）をそのテキストに解決し、onResolvedに
+  // 渡す。チャンクは同期的に解決されるが、テンプレートは変数入力モーダルを
+  // 開き、ユーザーが確定した時点で非同期に解決される。
   function resolveCombineSource(source, onResolved) {
     if (!source) {
       onResolved('');

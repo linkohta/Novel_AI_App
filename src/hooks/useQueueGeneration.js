@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { waitWithCountdown } from '../utils/sleep.js';
 
-// The "複数プロンプト連続生成" loop: walks the queue-items list top to
-// bottom, generating each row's prompt `count` times with a wait between
-// generations, saving every image (across all rows) under one shared
-// `queue_<timestamp>/` folder. Guards against running at the same time as the
-// single-prompt batch generation loop (see useBatchGeneration.js).
+// 「複数プロンプト連続生成」のループ：queue-itemsのリストを上から順に走査し、
+// 各行のプロンプトを`count`回、生成の間に待機を挟みながら生成し、
+// （全行にわたる）すべての画像を1つの共有`queue_<timestamp>/`フォルダに
+// 保存する。単一プロンプトの連続生成ループと同時実行されないようガードして
+// いる（useBatchGeneration.js参照）。
 export function useQueueGeneration({
   queueItems,
   queueInterval,

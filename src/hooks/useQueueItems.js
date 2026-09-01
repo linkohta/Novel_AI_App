@@ -10,11 +10,11 @@ function makeQueueItem() {
   };
 }
 
-// State + CRUD for the 複数プロンプト連続生成 (queue) list: each row's
-// prompt/negativePrompt/count plus its own set of character prompts, plus
-// `bulkCount`/`applyBulkCount` for setting every row's count at once.
-// Extracted out of App.jsx since it's a self-contained slice of state that
-// doesn't need any of App's other state to update itself.
+// 複数プロンプト連続生成（queue）リストのstate＋CRUD：各行の
+// prompt/negativePrompt/count、およびその行専用のキャラクタープロンプトの
+// 集合、加えて全行の枚数を一括で設定するための `bulkCount`/`applyBulkCount`。
+// 自身を更新するのにApp.jsxの他のstateを必要としない自己完結したstateの
+// かたまりであるため、App.jsxから切り出した。
 export function useQueueItems() {
   const [queueItems, setQueueItems] = useState([makeQueueItem()]);
   const [bulkCount, setBulkCount] = useState('1');

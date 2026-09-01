@@ -2,14 +2,14 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Counts down `totalSeconds`, calling `onTick(remainingSeconds)` roughly once
-// a second until `shouldStop()` becomes true or time runs out. Unlike naively
-// looping `sleep(1000)` and decrementing a counter, this recomputes the
-// remaining time from wall-clock timestamps on every tick, so a single
-// `sleep` call that runs long (e.g. the OS/browser throttling timers while
-// the window is minimized or the app is backgrounded) doesn't push the total
-// wait out further than intended — the countdown catches back up to the
-// original end time instead of drifting.
+// `totalSeconds` をカウントダウンし、`shouldStop()` がtrueになるか時間切れになる
+// まで、おおよそ1秒ごとに `onTick(remainingSeconds)` を呼び出す。単純に
+// `sleep(1000)` をループしながらカウンタをデクリメントする方式とは異なり、
+// これは毎回のtickで残り時間をウォールクロックのタイムスタンプから再計算する
+// ため、1回の `sleep` 呼び出しが長引いた場合（例えばウィンドウが最小化・
+// バックグラウンド化した際のOS/ブラウザによるタイマーの間引き）でも、
+// 想定より待機時間全体が延びてしまうことがなく——カウントダウンはずれて
+// いくのではなく本来の終了時刻に追いつく形になる。
 export async function waitWithCountdown(totalSeconds, { onTick, shouldStop }) {
   const endTime = Date.now() + totalSeconds * 1000;
   while (!shouldStop()) {

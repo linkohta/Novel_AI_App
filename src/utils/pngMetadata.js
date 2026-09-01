@@ -1,17 +1,17 @@
-// Pure browser-side parsing of NovelAI's PNG generation metadata. NovelAI
-// (and this app's own generateImage output) embeds the parameters used to
-// generate an image as PNG text chunks ("Description" / "Comment" / "Source"
-// / "Software"), so this reads a File the user picked and returns the
-// extracted prompt/parameters without any window.api round-trip — the
-// parsing needs only the file bytes, so there is nothing platform-specific
-// for Electron's main.js or capacitorBridge.js to implement.
+// NovelAIのPNG生成メタデータを純粋にブラウザ側だけで解析する。NovelAI
+// （およびこのアプリ自身のgenerateImageの出力）は、画像生成に使ったパラメータを
+// PNGのテキストチャンク（"Description" / "Comment" / "Source" / "Software"）
+// として埋め込んでいるため、ユーザーが選択したFileを読み取り、window.apiを
+// 経由することなく抽出したプロンプト・パラメータを返す——解析にはファイルの
+// バイト列だけあれば十分なので、Electronのmain.jsやcapacitorBridge.js側に
+// プラットフォーム固有の実装は不要である。
 
 const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
 
 async function inflateZlib(bytes) {
-  // PNG's zTXt/compressed-iTXt payloads are zlib streams (RFC 1950), which is
-  // what the Streams API's 'deflate' format name refers to (unlike
-  // 'deflate-raw', which is RFC 1951 with no zlib header).
+  // PNGのzTXt／圧縮iTXtのペイロードはzlibストリーム（RFC 1950）であり、これは
+  // Streams APIの'deflate'というフォーマット名が指すものにあたる（zlibヘッダの
+  // 無いRFC 1951である'deflate-raw'とは異なる）。
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
   const buf = await new Response(stream).arrayBuffer();
   return new Uint8Array(buf);
@@ -21,9 +21,9 @@ function readUint32BE(view, offset) {
   return view.getUint32(offset, false);
 }
 
-// Parses raw PNG bytes into { width, height, texts }, where `texts` maps each
-// tEXt/zTXt/iTXt chunk's keyword (e.g. "Comment", "Description", "Source",
-// "Software") to its decoded string value.
+// 生のPNGバイト列を { width, height, texts } にパースする。`texts` は
+// tEXt/zTXt/iTXt 各チャンクのキーワード（例: "Comment", "Description",
+// "Source", "Software"）をデコード後の文字列値にマッピングしたものである。
 async function parsePngChunks(arrayBuffer) {
   const bytes = new Uint8Array(arrayBuffer);
   const view = new DataView(arrayBuffer);
@@ -61,12 +61,12 @@ async function parsePngChunks(arrayBuffer) {
       const nullIndex = data.indexOf(0);
       if (nullIndex !== -1) {
         const keyword = decoder.decode(data.subarray(0, nullIndex));
-        const compressed = data.subarray(nullIndex + 2); // skip null + compression method byte
+        const compressed = data.subarray(nullIndex + 2); // null文字＋圧縮方式バイトをスキップ
         try {
           const inflated = await inflateZlib(compressed);
           texts[keyword] = decoder.decode(inflated);
         } catch {
-          // Ignore chunks we fail to decompress rather than aborting the whole parse.
+          // 解凍に失敗したチャンクは無視し、パース全体を中断しない。
         }
       }
     } else if (type === 'iTXt') {
@@ -74,7 +74,7 @@ async function parsePngChunks(arrayBuffer) {
       if (p !== -1) {
         const keyword = decoder.decode(data.subarray(0, p));
         const compressionFlag = data[p + 1];
-        p += 3; // null + compressionFlag + compressionMethod
+        p += 3; // null文字＋compressionFlag＋compressionMethod
         const langEnd = data.indexOf(0, p);
         p = langEnd + 1;
         const translatedEnd = data.indexOf(0, p);
@@ -84,22 +84,22 @@ async function parsePngChunks(arrayBuffer) {
           const finalBytes = compressionFlag === 1 ? await inflateZlib(textBytes) : textBytes;
           texts[keyword] = decoder.decode(finalBytes);
         } catch {
-          // Ignore chunks we fail to decompress rather than aborting the whole parse.
+          // 解凍に失敗したチャンクは無視し、パース全体を中断しない。
         }
       }
     }
 
-    offset = dataEnd + 4; // skip CRC
+    offset = dataEnd + 4; // CRCをスキップ
     if (type === 'IEND') break;
   }
 
   return { width, height, texts };
 }
 
-// Extracts NovelAI generation parameters from a PNG File/Blob. Returns null
-// if the image carries no recognizable NovelAI metadata (e.g. a screenshot,
-// or a PNG that was re-saved/re-encoded by another tool and lost its text
-// chunks). Throws only if the file isn't a valid PNG at all.
+// PNGのFile/BlobからNovelAIの生成パラメータを抽出する。画像がNovelAIの
+// メタデータを含んでいない場合（スクリーンショットや、他のツールで再保存・
+// 再エンコードされてテキストチャンクが失われたPNGなど）はnullを返す。
+// 有効なPNGでない場合にのみ例外を投げる。
 export async function extractNovelAiMetadata(file) {
   const arrayBuffer = await file.arrayBuffer();
   const { width, height, texts } = await parsePngChunks(arrayBuffer);
