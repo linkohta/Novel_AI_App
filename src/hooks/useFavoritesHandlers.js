@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
-// Handlers for the "お気に入り" section: saving/editing favorite artists and
-// favorite characters, and "テンプレへ" which copies a favorite character
-// into the "キャラクター名で追加" form (useCharacters' charNameByName/
-// charSeriesByName state) and expands that section.
+// 「お気に入り」セクションのハンドラ：お気に入りアーティスト・お気に入り
+// キャラクターの保存／編集、および「テンプレへ」（お気に入りキャラクターを
+// 「キャラクター名で追加」フォーム（useCharactersのcharNameByName/
+// charSeriesByNameのstate）にコピーし、そのセクションを展開する）。
 export function useFavoritesHandlers({
   favoriteArtists,
   favoriteCharacters,

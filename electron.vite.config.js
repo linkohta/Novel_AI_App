@@ -1,12 +1,11 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 
-// Used only by `npm run dev` (electron-vite dev): builds+watches main.js and
-// preload.js, starts the Vite dev server for src/, and launches Electron
-// pointing at it. The production pipeline (npm start / npm run build:web /
-// npm run cap:sync) does not use this file — it still runs plain `vite
-// build` (vite.config.js) into www/, loaded by the unbundled main.js/preload.js
-// exactly as before.
+// `npm run dev`（electron-vite dev）専用: main.jsとpreload.jsをビルド+watchし、
+// src/ 用のVite開発サーバーを起動して、それを指すElectronを起動する。
+// 本番パイプライン（npm start / npm run build:web / npm run cap:sync）は
+// このファイルを使わない —— 従来通り通常の `vite build`（vite.config.js）で
+// www/ にビルドし、バンドルされていないmain.js/preload.jsから読み込む。
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],

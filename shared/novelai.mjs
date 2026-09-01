@@ -2,11 +2,11 @@ export function isV4Model(model) {
   return /^nai-diffusion-[45]/.test(model);
 }
 
-// Sanitizes a batch-folder path made of one or more "/"-separated segments
-// (e.g. "queue_123/prompt1"), stripping unsafe characters from each segment
-// individually so nested subfolders keep working. Shared by main.js (Electron)
-// and capacitorBridge.js (Android), which both write generated images under
-// an optional batch/queue subfolder of the output directory.
+// 1個以上の"/"区切りセグメントからなるバッチフォルダパス
+// （例: "queue_123/prompt1"）をサニタイズする。ネストしたサブフォルダが
+// 機能し続けるよう、各セグメントごとに個別に不正な文字を取り除く。
+// 生成画像を出力ディレクトリ配下の任意のbatch/queueサブフォルダに書き込む
+// main.js（Electron）とcapacitorBridge.js（Android）の両方で共有される。
 export function sanitizeBatchFolder(batchFolder) {
   if (!batchFolder) return '';
   return String(batchFolder)
@@ -40,20 +40,21 @@ export function buildRequestBody(params) {
     legacy: false,
     legacy_v3_extend: false,
     cfg_rescale: 0,
-    // SMEA/SMEA DYN off, but let the site auto-enable SMEA for resolutions
-    // above 1024x1024 (its "Auto" toggle) the same way the website does —
-    // otherwise higher-resolution generations lose the anatomy/coherency
-    // correction SMEA provides and come out lower quality than the website.
+    // SMEA/SMEA DYNはOFFだが、公式サイトと同様に1024x1024pxを超える解像度では
+    // SMEAを自動的に有効化させる（サイトの「Auto」トグルと同じ挙動）——
+    // そうしないと高解像度の生成でSMEAによる構図・アナトミーの補正が働かず、
+    // 公式サイトより低品質な結果になってしまう。
     sm: false,
     sm_dyn: false,
     autoSmea: true,
   };
 
   if (isV4Model(params.model)) {
-    // Matches the official site's defaults for V4/V4.5 models (novelai-api's
-    // presets_v4/default.preset) so results line up with the website for the
-    // same prompt/seed/sampler — these change the actual diffusion sampling,
-    // not just prompt content, so omitting them yields very different images.
+    // V4/V4.5モデルにおける公式サイトの既定値（novelai-apiの
+    // presets_v4/default.preset）に合わせることで、同じプロンプト/シード/
+    // サンプラーでの結果を公式サイトと一致させる —— これらはプロンプト内容
+    // ではなく実際の拡散サンプリングそのものを左右するため、省略すると
+    // 大きく異なる画像になる。
     parameters.noise_schedule = 'karras';
     parameters.deliberate_euler_ancestral_bug = false;
     parameters.prefer_brownian = true;

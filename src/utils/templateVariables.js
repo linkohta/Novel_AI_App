@@ -22,9 +22,9 @@ export function substituteTemplateVariables(text, values) {
   return result;
 }
 
-// A queue template's "text" is spread across every row's prompt/negativePrompt
-// and each row's character prompts/negativePrompts, so variables must be
-// collected from all of them combined before showing a single input per name.
+// 複数プロンプトテンプレートの「本文」は各行のprompt/negativePromptと、
+// 各行のキャラクターのprompt/negativePromptに分散しているため、変数名ごとに
+// 1つの入力欄を表示する前に、それらすべてを合わせた上で変数を収集する必要がある。
 export function extractQueueTemplateVariables(rows) {
   const combined = (rows || [])
     .flatMap((row) => [

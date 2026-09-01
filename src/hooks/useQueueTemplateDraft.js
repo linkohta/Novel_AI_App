@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-// Encapsulates the save/edit-dialog draft and apply-dialog state for 複数プロン
-// プロンプトテンプレート (queue templates), plus every handler that mutates
-// them. Depends on the queue-items state and the queueTemplatesList CRUD
-// (useNamedList) from App.jsx, and on setStatus for validation messages —
-// these are passed in rather than re-derived so this hook stays a pure
-// extraction of the existing logic (no behavior change).
+// 複数プロンプトテンプレート（queue templates）の保存・編集ダイアログの
+// ドラフトと適用ダイアログの状態、およびそれらを操作する全ハンドラをまとめる。
+// キューアイテムのstateと、App.jsxから渡される queueTemplatesList のCRUD
+// （useNamedList）、バリデーションメッセージ用の setStatus に依存している——
+// これらは再導出せずpropsとして渡すことで、このフックが既存ロジックを
+// そのまま切り出した純粋な抽出にとどまるようにしている（挙動の変更なし）。
 export function useQueueTemplateDraft({
   queueItems,
   setQueueItems,

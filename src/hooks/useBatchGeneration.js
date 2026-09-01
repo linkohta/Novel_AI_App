@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { waitWithCountdown } from '../utils/sleep.js';
 
-// The "連続生成" loop: generates `batchCount` images of the same prompt with
-// a wait between each, saving all of them under one `batch_<timestamp>/`
-// folder. Guards against running at the same time as the prompt-queue
-// generation loop (they share the "生成する" button's disabled state and
-// can't safely run concurrently).
+// 「連続生成」のループ：同一プロンプトの画像を`batchCount`枚、各生成の間に
+// 待機を挟みながら生成し、すべて1つの`batch_<timestamp>/`フォルダに保存する。
+// 複数プロンプト連続生成のループと同時実行されないようガードしている
+// （両者は「生成する」ボタンの無効化状態を共有しており、同時に安全に
+// 実行することはできない）。
 export function useBatchGeneration({
   batchCount,
   batchInterval,

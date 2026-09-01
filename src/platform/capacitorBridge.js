@@ -11,10 +11,11 @@ import {
   NOVELAI_SUBSCRIPTION_ENDPOINT,
 } from '../../shared/novelai.mjs';
 
-// Electron already defines window.api via preload.js's contextBridge before
-// any page script runs, so this bridge only activates for Capacitor/web.
-// Importing this module (from main.jsx, before rendering <App />) is what
-// triggers the setup below — it must run before App can call window.api.
+// Electronではページ内の他のスクリプトが実行される前に、preload.jsの
+// contextBridgeによってすでにwindow.apiが定義されているため、このブリッジは
+// Capacitor/Web環境でのみ有効化される。このモジュールをimportすること
+// （main.jsxで<App />をレンダリングする前）が以下のセットアップの起点となる
+// ——Appがwindow.apiを呼び出せるようになる前に必ず実行されている必要がある。
 if (!window.api) {
   const SETTINGS_KEY = 'novelai_settings';
   const CHUNKS_KEY = 'novelai_chunks';
@@ -175,7 +176,7 @@ if (!window.api) {
       filePath = uriResult.uri;
       lastSavedUri = uriResult.uri;
     } catch {
-      // getUri is best-effort; fall back to the relative path for display.
+      // getUriはベストエフォートであり、失敗した場合は表示用に相対パスへフォールバックする。
     }
 
     return {
@@ -224,15 +225,15 @@ if (!window.api) {
   }
 
   async function chooseOutputFolder() {
-    // Capacitor has no arbitrary directory-picker API without an extra
-    // native plugin; Android always saves under Documents/output.
+    // Capacitorには追加のネイティブプラグイン無しで任意のフォルダを選択できる
+    // APIが無いため、Androidでは常にDocuments/output配下に保存する。
     return null;
   }
 
   async function openOutputFolder() {
     if (!lastSavedUri) return;
-    // Android has no general "open this app's folder" API for third-party apps,
-    // so the closest equivalent is sharing the most recently saved image.
+    // Androidにはサードパーティアプリ向けの「このアプリのフォルダを開く」汎用APIが
+    // 無いため、最も近い代替手段として直近に保存した画像を共有する。
     await Share.share({ url: lastSavedUri });
   }
 

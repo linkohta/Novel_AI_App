@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
-// Shared load/save/update/delete list behavior used by prompt chunks, prompt
-// templates, and (via useFavoritesList) favorite artists/characters. Mirrors
-// the old renderChunks/renderTemplates pattern: every mutation re-fetches the
-// authoritative list from window.api rather than trusting optimistic local state.
+// プロンプトチャンク、プロンプトテンプレート、および（useFavoritesList経由で）
+// お気に入りアーティスト／キャラクターで共有されるload/save/update/deleteの
+// リスト処理。旧renderChunks/renderTemplatesのパターンを踏襲しており、
+// 変更のたびに楽観的なローカルstateを信用せず、window.apiから正となる
+// リストを再取得する。
 export function useNamedList({ load, save, update, remove }) {
   const [items, setItems] = useState([]);
 
