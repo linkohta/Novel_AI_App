@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import PromptSection from './components/PromptSection.jsx';
 import TemplatesSection from './components/TemplatesSection.jsx';
 import FavoritesSection from './components/FavoritesSection.jsx';
@@ -8,13 +8,7 @@ import BatchSection from './components/BatchSection.jsx';
 import PromptQueueSection from './components/PromptQueueSection.jsx';
 import Section from './components/Section.jsx';
 import ResultPanel from './components/ResultPanel.jsx';
-import ChunkEditModal from './components/modals/ChunkEditModal.jsx';
-import TemplateEditModal from './components/modals/TemplateEditModal.jsx';
-import TemplateApplyModal from './components/modals/TemplateApplyModal.jsx';
-import QueueTemplateEditModal from './components/modals/QueueTemplateEditModal.jsx';
-import QueueTemplateApplyModal from './components/modals/QueueTemplateApplyModal.jsx';
-import FavArtistEditModal from './components/modals/FavArtistEditModal.jsx';
-import FavCharEditModal from './components/modals/FavCharEditModal.jsx';
+import AppModals from './components/AppModals.jsx';
 import { useNamedList } from './hooks/useNamedList.js';
 import { useFavoritesList } from './hooks/useFavoritesList.js';
 import { useQueueItems } from './hooks/useQueueItems.js';
@@ -25,7 +19,8 @@ import { usePromptLibrary } from './hooks/usePromptLibrary.js';
 import { useFavoritesHandlers } from './hooks/useFavoritesHandlers.js';
 import { useBatchGeneration } from './hooks/useBatchGeneration.js';
 import { useQueueGeneration } from './hooks/useQueueGeneration.js';
-import { extractNovelAiMetadata } from './utils/pngMetadata.js';
+import { useSettingsPersistence } from './hooks/useSettingsPersistence.js';
+import { useImageMetadataLoader } from './hooks/useImageMetadataLoader.js';
 
 const DEFAULT_SECTION_STATE = {
   settingsSection: true,
@@ -39,7 +34,7 @@ const DEFAULT_SECTION_STATE = {
 };
 
 export default function App() {
-  // Persisted settings.
+  // 永続化される設定。
   const [apiKey, setApiKey] = useState('');
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
@@ -52,12 +47,11 @@ export default function App() {
   const [qualityToggle, setQualityToggle] = useState(true);
   const [outputDir, setOutputDir] = useState('');
   const [sectionState, setSectionState] = useState(DEFAULT_SECTION_STATE);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-  // Not persisted (matches the old app: seed always starts at 0/random).
+  // 永続化しない（旧アプリと同様、シードは常に0/ランダムから開始する）。
   const [seed, setSeed] = useState('0');
 
-  // Prompt-chunk / template / favorite lists.
+  // プロンプトチャンク／テンプレート／お気に入りのリスト。
   const chunksList = useNamedList({
     load: window.api.loadChunks,
     save: window.api.saveChunk,
@@ -79,7 +73,7 @@ export default function App() {
   const favoriteArtists = useFavoritesList('artist');
   const favoriteCharacters = useFavoritesList('character');
 
-  // Generation state.
+  // 生成の状態。
   const [status, setStatus] = useState('');
   const [subscriptionInfo, setSubscriptionInfo] = useState(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
@@ -88,11 +82,12 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [generating, setGenerating] = useState(false);
 
-  // Trivial persisted primitives kept here (rather than inside the
-  // generation hooks below) because currentSettings() needs to read them and
-  // handleStartBatch/handleStartQueue each need to guard on the other loop's
-  // running flag — lifting just these few values avoids a circular
-  // dependency between useBatchGeneration and useQueueGeneration.
+  // 単純で永続化される値は（以下の生成用フックの中ではなく）ここに保持
+  // している。currentSettings() がこれらを読み取る必要があり、かつ
+  // handleStartBatch/handleStartQueue はそれぞれもう一方のループの
+  // runningフラグを見てガードする必要があるため——これら少数の値だけを
+  // 引き上げておくことで、useBatchGeneration と useQueueGeneration の間の
+  // 循環依存を避けている。
   const [batchCount, setBatchCount] = useState('1');
   const [batchInterval, setBatchInterval] = useState('5');
   const [batchRunning, setBatchRunning] = useState(false);
@@ -132,10 +127,10 @@ export default function App() {
     handleQueueTemplateApplyConfirm,
   } = useQueueTemplateDraft({ queueItems, setQueueItems, queueTemplatesList, setStatus });
 
-  // Shared by useCharacters (キャラクター名で追加 can combine a template) and
-  // usePromptLibrary (プロンプトテンプレートの適用) — both open the same
-  // variable-input modal, so this one piece of state is owned by App rather
-  // than either hook to avoid a circular dependency between them.
+  // useCharacters（キャラクター名で追加 でテンプレートを組み合わせられる）と
+  // usePromptLibrary（プロンプトテンプレートの適用）の両方で共有される——
+  // どちらも同じ変数入力モーダルを開くため、この1つの状態はどちらかの
+  // フックではなくApp側が保持することで、両者の間の循環依存を避けている。
   const [templateApplyState, setTemplateApplyState] = useState(null);
 
   const {
@@ -222,103 +217,57 @@ export default function App() {
     charNameByNameRef,
   });
 
-  useEffect(() => {
-    (async () => {
-      const settings = await window.api.loadSettings();
-      if (settings.apiKey) setApiKey(settings.apiKey);
-      if (settings.prompt) setPrompt(settings.prompt);
-      if (settings.negativePrompt) setNegativePrompt(settings.negativePrompt);
-      if (settings.model) setModel(settings.model);
-      if (settings.width) setWidth(settings.width);
-      if (settings.height) setHeight(settings.height);
-      if (settings.steps) setSteps(settings.steps);
-      if (settings.scale) setScale(settings.scale);
-      if (settings.sampler) setSampler(settings.sampler);
-      if (typeof settings.qualityToggle === 'boolean') setQualityToggle(settings.qualityToggle);
-      if (settings.outputDir) setOutputDir(settings.outputDir);
-      if (Array.isArray(settings.characters)) {
-        // Older saved settings predate per-character ids (used as the React
-        // list key); backfill them so existing characters get a stable key too.
-        setCharacters(
-          settings.characters.map((c) => (c.id ? c : { ...c, id: window.crypto.randomUUID() }))
-        );
-      }
-      if (Array.isArray(settings.queueItems) && settings.queueItems.length > 0) {
-        // Older saved settings predate per-item/per-character ids; backfill
-        // them so existing rows get stable keys too.
-        setQueueItems(
-          settings.queueItems.map((item) => ({
-            ...item,
-            id: item.id || window.crypto.randomUUID(),
-            characters: (item.characters || []).map((c) =>
-              c.id ? c : { ...c, id: window.crypto.randomUUID() }
-            ),
-          }))
-        );
-      }
-      if (settings.sectionState) {
-        setSectionState((prev) => ({ ...prev, ...settings.sectionState }));
-      }
-      if (settings.batchCount) setBatchCount(settings.batchCount);
-      if (settings.batchInterval) setBatchInterval(settings.batchInterval);
-      if (settings.queueInterval) setQueueInterval(settings.queueInterval);
-      setSettingsLoaded(true);
-    })();
-  }, [setQueueItems, setCharacters]);
+  const { currentSettings, handleChooseOutputDir } = useSettingsPersistence({
+    apiKey,
+    setApiKey,
+    prompt,
+    setPrompt,
+    negativePrompt,
+    setNegativePrompt,
+    model,
+    setModel,
+    width,
+    setWidth,
+    height,
+    setHeight,
+    steps,
+    setSteps,
+    scale,
+    setScale,
+    sampler,
+    setSampler,
+    qualityToggle,
+    setQualityToggle,
+    outputDir,
+    setOutputDir,
+    characters,
+    setCharacters,
+    sectionState,
+    setSectionState,
+    queueItems,
+    setQueueItems,
+    batchCount,
+    setBatchCount,
+    batchInterval,
+    setBatchInterval,
+    queueInterval,
+    setQueueInterval,
+  });
 
-  const currentSettings = useCallback(
-    () => ({
-      apiKey,
-      prompt,
-      negativePrompt,
-      model,
-      width,
-      height,
-      steps,
-      scale,
-      sampler,
-      qualityToggle,
-      outputDir,
-      characters,
-      sectionState,
-      queueItems,
-      batchCount,
-      batchInterval,
-      queueInterval,
-    }),
-    [
-      apiKey,
-      prompt,
-      negativePrompt,
-      model,
-      width,
-      height,
-      steps,
-      scale,
-      sampler,
-      qualityToggle,
-      outputDir,
-      characters,
-      sectionState,
-      queueItems,
-      batchCount,
-      batchInterval,
-      queueInterval,
-    ]
-  );
-
-  // Debounced autosave, mirroring the old app's "save shortly after the user
-  // stops editing" behavior without wiring a persist call to every field.
-  useEffect(() => {
-    if (!settingsLoaded) return undefined;
-    const id = setTimeout(() => window.api.saveSettings(currentSettings()), 300);
-    return () => clearTimeout(id);
-  }, [settingsLoaded, currentSettings]);
-
-  async function handleChooseOutputDir() {
-    const dir = await window.api.chooseOutputFolder();
-    if (dir) setOutputDir(dir);
-  }
+  const { handleLoadImageMetadata, handleLoadQueueItemImageMetadata } = useImageMetadataLoader({
+    setPrompt,
+    setNegativePrompt,
+    setSteps,
+    setScale,
+    setSampler,
+    setSeed,
+    setWidth,
+    setHeight,
+    setQualityToggle,
+    setCharacters,
+    setQueueItems,
+    setStatus,
+  });
 
   async function handleCheckSubscription() {
     setSubscriptionStatus('確認中...');
@@ -334,89 +283,6 @@ export default function App() {
 
   function handleSectionToggle(id, isOpen) {
     setSectionState((prev) => ({ ...prev, [id]: isOpen }));
-  }
-
-  async function handleLoadImageMetadata(e) {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // allow re-selecting the same file next time
-    if (!file) return;
-    try {
-      const meta = await extractNovelAiMetadata(file);
-      if (!meta) {
-        setStatus('この画像からNovelAIの生成情報を読み取れませんでした');
-        return;
-      }
-      setPrompt(meta.prompt);
-      setNegativePrompt(meta.negativePrompt);
-      if (meta.steps) setSteps(meta.steps);
-      if (meta.scale) setScale(meta.scale);
-      if (meta.sampler) setSampler(meta.sampler);
-      if (meta.seed) setSeed(meta.seed);
-      if (meta.width) setWidth(meta.width);
-      if (meta.height) setHeight(meta.height);
-      // The extracted prompt/negative prompt are what was actually sent for
-      // generation, which already includes any auto-added Quality Tags — turn
-      // the toggle off so a re-generation doesn't add them a second time.
-      setQualityToggle(false);
-      if (meta.characters.length > 0) {
-        setCharacters(
-          meta.characters.map((c) => ({
-            id: window.crypto.randomUUID(),
-            prompt: c.prompt,
-            negativePrompt: c.negativePrompt,
-            enabled: true,
-          }))
-        );
-      }
-      setStatus(
-        meta.sourceInfo
-          ? `画像からプロンプト情報を読み込みました（元モデル情報: ${meta.sourceInfo}。モデルの種類はこの情報からは正確に判別できないため、必要に応じて「モデル」セクションで選び直してください）`
-          : '画像からプロンプト情報を読み込みました'
-      );
-    } catch (err) {
-      setStatus(`画像の読み込みに失敗しました: ${err.message}`);
-    }
-  }
-
-  async function handleLoadQueueItemImageMetadata(index, e) {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // allow re-selecting the same file next time
-    if (!file) return;
-    try {
-      const meta = await extractNovelAiMetadata(file);
-      if (!meta) {
-        setStatus('この画像からNovelAIの生成情報を読み取れませんでした');
-        return;
-      }
-      setQueueItems((prev) =>
-        prev.map((item, i) =>
-          i === index
-            ? {
-                ...item,
-                prompt: meta.prompt,
-                negativePrompt: meta.negativePrompt,
-                characters: meta.characters.map((c) => ({
-                  id: window.crypto.randomUUID(),
-                  prompt: c.prompt,
-                  negativePrompt: c.negativePrompt,
-                  enabled: true,
-                })),
-              }
-            : item
-        )
-      );
-      // モデル・サイズ・Quality Tagsの自動追加設定は行ごとではなく共通設定
-      // （左パネルの「モデル」セクション）を使うため、単一プロンプト用の読み
-      // 込みと同様にここでもQuality Tagsの自動追加をOFFにしておく。
-      setQualityToggle(false);
-      setStatus(
-        meta.sourceInfo
-          ? `${index + 1}行目に画像からプロンプト情報を読み込みました（元モデル情報: ${meta.sourceInfo}。モデルの種類はこの情報からは正確に判別できないため、必要に応じて「モデル」セクションで選び直してください）`
-          : `${index + 1}行目に画像からプロンプト情報を読み込みました`
-      );
-    } catch (err) {
-      setStatus(`画像の読み込みに失敗しました: ${err.message}`);
-    }
   }
 
   function buildGenerateParams(extra) {
@@ -709,51 +575,34 @@ export default function App() {
         }}
       />
 
-      <ChunkEditModal
-        draft={chunkEditDraft}
-        onChange={setChunkEditDraft}
-        onCancel={() => setChunkEditDraft(null)}
-        onSave={handleSaveChunkEdit}
-      />
-      <TemplateEditModal
-        draft={templateEditDraft}
-        onChange={setTemplateEditDraft}
-        onCancel={() => setTemplateEditDraft(null)}
-        onSave={handleSaveTemplateEdit}
-      />
-      <TemplateApplyModal
-        applyState={templateApplyState}
-        onCancel={() => setTemplateApplyState(null)}
-        onConfirm={handleTemplateApplyConfirm}
-      />
-      <QueueTemplateEditModal
-        draft={queueTemplateDraft}
-        onChange={setQueueTemplateDraft}
-        onChangeRow={updateQueueTemplateDraftRow}
-        onChangeCharacter={updateQueueTemplateDraftCharacter}
-        onAddRow={addQueueTemplateDraftRow}
-        onRemoveRow={removeQueueTemplateDraftRow}
-        onAddCharacter={addQueueTemplateDraftCharacter}
-        onRemoveCharacter={removeQueueTemplateDraftCharacter}
-        onCancel={() => setQueueTemplateDraft(null)}
-        onSave={handleSaveQueueTemplate}
-      />
-      <QueueTemplateApplyModal
-        applyState={queueTemplateApplyState}
-        onCancel={() => setQueueTemplateApplyState(null)}
-        onConfirm={handleQueueTemplateApplyConfirm}
-      />
-      <FavArtistEditModal
-        draft={favArtistEditDraft}
-        onChange={setFavArtistEditDraft}
-        onCancel={() => setFavArtistEditDraft(null)}
-        onSave={handleSaveFavArtistEdit}
-      />
-      <FavCharEditModal
-        draft={favCharEditDraft}
-        onChange={setFavCharEditDraft}
-        onCancel={() => setFavCharEditDraft(null)}
-        onSave={handleSaveFavCharEdit}
+      <AppModals
+        chunkEditDraft={chunkEditDraft}
+        setChunkEditDraft={setChunkEditDraft}
+        handleSaveChunkEdit={handleSaveChunkEdit}
+        templateEditDraft={templateEditDraft}
+        setTemplateEditDraft={setTemplateEditDraft}
+        handleSaveTemplateEdit={handleSaveTemplateEdit}
+        templateApplyState={templateApplyState}
+        setTemplateApplyState={setTemplateApplyState}
+        handleTemplateApplyConfirm={handleTemplateApplyConfirm}
+        queueTemplateDraft={queueTemplateDraft}
+        setQueueTemplateDraft={setQueueTemplateDraft}
+        updateQueueTemplateDraftRow={updateQueueTemplateDraftRow}
+        updateQueueTemplateDraftCharacter={updateQueueTemplateDraftCharacter}
+        addQueueTemplateDraftRow={addQueueTemplateDraftRow}
+        removeQueueTemplateDraftRow={removeQueueTemplateDraftRow}
+        addQueueTemplateDraftCharacter={addQueueTemplateDraftCharacter}
+        removeQueueTemplateDraftCharacter={removeQueueTemplateDraftCharacter}
+        handleSaveQueueTemplate={handleSaveQueueTemplate}
+        queueTemplateApplyState={queueTemplateApplyState}
+        setQueueTemplateApplyState={setQueueTemplateApplyState}
+        handleQueueTemplateApplyConfirm={handleQueueTemplateApplyConfirm}
+        favArtistEditDraft={favArtistEditDraft}
+        setFavArtistEditDraft={setFavArtistEditDraft}
+        handleSaveFavArtistEdit={handleSaveFavArtistEdit}
+        favCharEditDraft={favCharEditDraft}
+        setFavCharEditDraft={setFavCharEditDraft}
+        handleSaveFavCharEdit={handleSaveFavCharEdit}
       />
     </>
   );

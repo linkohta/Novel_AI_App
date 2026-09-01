@@ -11,9 +11,9 @@
     "cap:open:android": "npx cap open android",
     "dist": "npm run build:web && electron-builder",
     "dist:win": "npm run build:web && electron-builder --win nsis portable",
-    "format": "prettier --write main.js preload.js shared src",
-    "format:check": "prettier --check main.js preload.js shared src",
-    "lint": "eslint main.js preload.js shared src"
+    "format": "prettier --write main.js preload.js electron shared src",
+    "format:check": "prettier --check main.js preload.js electron shared src",
+    "lint": "eslint main.js preload.js electron shared src"
   },
   "author": "",
   "license": "Apache-2.0",
