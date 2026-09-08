@@ -1,7 +1,80 @@
 import type { ChangeEvent } from 'react';
 import Section from './Section';
 import CharacterCard from './CharacterCard';
-import type { QueueCharacter, QueueItem, QueueTemplate } from '../types/domain';
+import type { QueueCharacter, QueueItem, QueueTemplate, VibeTransferImage } from '../types/domain';
+
+interface QueueVibeTransferCardProps {
+  image: VibeTransferImage;
+  onChangeField: (
+    id: string,
+    field: 'informationExtracted' | 'referenceStrength',
+    value: number
+  ) => void;
+  onRemove: (id: string) => void;
+}
+
+function QueueVibeTransferCard({ image, onChangeField, onRemove }: QueueVibeTransferCardProps) {
+  const isVibeFile = image.source === 'vibeFile';
+  return (
+    <div className="char-card">
+      <button type="button" className="remove-char" onClick={() => onRemove(image.id)}>
+        削除
+      </button>
+      {isVibeFile ? (
+        <div
+          style={{
+            width: '120px',
+            height: '120px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '8px',
+            border: '1px dashed #888',
+            fontSize: '12px',
+            textAlign: 'center',
+          }}
+        >
+          ポーションセット
+        </div>
+      ) : (
+        <img
+          src={`data:image/png;base64,${image.image}`}
+          alt="参照画像"
+          style={{ maxWidth: '120px', maxHeight: '120px', display: 'block', marginBottom: '8px' }}
+        />
+      )}
+      {isVibeFile ? (
+        <>
+          <label>Information Extracted（{image.informationExtracted.toFixed(2)}）</label>
+          <p className="hint">ポーションセットファイルに含まれる値のため変更できません。</p>
+        </>
+      ) : (
+        <>
+          <label>Information Extracted（{image.informationExtracted.toFixed(2)}）</label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={image.informationExtracted}
+            onChange={(e) =>
+              onChangeField(image.id, 'informationExtracted', Number(e.target.value))
+            }
+          />
+        </>
+      )}
+      <label>Reference Strength（{image.referenceStrength.toFixed(2)}）</label>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={image.referenceStrength}
+        onChange={(e) => onChangeField(image.id, 'referenceStrength', Number(e.target.value))}
+      />
+    </div>
+  );
+}
 
 interface QueueItemCardProps {
   index: number;
@@ -20,6 +93,15 @@ interface QueueItemCardProps {
     value: string | boolean
   ) => void;
   onLoadImageMetadata: (index: number, e: ChangeEvent<HTMLInputElement>) => void;
+  onAddVibeTransferImage: (index: number, e: ChangeEvent<HTMLInputElement>) => void;
+  onAddVibeTransferSetFile: (index: number, e: ChangeEvent<HTMLInputElement>) => void;
+  onRemoveVibeTransferImage: (index: number, vibeId: string) => void;
+  onChangeVibeTransferField: (
+    index: number,
+    vibeId: string,
+    field: 'informationExtracted' | 'referenceStrength',
+    value: number
+  ) => void;
 }
 
 function QueueItemCard({
@@ -34,8 +116,13 @@ function QueueItemCard({
   onRemoveCharacter,
   onChangeCharacter,
   onLoadImageMetadata,
+  onAddVibeTransferImage,
+  onAddVibeTransferSetFile,
+  onRemoveVibeTransferImage,
+  onChangeVibeTransferField,
 }: QueueItemCardProps) {
   const characters = item.characters || [];
+  const vibeTransferImages = item.vibeTransferImages || [];
 
   return (
     <div className="char-card">
@@ -100,6 +187,28 @@ function QueueItemCard({
       <button type="button" className="secondary" onClick={() => onAddCharacter(index)}>
         ＋ キャラクターを追加
       </button>
+
+      <details className="char-fold">
+        <summary>AIポーション（Vibe Transfer）</summary>
+        {vibeTransferImages.map((image) => (
+          <QueueVibeTransferCard
+            key={image.id}
+            image={image}
+            onChangeField={(vibeId, field, value) =>
+              onChangeVibeTransferField(index, vibeId, field, value)
+            }
+            onRemove={(vibeId) => onRemoveVibeTransferImage(index, vibeId)}
+          />
+        ))}
+        <label>＋ 参照画像を追加</label>
+        <input type="file" accept="image/*" onChange={(e) => onAddVibeTransferImage(index, e)} />
+        <label>＋ ポーションセットファイルを読み込む（.naiv4vibe / .naiv4vibeBundle）</label>
+        <input
+          type="file"
+          accept=".naiv4vibe,.naiv4vibebundle,.naiv4vibeBundle"
+          onChange={(e) => onAddVibeTransferSetFile(index, e)}
+        />
+      </details>
     </div>
   );
 }
@@ -120,6 +229,10 @@ interface PromptQueueSectionProps {
   onRemoveItemCharacter: (index: number, charIndex: number) => void;
   onChangeItemCharacter: QueueItemCardProps['onChangeCharacter'];
   onLoadItemImageMetadata: QueueItemCardProps['onLoadImageMetadata'];
+  onAddItemVibeTransferImage: QueueItemCardProps['onAddVibeTransferImage'];
+  onAddItemVibeTransferSetFile: QueueItemCardProps['onAddVibeTransferSetFile'];
+  onRemoveItemVibeTransferImage: QueueItemCardProps['onRemoveVibeTransferImage'];
+  onChangeItemVibeTransferField: QueueItemCardProps['onChangeVibeTransferField'];
   onFocusField: (key: string) => void;
   queueInterval: string;
   setQueueInterval: (value: string) => void;
@@ -150,6 +263,10 @@ export default function PromptQueueSection({
   onRemoveItemCharacter,
   onChangeItemCharacter,
   onLoadItemImageMetadata,
+  onAddItemVibeTransferImage,
+  onAddItemVibeTransferSetFile,
+  onRemoveItemVibeTransferImage,
+  onChangeItemVibeTransferField,
   onFocusField,
   queueInterval,
   setQueueInterval,
@@ -201,6 +318,10 @@ export default function PromptQueueSection({
           onRemoveCharacter={onRemoveItemCharacter}
           onChangeCharacter={onChangeItemCharacter}
           onLoadImageMetadata={onLoadItemImageMetadata}
+          onAddVibeTransferImage={onAddItemVibeTransferImage}
+          onAddVibeTransferSetFile={onAddItemVibeTransferSetFile}
+          onRemoveVibeTransferImage={onRemoveItemVibeTransferImage}
+          onChangeVibeTransferField={onChangeItemVibeTransferField}
         />
       ))}
 

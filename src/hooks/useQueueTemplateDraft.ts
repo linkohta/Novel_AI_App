@@ -183,6 +183,10 @@ export function useQueueTemplateDraft({
           negativePrompt: c.negativePrompt || '',
           enabled: c.enabled !== false,
         })),
+        // 複数プロンプトテンプレートはAIポーション参照画像を保存対象に
+        // 含めない（テンプレートは文字列プロンプトのみを対象とする設計の
+        // ため）。適用時は常に空配列から開始する。
+        vibeTransferImages: [],
       }))
     );
     setQueueTemplateApplyState(null);

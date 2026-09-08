@@ -12,12 +12,27 @@ export interface Character {
 
 export interface QueueCharacter extends Character {}
 
+// AIポーション（Vibe Transfer）用の参照画像1件分。imageはbase64文字列
+// （data URLのprefixは含まない。sourceが'vibeFile'の場合はNovelAI公式の
+// ポーションセットファイルに含まれる事前エンコード済みのvibeデータ）で保持する。
+// sourceは'image'（画像アップロード）と'vibeFile'（.naiv4vibeファイルからの
+// 読み込み）を区別する。'vibeFile'の場合、informationExtractedは元ファイルの
+// 値をそのまま使い（再エンコードなしに変更できないため）UI上は編集不可にする。
+export interface VibeTransferImage {
+  id: string;
+  image: string;
+  informationExtracted: number;
+  referenceStrength: number;
+  source: 'image' | 'vibeFile';
+}
+
 export interface QueueItem {
   id: string;
   prompt: string;
   negativePrompt: string;
   count: number | string;
   characters: QueueCharacter[];
+  vibeTransferImages: VibeTransferImage[];
 }
 
 export interface NamedItem {
@@ -99,6 +114,7 @@ export interface SectionState {
   modelSection?: boolean;
   batchSection?: boolean;
   promptQueueSection?: boolean;
+  vibeSection?: boolean;
   [key: string]: boolean | undefined;
 }
 

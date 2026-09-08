@@ -47,6 +47,50 @@ export function requestImage(apiKey: string, body: any, endpoint: string): Promi
   });
 }
 
+// AIポーション（Vibe Transfer）の参照画像を事前エンコードする。
+// レスポンスはJSONではなく生バイナリ（エンコード済みvibeデータ）で返る。
+export function requestEncodeVibe(
+  apiKey: string,
+  body: { image: string; model: string; informationExtracted: number },
+  endpoint: string
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const url = new URL(endpoint);
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        path: url.pathname,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Length': Buffer.byteLength(data),
+        },
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          if (res.statusCode !== 200) {
+            reject(
+              new Error(
+                `Vibeのエンコードに失敗しました (${res.statusCode}): ${buffer.toString('utf-8')}`
+              )
+            );
+            return;
+          }
+          resolve(buffer);
+        });
+      }
+    );
+    req.on('error', (err) => reject(new Error(`Vibeのエンコードに失敗しました: ${err.message}`)));
+    req.write(data);
+    req.end();
+  });
+}
+
 export function requestSubscriptionInfo(apiKey: string, endpoint: string): Promise<any> {
   return new Promise((resolve, reject) => {
     const url = new URL(endpoint);

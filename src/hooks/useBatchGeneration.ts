@@ -1,13 +1,21 @@
 import { Dispatch, SetStateAction, useRef, useState } from 'react';
 import { waitWithCountdown } from '../utils/sleep';
+import type { VibeTransferImage } from '../types/domain';
 import type { GenerateImageParams, GenerateImageResult, Settings } from '../types/window-api';
+
+// App.tsxのbuildGenerateParamsと同じextra型（vibeTransferImagesのみ、
+// 送信直前のエンコード要否判定に必要なsource等を含むVibeTransferImageで
+// 受け取る）。
+type GenerateParamsExtra = Partial<Omit<GenerateImageParams, 'vibeTransferImages'>> & {
+  vibeTransferImages?: VibeTransferImage[];
+};
 
 interface UseBatchGenerationParams {
   batchCount: string;
   batchInterval: string;
   setBatchRunning: Dispatch<SetStateAction<boolean>>;
   queueRunning: boolean;
-  buildGenerateParams: (extra?: Partial<GenerateImageParams>) => GenerateImageParams;
+  buildGenerateParams: (extra?: GenerateParamsExtra) => Promise<GenerateImageParams>;
   recordResult: (result: GenerateImageResult) => void;
   currentSettings: () => Settings;
 }
@@ -42,7 +50,9 @@ export function useBatchGeneration({
     try {
       // 画像ごとではなく、このプロンプト1件について1つだけリクエスト内容を
       // 保存する（各画像の実際のシード値は保存対象に含めない）。
-      await window.api.savePromptInfo(buildGenerateParams({ batchFolder, fileName: 'prompt' }));
+      await window.api.savePromptInfo(
+        await buildGenerateParams({ batchFolder, fileName: 'prompt' })
+      );
     } catch (err) {
       setBatchStatus(`プロンプト情報の保存でエラー: ${(err as Error).message}（中断しました）`);
       setBatchRunning(false);
@@ -57,7 +67,7 @@ export function useBatchGeneration({
       setBatchStatus(`${i}/${count} 枚目を生成中...`);
       try {
         const result = await window.api.generateImage(
-          buildGenerateParams({ batchFolder, skipJsonOutput: true })
+          await buildGenerateParams({ batchFolder, skipJsonOutput: true })
         );
         recordResult(result);
         setBatchStatus(`${i}/${count} 枚生成しました（保存先: output/${batchFolder}）`);

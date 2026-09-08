@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
-import type { Character, QueueItem, SectionState } from '../types/domain';
+import type { Character, QueueItem, SectionState, VibeTransferImage } from '../types/domain';
 
 interface UseSettingsPersistenceParams {
   apiKey: string;
@@ -22,10 +22,14 @@ interface UseSettingsPersistenceParams {
   setSampler: Dispatch<SetStateAction<string>>;
   qualityToggle: boolean;
   setQualityToggle: Dispatch<SetStateAction<boolean>>;
+  varietyPlus: boolean;
+  setVarietyPlus: Dispatch<SetStateAction<boolean>>;
   outputDir: string;
   setOutputDir: Dispatch<SetStateAction<string>>;
   characters: Character[];
   setCharacters: Dispatch<SetStateAction<Character[]>>;
+  vibeTransferImages: VibeTransferImage[];
+  setVibeTransferImages: Dispatch<SetStateAction<VibeTransferImage[]>>;
   sectionState: SectionState;
   setSectionState: Dispatch<SetStateAction<SectionState>>;
   queueItems: QueueItem[];
@@ -65,10 +69,14 @@ export function useSettingsPersistence({
   setSampler,
   qualityToggle,
   setQualityToggle,
+  varietyPlus,
+  setVarietyPlus,
   outputDir,
   setOutputDir,
   characters,
   setCharacters,
+  vibeTransferImages,
+  setVibeTransferImages,
   sectionState,
   setSectionState,
   queueItems,
@@ -95,6 +103,7 @@ export function useSettingsPersistence({
       if (settings.scale) setScale(settings.scale);
       if (settings.sampler) setSampler(settings.sampler);
       if (typeof settings.qualityToggle === 'boolean') setQualityToggle(settings.qualityToggle);
+      if (typeof settings.varietyPlus === 'boolean') setVarietyPlus(settings.varietyPlus);
       if (settings.outputDir) setOutputDir(settings.outputDir);
       if (Array.isArray(settings.characters)) {
         // 古い保存済み設定はキャラクターごとのid（Reactのリストキーとして
@@ -106,15 +115,29 @@ export function useSettingsPersistence({
           )
         );
       }
+      if (Array.isArray(settings.vibeTransferImages)) {
+        // 古い保存済み設定はidより前のものなので、既存の参照画像にも
+        // 安定したキーがつくように補完する。
+        setVibeTransferImages(
+          settings.vibeTransferImages.map((v: VibeTransferImage) =>
+            v.id ? v : { ...v, id: window.crypto.randomUUID() }
+          )
+        );
+      }
       if (Array.isArray(settings.queueItems) && settings.queueItems.length > 0) {
         // 古い保存済み設定は行ごと/キャラクターごとのidより前のものなので、
-        // 既存の行にも安定したキーがつくように補完する。
+        // 既存の行にも安定したキーがつくように補完する。同様に、行ごとの
+        // AIポーション参照画像（vibeTransferImages）が無い古い設定は空配列で
+        // 補完する。
         setQueueItems(
           settings.queueItems.map((item: QueueItem) => ({
             ...item,
             id: item.id || window.crypto.randomUUID(),
             characters: (item.characters || []).map((c) =>
               c.id ? c : { ...c, id: window.crypto.randomUUID() }
+            ),
+            vibeTransferImages: (item.vibeTransferImages || []).map((v) =>
+              v.id ? v : { ...v, id: window.crypto.randomUUID() }
             ),
           }))
         );
@@ -132,7 +155,7 @@ export function useSettingsPersistence({
     // なので依存配列には含めない。setQueueItems/setCharactersのみ、その値を
     // 読み込み後の補完処理内で直接参照しているため明示している。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setQueueItems, setCharacters]);
+  }, [setQueueItems, setCharacters, setVibeTransferImages]);
 
   const currentSettings = useCallback(
     () => ({
@@ -146,8 +169,10 @@ export function useSettingsPersistence({
       scale,
       sampler,
       qualityToggle,
+      varietyPlus,
       outputDir,
       characters,
+      vibeTransferImages,
       sectionState,
       queueItems,
       batchCount,
@@ -165,8 +190,10 @@ export function useSettingsPersistence({
       scale,
       sampler,
       qualityToggle,
+      varietyPlus,
       outputDir,
       characters,
+      vibeTransferImages,
       sectionState,
       queueItems,
       batchCount,

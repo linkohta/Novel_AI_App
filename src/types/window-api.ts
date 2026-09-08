@@ -33,7 +33,14 @@ export interface GenerateImageParams {
   sampler: string;
   seed?: number | string;
   qualityToggle?: boolean;
+  // 公式サイトの「Variety+」トグル相当（V4系・V5系のみ有効）。
+  varietyPlus?: boolean;
   characterPrompts?: { prompt?: string; negativePrompt?: string; enabled?: boolean }[];
+  vibeTransferImages?: {
+    image: string;
+    informationExtracted?: number;
+    referenceStrength?: number;
+  }[];
   batchFolder?: string;
   skipJsonOutput?: boolean;
   fileName?: string;
@@ -86,6 +93,16 @@ export interface WindowApi {
   saveFavorite(kind: FavoriteKind, item: JsonValue): Promise<GenericListItem[]>;
   updateFavorite(kind: FavoriteKind, item: GenericListItem): Promise<GenericListItem[]>;
   deleteFavorite(kind: FavoriteKind, id: string): Promise<GenericListItem[]>;
+  // AIポーション（Vibe Transfer）の参照画像1枚をNovelAI側の専用APIで事前
+  // エンコードし、エンコード済みデータをbase64文字列で返す（V4系・V5系モデル
+  // で`reference_image_multiple`に渡す前に必要。1回の呼び出しにつき2 Anlas
+  // 消費するため、呼び出し側でキャッシュして使い回すこと）。
+  encodeVibe(
+    apiKey: string,
+    image: string,
+    model: string,
+    informationExtracted: number
+  ): Promise<string>;
 }
 
 declare global {
