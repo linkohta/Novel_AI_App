@@ -131,6 +131,8 @@ export default function App() {
     addQueueItemVibeTransferSetFile,
     removeQueueItemVibeTransferImage,
     updateQueueItemVibeTransferField,
+    applyBulkVibeTransferImage,
+    applyBulkVibeTransferSetFile,
   } = useQueueItems(setStatus);
 
   const {
@@ -612,6 +614,16 @@ export default function App() {
           bulkCount={bulkCount}
           setBulkCount={setBulkCount}
           onApplyBulkCount={applyBulkCount}
+          onApplyBulkVibeTransferImage={(e) => {
+            const file = e.target.files?.[0];
+            if (file) applyBulkVibeTransferImage(file);
+            e.target.value = '';
+          }}
+          onApplyBulkVibeTransferSetFile={(e) => {
+            const file = e.target.files?.[0];
+            if (file) applyBulkVibeTransferSetFile(file);
+            e.target.value = '';
+          }}
           onChangeItem={updateQueueItemField}
           onRemoveItem={removeQueueItem}
           onMoveItemUp={(index) => moveQueueItem(index, -1)}
