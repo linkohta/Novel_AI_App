@@ -8,7 +8,11 @@ interface UseQueueGenerationParams {
   queueInterval: string;
   setQueueRunning: Dispatch<SetStateAction<boolean>>;
   batchRunning: boolean;
-  buildGenerateParams: (extra?: Partial<GenerateImageParams>) => GenerateImageParams;
+  buildGenerateParams: (
+    extra?: Partial<Omit<GenerateImageParams, 'vibeTransferImages'>> & {
+      vibeTransferImages?: QueueItem['vibeTransferImages'];
+    }
+  ) => Promise<GenerateImageParams>;
   recordResult: (result: GenerateImageResult) => void;
   currentSettings: () => Settings;
 }
@@ -54,17 +58,13 @@ export function useQueueGeneration({
       const itemCharacterPrompts = (item.characters || []).filter(
         (c) => c.enabled !== false && c.prompt?.trim()
       );
-      const itemVibeTransferImages = (item.vibeTransferImages || []).map((v) => ({
-        image: v.image,
-        informationExtracted: v.informationExtracted,
-        referenceStrength: v.referenceStrength,
-      }));
+      const itemVibeTransferImages = item.vibeTransferImages || [];
 
       try {
         // 画像ごとではなく、この行のプロンプト1件について1つだけリクエスト
         // 内容を保存する（各画像の実際のシード値は保存対象に含めない）。
         await window.api.savePromptInfo(
-          buildGenerateParams({
+          await buildGenerateParams({
             prompt: item.prompt,
             negativePrompt: item.negativePrompt,
             characterPrompts: itemCharacterPrompts,
@@ -89,7 +89,7 @@ export function useQueueGeneration({
         );
         try {
           const result = await window.api.generateImage(
-            buildGenerateParams({
+            await buildGenerateParams({
               prompt: item.prompt,
               negativePrompt: item.negativePrompt,
               characterPrompts: itemCharacterPrompts,

@@ -31,6 +31,8 @@ interface ModelSectionProps {
   setSeed: (value: string) => void;
   qualityToggle: boolean;
   setQualityToggle: (value: boolean) => void;
+  varietyPlus: boolean;
+  setVarietyPlus: (value: boolean) => void;
 }
 
 export default function ModelSection({
@@ -52,6 +54,8 @@ export default function ModelSection({
   setSeed,
   qualityToggle,
   setQualityToggle,
+  varietyPlus,
+  setVarietyPlus,
 }: ModelSectionProps) {
   return (
     <Section id="modelSection" title="モデル" open={open} onToggle={onToggle}>
@@ -73,8 +77,19 @@ export default function ModelSection({
         Quality Tagsを自動追加する
       </label>
       <p className="hint">
-        プロンプトにQuality
-        Tagsを手動で追加済みの場合は、サーバー側での二重追加を避けるためOFFにしてください。
+        プロンプトにQuality Tagsを手動で追加済みの場合は、二重追加を避けるためOFFにしてください。
+      </p>
+
+      <label className="char-enable">
+        <input
+          type="checkbox"
+          checked={varietyPlus}
+          onChange={(e) => setVarietyPlus(e.target.checked)}
+        />
+        Variety+（多様性を高める）
+      </label>
+      <p className="hint">
+        公式サイトの「Variety+」と同じく、CFGの適用範囲を制限して構図の多様性を高めます（V4系・V5系モデルのみ有効）。
       </p>
 
       <div className="row">

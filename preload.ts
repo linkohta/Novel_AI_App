@@ -25,6 +25,8 @@ const api: WindowApi = {
   saveFavorite: (kind, item) => ipcRenderer.invoke('save-favorite', { kind, item }),
   updateFavorite: (kind, item) => ipcRenderer.invoke('update-favorite', { kind, item }),
   deleteFavorite: (kind, id) => ipcRenderer.invoke('delete-favorite', { kind, id }),
+  encodeVibe: (apiKey, image, model, informationExtracted) =>
+    ipcRenderer.invoke('encode-vibe', { apiKey, image, model, informationExtracted }),
 };
 
 contextBridge.exposeInMainWorld('api', api);

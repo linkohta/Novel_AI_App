@@ -13,25 +13,55 @@ interface VibeTransferCardProps {
 }
 
 function VibeTransferCard({ image, onChangeField, onRemove }: VibeTransferCardProps) {
+  const isVibeFile = image.source === 'vibeFile';
   return (
     <div className="char-card">
       <button type="button" className="remove-char" onClick={() => onRemove(image.id)}>
         削除
       </button>
-      <img
-        src={`data:image/png;base64,${image.image}`}
-        alt="参照画像"
-        style={{ maxWidth: '120px', maxHeight: '120px', display: 'block', marginBottom: '8px' }}
-      />
-      <label>Information Extracted（{image.informationExtracted.toFixed(2)}）</label>
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        value={image.informationExtracted}
-        onChange={(e) => onChangeField(image.id, 'informationExtracted', Number(e.target.value))}
-      />
+      {isVibeFile ? (
+        <div
+          style={{
+            width: '120px',
+            height: '120px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '8px',
+            border: '1px dashed #888',
+            fontSize: '12px',
+            textAlign: 'center',
+          }}
+        >
+          ポーションセット
+        </div>
+      ) : (
+        <img
+          src={`data:image/png;base64,${image.image}`}
+          alt="参照画像"
+          style={{ maxWidth: '120px', maxHeight: '120px', display: 'block', marginBottom: '8px' }}
+        />
+      )}
+      {isVibeFile ? (
+        <>
+          <label>Information Extracted（{image.informationExtracted.toFixed(2)}）</label>
+          <p className="hint">ポーションセットファイルに含まれる値のため変更できません。</p>
+        </>
+      ) : (
+        <>
+          <label>Information Extracted（{image.informationExtracted.toFixed(2)}）</label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={image.informationExtracted}
+            onChange={(e) =>
+              onChangeField(image.id, 'informationExtracted', Number(e.target.value))
+            }
+          />
+        </>
+      )}
       <label>Reference Strength（{image.referenceStrength.toFixed(2)}）</label>
       <input
         type="range"
@@ -50,6 +80,7 @@ interface VibeTransferSectionProps {
   onToggle: (id: string, open: boolean) => void;
   vibeTransferImages: VibeTransferImage[];
   onAddImage: (e: ChangeEvent<HTMLInputElement>) => void;
+  onAddSetFile: (e: ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: (id: string) => void;
   onChangeImageField: VibeTransferCardProps['onChangeField'];
 }
@@ -59,6 +90,7 @@ export default function VibeTransferSection({
   onToggle,
   vibeTransferImages,
   onAddImage,
+  onAddSetFile,
   onRemoveImage,
   onChangeImageField,
 }: VibeTransferSectionProps) {
@@ -81,6 +113,17 @@ export default function VibeTransferSection({
       </div>
       <label>＋ 参照画像を追加</label>
       <input type="file" accept="image/*" onChange={onAddImage} />
+      <label>＋ ポーションセットファイルを読み込む</label>
+      <p className="hint">
+        NovelAI公式サイトで書き出した「ポーションセット」ファイル（.naiv4vibe）、および複数の
+        ポーションをまとめてExportした「ポーションセットバンドル」ファイル（.naiv4vibeBundle）を
+        読み込みます。
+      </p>
+      <input
+        type="file"
+        accept=".naiv4vibe,.naiv4vibebundle,.naiv4vibeBundle"
+        onChange={onAddSetFile}
+      />
     </Section>
   );
 }

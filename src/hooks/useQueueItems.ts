@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { QueueCharacter, QueueItem } from '../types/domain';
+import { parseNaiv4VibeFile } from '../utils/naiv4vibe';
 
 function makeQueueItem(): QueueItem {
   return {
@@ -37,7 +38,10 @@ type VibeTransferField = 'informationExtracted' | 'referenceStrength';
 // 集合、加えて全行の枚数を一括で設定するための `bulkCount`/`applyBulkCount`。
 // 自身を更新するのにApp.jsxの他のstateを必要としない自己完結したstateの
 // かたまりであるため、App.jsxから切り出した。
-export function useQueueItems() {
+// `setStatus`はファイル読み込み失敗時にエラー内容を画面上部のステータス表示へ
+// 反映するために使う（渡さなくても動作するが、失敗が画面上に一切表示されず
+// 「選択しても反映されない」ように見えてしまうため、App.tsxからは必ず渡すこと）。
+export function useQueueItems(setStatus?: (status: string) => void) {
   const [queueItems, setQueueItems] = useState<QueueItem[]>([makeQueueItem()]);
   const [bulkCount, setBulkCount] = useState('1');
 
@@ -116,25 +120,61 @@ export function useQueueItems() {
   // 行ごとのAIポーション（Vibe Transfer）参照画像のCRUD。
   // updateQueueItemCharacterField等と同じパターンで実装している。
   async function addQueueItemVibeTransferImage(itemIndex: number, file: File) {
-    const image = await fileToBase64(file);
-    setQueueItems((prev) =>
-      prev.map((item, i) =>
-        i === itemIndex
-          ? {
-              ...item,
-              vibeTransferImages: [
-                ...(item.vibeTransferImages || []),
-                {
-                  id: window.crypto.randomUUID(),
-                  image,
-                  informationExtracted: 1,
-                  referenceStrength: 0.6,
-                },
-              ],
-            }
-          : item
-      )
-    );
+    try {
+      const image = await fileToBase64(file);
+      setQueueItems((prev) =>
+        prev.map((item, i) =>
+          i === itemIndex
+            ? {
+                ...item,
+                vibeTransferImages: [
+                  ...(item.vibeTransferImages || []),
+                  {
+                    id: window.crypto.randomUUID(),
+                    image,
+                    informationExtracted: 1,
+                    referenceStrength: 0.6,
+                    source: 'image',
+                  },
+                ],
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      setStatus?.(`エラー: ${(err as Error).message}`);
+    }
+  }
+
+  // 行ごとにNovelAI公式サイトの「ポーションセット」ファイル（.naiv4vibe）を
+  // 読み込み、含まれるvibeデータをすべてその行の参照画像一覧に追加する。
+  async function addQueueItemVibeTransferSetFile(itemIndex: number, file: File) {
+    try {
+      const entries = await parseNaiv4VibeFile(file);
+      setQueueItems((prev) =>
+        prev.map((item, i) =>
+          i === itemIndex
+            ? {
+                ...item,
+                vibeTransferImages: [
+                  ...(item.vibeTransferImages || []),
+                  ...entries.map((entry) => ({
+                    id: window.crypto.randomUUID(),
+                    image: entry.encoding,
+                    informationExtracted: entry.informationExtracted,
+                    // ファイルに公式サイトでのReference Strength
+                    // （importInfo.strength）が記録されていればそれを引き継ぐ。
+                    referenceStrength: entry.referenceStrength ?? 0.6,
+                    source: 'vibeFile' as const,
+                  })),
+                ],
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      setStatus?.(`エラー: ${(err as Error).message}`);
+    }
   }
 
   function removeQueueItemVibeTransferImage(itemIndex: number, vibeId: string) {
@@ -181,6 +221,7 @@ export function useQueueItems() {
     addQueueItemCharacter,
     removeQueueItemCharacter,
     addQueueItemVibeTransferImage,
+    addQueueItemVibeTransferSetFile,
     removeQueueItemVibeTransferImage,
     updateQueueItemVibeTransferField,
   };

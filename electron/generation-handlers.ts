@@ -3,7 +3,12 @@ import path from 'path';
 import fs from 'fs';
 import { unzipSync } from 'fflate';
 import { writeJson, getOutputDir } from './settings-store';
-import { loadNovelaiModule, requestImage, requestSubscriptionInfo } from './novelai-client';
+import {
+  loadNovelaiModule,
+  requestImage,
+  requestSubscriptionInfo,
+  requestEncodeVibe,
+} from './novelai-client';
 import type { BuildRequestBodyParams } from '../shared/novelai.mjs';
 
 export function registerGenerationHandlers(): void {
@@ -13,6 +18,27 @@ export function registerGenerationHandlers(): void {
     const data = await requestSubscriptionInfo(apiKey, NOVELAI_SUBSCRIPTION_ENDPOINT);
     return parseSubscriptionInfo(data);
   });
+
+  ipcMain.handle(
+    'encode-vibe',
+    async (
+      event: IpcMainInvokeEvent,
+      params: { apiKey: string; image: string; model: string; informationExtracted: number }
+    ) => {
+      if (!params.apiKey) throw new Error('APIキーを入力してください');
+      const { NOVELAI_ENCODE_VIBE_ENDPOINT } = await loadNovelaiModule();
+      const buffer = await requestEncodeVibe(
+        params.apiKey,
+        {
+          image: params.image,
+          model: params.model,
+          informationExtracted: params.informationExtracted,
+        },
+        NOVELAI_ENCODE_VIBE_ENDPOINT
+      );
+      return buffer.toString('base64');
+    }
+  );
 
   ipcMain.handle(
     'generate-image',

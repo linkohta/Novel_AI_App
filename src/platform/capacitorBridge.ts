@@ -9,6 +9,7 @@ import {
   sanitizeBatchFolder,
   NOVELAI_IMAGE_ENDPOINT,
   NOVELAI_SUBSCRIPTION_ENDPOINT,
+  NOVELAI_ENCODE_VIBE_ENDPOINT,
 } from '../../shared/novelai.mjs';
 import type {
   WindowApi,
@@ -234,6 +235,32 @@ if (!window.api) {
     return parseSubscriptionInfo(data);
   }
 
+  // AIポーション（Vibe Transfer）の参照画像を事前エンコードする
+  // （main.jsのencode-vibeハンドラと同じ役割）。レスポンスは生バイナリの
+  // ためArrayBufferで受け取り、base64文字列に変換して返す。
+  async function encodeVibe(
+    apiKey: string,
+    image: string,
+    model: string,
+    informationExtracted: number
+  ): Promise<string> {
+    if (!apiKey) throw new Error('APIキーを入力してください');
+    const res = await fetch(NOVELAI_ENCODE_VIBE_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ image, model, informationExtracted }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Vibeのエンコードに失敗しました (${res.status}): ${text}`);
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    return bytesToBase64(new Uint8Array(arrayBuffer));
+  }
+
   async function chooseOutputFolder(): Promise<string | null> {
     // Capacitorには追加のネイティブプラグイン無しで任意のフォルダを選択できる
     // APIが無いため、Androidでは常にDocuments/output配下に保存する。
@@ -279,6 +306,7 @@ if (!window.api) {
     saveFavorite: (kind, item) => favoritesApis[kind].save(item),
     updateFavorite: (kind, item) => favoritesApis[kind].update(item),
     deleteFavorite: (kind, id) => favoritesApis[kind].remove(id),
+    encodeVibe,
   };
 
   window.api = api;

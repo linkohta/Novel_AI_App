@@ -22,6 +22,8 @@ interface UseSettingsPersistenceParams {
   setSampler: Dispatch<SetStateAction<string>>;
   qualityToggle: boolean;
   setQualityToggle: Dispatch<SetStateAction<boolean>>;
+  varietyPlus: boolean;
+  setVarietyPlus: Dispatch<SetStateAction<boolean>>;
   outputDir: string;
   setOutputDir: Dispatch<SetStateAction<string>>;
   characters: Character[];
@@ -67,6 +69,8 @@ export function useSettingsPersistence({
   setSampler,
   qualityToggle,
   setQualityToggle,
+  varietyPlus,
+  setVarietyPlus,
   outputDir,
   setOutputDir,
   characters,
@@ -99,6 +103,7 @@ export function useSettingsPersistence({
       if (settings.scale) setScale(settings.scale);
       if (settings.sampler) setSampler(settings.sampler);
       if (typeof settings.qualityToggle === 'boolean') setQualityToggle(settings.qualityToggle);
+      if (typeof settings.varietyPlus === 'boolean') setVarietyPlus(settings.varietyPlus);
       if (settings.outputDir) setOutputDir(settings.outputDir);
       if (Array.isArray(settings.characters)) {
         // 古い保存済み設定はキャラクターごとのid（Reactのリストキーとして
@@ -164,6 +169,7 @@ export function useSettingsPersistence({
       scale,
       sampler,
       qualityToggle,
+      varietyPlus,
       outputDir,
       characters,
       vibeTransferImages,
@@ -184,6 +190,7 @@ export function useSettingsPersistence({
       scale,
       sampler,
       qualityToggle,
+      varietyPlus,
       outputDir,
       characters,
       vibeTransferImages,

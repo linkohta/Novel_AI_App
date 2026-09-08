@@ -16,6 +16,7 @@ import { useQueueItems } from './hooks/useQueueItems';
 import { useQueueTemplateDraft } from './hooks/useQueueTemplateDraft';
 import { useCharacters } from './hooks/useCharacters';
 import { useVibeTransfer } from './hooks/useVibeTransfer';
+import { useVibeEncoding } from './hooks/useVibeEncoding';
 import { useFocusedField } from './hooks/useFocusedField';
 import { usePromptLibrary } from './hooks/usePromptLibrary';
 import { useFavoritesHandlers } from './hooks/useFavoritesHandlers';
@@ -30,6 +31,7 @@ import type {
   NamedItem,
   SectionState,
   TemplateApplyState,
+  VibeTransferImage,
 } from './types/domain';
 import type {
   GenerateImageParams,
@@ -61,6 +63,7 @@ export default function App() {
   const [scale, setScale] = useState('5');
   const [sampler, setSampler] = useState('k_euler_ancestral');
   const [qualityToggle, setQualityToggle] = useState(true);
+  const [varietyPlus, setVarietyPlus] = useState(false);
   const [outputDir, setOutputDir] = useState('');
   const [sectionState, setSectionState] = useState<SectionState>(DEFAULT_SECTION_STATE);
 
@@ -125,9 +128,10 @@ export default function App() {
     addQueueItemCharacter,
     removeQueueItemCharacter,
     addQueueItemVibeTransferImage,
+    addQueueItemVibeTransferSetFile,
     removeQueueItemVibeTransferImage,
     updateQueueItemVibeTransferField,
-  } = useQueueItems();
+  } = useQueueItems(setStatus);
 
   const {
     queueTemplateDraft,
@@ -174,9 +178,12 @@ export default function App() {
     vibeTransferImages,
     setVibeTransferImages,
     addVibeTransferImage,
+    addVibeTransferSetFile,
     removeVibeTransferImage,
     updateVibeTransferImageField,
-  } = useVibeTransfer();
+  } = useVibeTransfer(setStatus);
+
+  const { encodeVibeImages } = useVibeEncoding(setStatus);
 
   const { setFocusedFieldKey, resolveFocusedField, insertIntoFocused } = useFocusedField({
     prompt,
@@ -266,6 +273,8 @@ export default function App() {
     setSampler,
     qualityToggle,
     setQualityToggle,
+    varietyPlus,
+    setVarietyPlus,
     outputDir,
     setOutputDir,
     characters,
@@ -315,7 +324,21 @@ export default function App() {
     setSectionState((prev) => ({ ...prev, [id]: isOpen }));
   }
 
-  function buildGenerateParams(extra?: Partial<GenerateImageParams>): GenerateImageParams {
+  // extraのvibeTransferImagesは、送信直前のエンコード要否（画像アップロード
+  // 由来かどうか）を判定できるよう、IPC送信用の絞り込んだ型ではなく
+  // VibeTransferImage（source等を含む）で受け取る。
+  type GenerateParamsExtra = Partial<Omit<GenerateImageParams, 'vibeTransferImages'>> & {
+    vibeTransferImages?: VibeTransferImage[];
+  };
+
+  async function buildGenerateParams(extra?: GenerateParamsExtra): Promise<GenerateImageParams> {
+    const { vibeTransferImages: extraVibeTransferImages, ...restExtra } = extra || {};
+    const targetModel = restExtra.model ?? model;
+    const encodedVibeImages = await encodeVibeImages(
+      extraVibeTransferImages ?? vibeTransferImages,
+      apiKey,
+      targetModel
+    );
     return {
       apiKey,
       prompt,
@@ -328,13 +351,10 @@ export default function App() {
       sampler,
       seed,
       qualityToggle,
+      varietyPlus,
       characterPrompts: characters.filter((c) => c.enabled !== false && c.prompt?.trim()),
-      vibeTransferImages: vibeTransferImages.map((v) => ({
-        image: v.image,
-        informationExtracted: v.informationExtracted,
-        referenceStrength: v.referenceStrength,
-      })),
-      ...extra,
+      vibeTransferImages: encodedVibeImages,
+      ...restExtra,
     };
   }
 
@@ -352,7 +372,7 @@ export default function App() {
     setGenerating(true);
     setStatus('生成中...');
     try {
-      const result = await window.api.generateImage(buildGenerateParams());
+      const result = await window.api.generateImage(await buildGenerateParams());
       recordResult(result);
       setStatus(`保存しました: ${result.filePath}`);
     } catch (err) {
@@ -534,6 +554,11 @@ export default function App() {
             if (file) addVibeTransferImage(file);
             e.target.value = '';
           }}
+          onAddSetFile={(e) => {
+            const file = e.target.files?.[0];
+            if (file) addVibeTransferSetFile(file);
+            e.target.value = '';
+          }}
           onRemoveImage={removeVibeTransferImage}
           onChangeImageField={updateVibeTransferImageField}
         />
@@ -557,6 +582,8 @@ export default function App() {
           setSeed={setSeed}
           qualityToggle={qualityToggle}
           setQualityToggle={setQualityToggle}
+          varietyPlus={varietyPlus}
+          setVarietyPlus={setVarietyPlus}
         />
 
         <div className="generate-sticky">
@@ -597,6 +624,11 @@ export default function App() {
           onAddItemVibeTransferImage={(index, e) => {
             const file = e.target.files?.[0];
             if (file) addQueueItemVibeTransferImage(index, file);
+            e.target.value = '';
+          }}
+          onAddItemVibeTransferSetFile={(index, e) => {
+            const file = e.target.files?.[0];
+            if (file) addQueueItemVibeTransferSetFile(index, file);
             e.target.value = '';
           }}
           onRemoveItemVibeTransferImage={removeQueueItemVibeTransferImage}
