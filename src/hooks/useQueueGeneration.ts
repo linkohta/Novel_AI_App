@@ -54,6 +54,11 @@ export function useQueueGeneration({
       const itemCharacterPrompts = (item.characters || []).filter(
         (c) => c.enabled !== false && c.prompt?.trim()
       );
+      const itemVibeTransferImages = (item.vibeTransferImages || []).map((v) => ({
+        image: v.image,
+        informationExtracted: v.informationExtracted,
+        referenceStrength: v.referenceStrength,
+      }));
 
       try {
         // 画像ごとではなく、この行のプロンプト1件について1つだけリクエスト
@@ -63,6 +68,7 @@ export function useQueueGeneration({
             prompt: item.prompt,
             negativePrompt: item.negativePrompt,
             characterPrompts: itemCharacterPrompts,
+            vibeTransferImages: itemVibeTransferImages,
             batchFolder: queueFolder,
             fileName: `prompt${itemIndex + 1}`,
           })
@@ -87,6 +93,7 @@ export function useQueueGeneration({
               prompt: item.prompt,
               negativePrompt: item.negativePrompt,
               characterPrompts: itemCharacterPrompts,
+              vibeTransferImages: itemVibeTransferImages,
               batchFolder: queueFolder,
               skipJsonOutput: true,
             })

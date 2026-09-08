@@ -3,6 +3,7 @@ import PromptSection from './components/PromptSection';
 import TemplatesSection from './components/TemplatesSection';
 import FavoritesSection from './components/FavoritesSection';
 import CharactersSection from './components/CharactersSection';
+import VibeTransferSection from './components/VibeTransferSection';
 import ModelSection from './components/ModelSection';
 import BatchSection from './components/BatchSection';
 import PromptQueueSection from './components/PromptQueueSection';
@@ -14,6 +15,7 @@ import { useFavoritesList } from './hooks/useFavoritesList';
 import { useQueueItems } from './hooks/useQueueItems';
 import { useQueueTemplateDraft } from './hooks/useQueueTemplateDraft';
 import { useCharacters } from './hooks/useCharacters';
+import { useVibeTransfer } from './hooks/useVibeTransfer';
 import { useFocusedField } from './hooks/useFocusedField';
 import { usePromptLibrary } from './hooks/usePromptLibrary';
 import { useFavoritesHandlers } from './hooks/useFavoritesHandlers';
@@ -44,6 +46,7 @@ const DEFAULT_SECTION_STATE: SectionState = {
   modelSection: true,
   batchSection: false,
   promptQueueSection: false,
+  vibeSection: false,
 };
 
 export default function App() {
@@ -121,6 +124,9 @@ export default function App() {
     updateQueueItemCharacterField,
     addQueueItemCharacter,
     removeQueueItemCharacter,
+    addQueueItemVibeTransferImage,
+    removeQueueItemVibeTransferImage,
+    updateQueueItemVibeTransferField,
   } = useQueueItems();
 
   const {
@@ -163,6 +169,14 @@ export default function App() {
     setCharNameNegativeSource,
     handleAddByName,
   } = useCharacters({ chunksList, templatesList, setTemplateApplyState, setStatus });
+
+  const {
+    vibeTransferImages,
+    setVibeTransferImages,
+    addVibeTransferImage,
+    removeVibeTransferImage,
+    updateVibeTransferImageField,
+  } = useVibeTransfer();
 
   const { setFocusedFieldKey, resolveFocusedField, insertIntoFocused } = useFocusedField({
     prompt,
@@ -256,6 +270,8 @@ export default function App() {
     setOutputDir,
     characters,
     setCharacters,
+    vibeTransferImages,
+    setVibeTransferImages,
     sectionState,
     setSectionState,
     queueItems,
@@ -313,6 +329,11 @@ export default function App() {
       seed,
       qualityToggle,
       characterPrompts: characters.filter((c) => c.enabled !== false && c.prompt?.trim()),
+      vibeTransferImages: vibeTransferImages.map((v) => ({
+        image: v.image,
+        informationExtracted: v.informationExtracted,
+        referenceStrength: v.referenceStrength,
+      })),
       ...extra,
     };
   }
@@ -504,6 +525,19 @@ export default function App() {
           nameInputRef={charNameByNameRef}
         />
 
+        <VibeTransferSection
+          open={!!sectionState.vibeSection}
+          onToggle={handleSectionToggle}
+          vibeTransferImages={vibeTransferImages}
+          onAddImage={(e) => {
+            const file = e.target.files?.[0];
+            if (file) addVibeTransferImage(file);
+            e.target.value = '';
+          }}
+          onRemoveImage={removeVibeTransferImage}
+          onChangeImageField={updateVibeTransferImageField}
+        />
+
         <ModelSection
           open={!!sectionState.modelSection}
           onToggle={handleSectionToggle}
@@ -560,6 +594,13 @@ export default function App() {
           onRemoveItemCharacter={removeQueueItemCharacter}
           onChangeItemCharacter={updateQueueItemCharacterField}
           onLoadItemImageMetadata={handleLoadQueueItemImageMetadata}
+          onAddItemVibeTransferImage={(index, e) => {
+            const file = e.target.files?.[0];
+            if (file) addQueueItemVibeTransferImage(index, file);
+            e.target.value = '';
+          }}
+          onRemoveItemVibeTransferImage={removeQueueItemVibeTransferImage}
+          onChangeItemVibeTransferField={updateQueueItemVibeTransferField}
           onFocusField={setFocusedFieldKey}
           queueInterval={queueInterval}
           setQueueInterval={setQueueInterval}

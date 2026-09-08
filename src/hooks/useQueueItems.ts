@@ -8,11 +8,29 @@ function makeQueueItem(): QueueItem {
     negativePrompt: '',
     count: '1',
     characters: [],
+    vibeTransferImages: [],
   };
+}
+
+// 選択された画像ファイルをbase64文字列（data URLのprefixなし）に変換する
+// （useVibeTransfer.tsのfileToBase64と同内容。行ごとのVibe Transferは
+// このフックが自己完結してCRUDを持つ設計のため、あえて重複させている）。
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const commaIndex = result.indexOf(',');
+      resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error || new Error('画像の読み込みに失敗しました'));
+    reader.readAsDataURL(file);
+  });
 }
 
 type QueueItemField = 'prompt' | 'negativePrompt' | 'count';
 type QueueCharacterField = keyof QueueCharacter;
+type VibeTransferField = 'informationExtracted' | 'referenceStrength';
 
 // 複数プロンプト連続生成（queue）リストのstate＋CRUD：各行の
 // prompt/negativePrompt/count、およびその行専用のキャラクタープロンプトの
@@ -95,6 +113,60 @@ export function useQueueItems() {
     );
   }
 
+  // 行ごとのAIポーション（Vibe Transfer）参照画像のCRUD。
+  // updateQueueItemCharacterField等と同じパターンで実装している。
+  async function addQueueItemVibeTransferImage(itemIndex: number, file: File) {
+    const image = await fileToBase64(file);
+    setQueueItems((prev) =>
+      prev.map((item, i) =>
+        i === itemIndex
+          ? {
+              ...item,
+              vibeTransferImages: [
+                ...(item.vibeTransferImages || []),
+                {
+                  id: window.crypto.randomUUID(),
+                  image,
+                  informationExtracted: 1,
+                  referenceStrength: 0.6,
+                },
+              ],
+            }
+          : item
+      )
+    );
+  }
+
+  function removeQueueItemVibeTransferImage(itemIndex: number, vibeId: string) {
+    setQueueItems((prev) =>
+      prev.map((item, i) =>
+        i === itemIndex
+          ? {
+              ...item,
+              vibeTransferImages: (item.vibeTransferImages || []).filter((v) => v.id !== vibeId),
+            }
+          : item
+      )
+    );
+  }
+
+  function updateQueueItemVibeTransferField(
+    itemIndex: number,
+    vibeId: string,
+    field: VibeTransferField,
+    value: number
+  ) {
+    setQueueItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== itemIndex) return item;
+        const vibeTransferImages = (item.vibeTransferImages || []).map((v) =>
+          v.id === vibeId ? { ...v, [field]: value } : v
+        );
+        return { ...item, vibeTransferImages };
+      })
+    );
+  }
+
   return {
     queueItems,
     setQueueItems,
@@ -108,5 +180,8 @@ export function useQueueItems() {
     updateQueueItemCharacterField,
     addQueueItemCharacter,
     removeQueueItemCharacter,
+    addQueueItemVibeTransferImage,
+    removeQueueItemVibeTransferImage,
+    updateQueueItemVibeTransferField,
   };
 }

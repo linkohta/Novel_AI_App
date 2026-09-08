@@ -12,12 +12,22 @@ export interface Character {
 
 export interface QueueCharacter extends Character {}
 
+// AIポーション（Vibe Transfer）用の参照画像1件分。imageはbase64文字列
+// （data URLのprefixは含まない）で保持する。
+export interface VibeTransferImage {
+  id: string;
+  image: string;
+  informationExtracted: number;
+  referenceStrength: number;
+}
+
 export interface QueueItem {
   id: string;
   prompt: string;
   negativePrompt: string;
   count: number | string;
   characters: QueueCharacter[];
+  vibeTransferImages: VibeTransferImage[];
 }
 
 export interface NamedItem {
@@ -99,6 +109,7 @@ export interface SectionState {
   modelSection?: boolean;
   batchSection?: boolean;
   promptQueueSection?: boolean;
+  vibeSection?: boolean;
   [key: string]: boolean | undefined;
 }
 

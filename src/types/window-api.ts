@@ -34,6 +34,11 @@ export interface GenerateImageParams {
   seed?: number | string;
   qualityToggle?: boolean;
   characterPrompts?: { prompt?: string; negativePrompt?: string; enabled?: boolean }[];
+  vibeTransferImages?: {
+    image: string;
+    informationExtracted?: number;
+    referenceStrength?: number;
+  }[];
   batchFolder?: string;
   skipJsonOutput?: boolean;
   fileName?: string;

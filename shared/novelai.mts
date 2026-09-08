@@ -22,6 +22,13 @@ export interface CharacterPromptInput {
   enabled?: boolean;
 }
 
+// AIポーション（Vibe Transfer）用の参照画像1件分の入力。
+export interface VibeTransferImageInput {
+  image: string;
+  informationExtracted?: number;
+  referenceStrength?: number;
+}
+
 export interface BuildRequestBodyParams {
   width: number | string;
   height: number | string;
@@ -34,6 +41,7 @@ export interface BuildRequestBodyParams {
   model: string;
   qualityToggle?: boolean;
   characterPrompts?: CharacterPromptInput[];
+  vibeTransferImages?: VibeTransferImageInput[];
 }
 
 // buildRequestBodyが組み立てるNovelAI APIリクエストの`parameters`は
@@ -77,6 +85,9 @@ export interface NovelaiRequestParameters {
     };
   };
   characterPrompts?: { prompt: string; uc: string }[];
+  reference_image_multiple?: string[];
+  reference_information_extracted_multiple?: number[];
+  reference_strength_multiple?: number[];
 }
 
 export interface NovelaiRequestBody {
@@ -155,6 +166,22 @@ export function buildRequestBody(params: BuildRequestBodyParams): NovelaiRequest
       prompt: c.prompt || '',
       uc: c.negativePrompt || '',
     }));
+  }
+
+  // AIポーション（Vibe Transfer）: 参照画像が1枚以上ある場合のみ、
+  // 3つの並行配列（同じ順序・同じ長さ）としてparametersに付与する。
+  // V3/V4/V5いずれのモデルでも同じ形式のため、モデル種別による分岐は不要。
+  const vibeTransferImages = Array.isArray(params.vibeTransferImages)
+    ? params.vibeTransferImages
+    : [];
+  if (vibeTransferImages.length) {
+    parameters.reference_image_multiple = vibeTransferImages.map((v) => v.image);
+    parameters.reference_information_extracted_multiple = vibeTransferImages.map((v) =>
+      typeof v.informationExtracted === 'number' ? v.informationExtracted : 1
+    );
+    parameters.reference_strength_multiple = vibeTransferImages.map((v) =>
+      typeof v.referenceStrength === 'number' ? v.referenceStrength : 0.6
+    );
   }
 
   return {
