@@ -1,9 +1,6 @@
-import Section from './Section';
 import type { NamedItem } from '../types/domain';
 
 interface TemplatesSectionProps {
-  open: boolean;
-  onToggle: (id: string, open: boolean) => void;
   templates: NamedItem[];
   templateNameInput: string;
   setTemplateNameInput: (value: string) => void;
@@ -16,8 +13,6 @@ interface TemplatesSectionProps {
 }
 
 export default function TemplatesSection({
-  open,
-  onToggle,
   templates,
   templateNameInput,
   setTemplateNameInput,
@@ -29,7 +24,8 @@ export default function TemplatesSection({
   onDeleteTemplate,
 }: TemplatesSectionProps) {
   return (
-    <Section id="templateSection" title="プロンプトテンプレート" open={open} onToggle={onToggle}>
+    <div className="manage-block">
+      <h3>プロンプトテンプレート</h3>
       <label>テンプレート名</label>
       <input
         type="text"
@@ -77,6 +73,6 @@ export default function TemplatesSection({
           </div>
         ))}
       </div>
-    </Section>
+    </div>
   );
 }

@@ -121,7 +121,50 @@ button.secondary {
   z-index: 10;
 }
 .generate-sticky button {
+  margin-top: 8px;
+}
+.generate-sticky button:first-child {
   margin-top: 0;
+}
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.tab-button {
+  flex: 1;
+  margin-top: 0;
+  padding: 8px 4px;
+  background: #1a1b20;
+  color: #a9abb5;
+  border: 1px solid #3c3d47;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: normal;
+}
+.tab-button.active {
+  background: #6c8cff;
+  color: #fff;
+  border-color: #6c8cff;
+  font-weight: bold;
+}
+.manage-open-button {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+.manage-block {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #383944;
+}
+.manage-block:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.manage-block h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
 }
 #result-image {
   max-width: 90%;

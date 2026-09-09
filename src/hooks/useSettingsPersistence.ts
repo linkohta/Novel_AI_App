@@ -40,6 +40,8 @@ interface UseSettingsPersistenceParams {
   setBatchInterval: Dispatch<SetStateAction<string>>;
   queueInterval: string;
   setQueueInterval: Dispatch<SetStateAction<string>>;
+  activeTab: string;
+  setActiveTab: Dispatch<SetStateAction<string>>;
 }
 
 // 画面に表示されているフォーム入力全般（APIキー・プロンプト・モデル設定・
@@ -87,6 +89,8 @@ export function useSettingsPersistence({
   setBatchInterval,
   queueInterval,
   setQueueInterval,
+  activeTab,
+  setActiveTab,
 }: UseSettingsPersistenceParams) {
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
@@ -148,6 +152,7 @@ export function useSettingsPersistence({
       if (settings.batchCount) setBatchCount(settings.batchCount);
       if (settings.batchInterval) setBatchInterval(settings.batchInterval);
       if (settings.queueInterval) setQueueInterval(settings.queueInterval);
+      if (settings.activeTab) setActiveTab(settings.activeTab);
       setSettingsLoaded(true);
     })();
     // 起動時に1回だけ読み込む処理であり、setXxx群はすべてApp.jsx側の
@@ -178,6 +183,7 @@ export function useSettingsPersistence({
       batchCount,
       batchInterval,
       queueInterval,
+      activeTab,
     }),
     [
       apiKey,
@@ -199,6 +205,7 @@ export function useSettingsPersistence({
       batchCount,
       batchInterval,
       queueInterval,
+      activeTab,
     ]
   );
 

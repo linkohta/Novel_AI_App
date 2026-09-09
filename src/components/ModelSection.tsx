@@ -12,6 +12,12 @@ const MODEL_OPTIONS = [
 
 const SAMPLER_OPTIONS = ['k_euler_ancestral', 'k_euler', 'k_dpmpp_2s_ancestral', 'k_dpmpp_2m'];
 
+const SIZE_OPTIONS = [
+  { label: '縦長', width: 832, height: 1216 },
+  { label: '横長', width: 1216, height: 832 },
+  { label: '正方形', width: 1024, height: 1024 },
+];
+
 interface ModelSectionProps {
   open: boolean;
   onToggle: (id: string, open: boolean) => void;
@@ -92,20 +98,24 @@ export default function ModelSection({
         公式サイトの「Variety+」と同じく、CFGの適用範囲を制限して構図の多様性を高めます（V4系・V5系モデルのみ有効）。
       </p>
 
+      <label>画像サイズ</label>
       <div className="row">
-        <div>
-          <label>幅</label>
-          <input type="number" step="64" value={width} onChange={(e) => setWidth(e.target.value)} />
-        </div>
-        <div>
-          <label>高さ</label>
-          <input
-            type="number"
-            step="64"
-            value={height}
-            onChange={(e) => setHeight(e.target.value)}
-          />
-        </div>
+        {SIZE_OPTIONS.map((option) => {
+          const selected = width === String(option.width) && height === String(option.height);
+          return (
+            <button
+              key={option.label}
+              type="button"
+              className={selected ? '' : 'secondary'}
+              onClick={() => {
+                setWidth(String(option.width));
+                setHeight(String(option.height));
+              }}
+            >
+              {`${option.label}（${option.width}×${option.height}）`}
+            </button>
+          );
+        })}
       </div>
 
       <div className="row">

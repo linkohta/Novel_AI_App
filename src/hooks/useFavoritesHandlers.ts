@@ -14,6 +14,7 @@ interface UseFavoritesHandlersParams {
   setCharSeriesByName: Dispatch<SetStateAction<string>>;
   setSectionState: Dispatch<SetStateAction<SectionState>>;
   charNameByNameRef: MutableRefObject<HTMLInputElement | null>;
+  onNavigateToCharacters?: () => void;
 }
 
 // 「お気に入り」セクションのハンドラ：お気に入りアーティスト・お気に入り
@@ -28,6 +29,7 @@ export function useFavoritesHandlers({
   setCharSeriesByName,
   setSectionState,
   charNameByNameRef,
+  onNavigateToCharacters,
 }: UseFavoritesHandlersParams) {
   const [favArtistNameInput, setFavArtistNameInput] = useState('');
   const [favArtistEditDraft, setFavArtistEditDraft] = useState<FavoriteArtist | null>(null);
@@ -72,6 +74,7 @@ export function useFavoritesHandlers({
     setCharNameByName(favorite.name);
     setCharSeriesByName(favorite.series || '');
     setSectionState((prev) => ({ ...prev, characterSection: true }));
+    onNavigateToCharacters?.();
     charNameByNameRef.current?.focus();
   }
 
