@@ -106,12 +106,8 @@ export interface TemplateApplyState {
 // 左パネルの各<details>セクションの開閉状態（App.jsxのDEFAULT_SECTION_STATE
 // を参照）。将来セクションが増える可能性があるためインデックスシグネチャも許容する。
 export interface SectionState {
-  settingsSection?: boolean;
   promptSection?: boolean;
-  templateSection?: boolean;
-  favoritesSection?: boolean;
   characterSection?: boolean;
-  modelSection?: boolean;
   batchSection?: boolean;
   promptQueueSection?: boolean;
   vibeSection?: boolean;

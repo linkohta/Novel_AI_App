@@ -1,9 +1,6 @@
-import Section from './Section';
 import type { FavoriteArtist, FavoriteCharacter } from '../types/domain';
 
 interface FavoritesSectionProps {
-  open: boolean;
-  onToggle: (id: string, open: boolean) => void;
   favArtists: FavoriteArtist[];
   favArtistNameInput: string;
   setFavArtistNameInput: (value: string) => void;
@@ -24,8 +21,6 @@ interface FavoritesSectionProps {
 }
 
 export default function FavoritesSection({
-  open,
-  onToggle,
   favArtists,
   favArtistNameInput,
   setFavArtistNameInput,
@@ -45,7 +40,8 @@ export default function FavoritesSection({
   onDeleteFavChar,
 }: FavoritesSectionProps) {
   return (
-    <Section id="favoritesSection" title="お気に入り" open={open} onToggle={onToggle}>
+    <div className="manage-block">
+      <h3>お気に入り</h3>
       <label>お気に入りアーティスト</label>
       <div className="chunk-row">
         <input
@@ -131,6 +127,6 @@ export default function FavoritesSection({
           );
         })}
       </div>
-    </Section>
+    </div>
   );
 }
