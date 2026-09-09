@@ -41,7 +41,7 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
 
 ## アーキテクチャ
 
-本アプリは **UI層を React + Vite で書き、Electron / Capacitor(Android) で共有し、「window.api」を境界にプラットフォーム固有の実装を差し替える** 構成になっている。`src/` が Vite のプロジェクトルート（`vite.config.ts` の `root: 'src'`）であり、`vite build` の出力（`build.outDir: '../www'`）が `www/` に生成される。**`www/` はビルド成果物であり、手で編集しない**（gitignore対象、`npm run build:web` で再生成）。
+本アプリは **UI層を React + Vite で書き、Electron / Capacitor(Android) で共有し、「window.api」を境界にプラットフォーム固有の実装を差し替える** 構成になっている。`src/` が Vite のプロジェクトルート（`vite.config.mts` の `root: 'src'`）であり、`vite build` の出力（`build.outDir: '../www'`）が `www/` に生成される。**`www/` はビルド成果物であり、手で編集しない**（gitignore対象、`npm run build:web` で再生成）。
 
 - **UI (`src/`)** — Electron・Android共通の画面本体（React）。
   - `src/index.html` — Viteのエントリーテンプレート。`<div id="root">` と `src/main.tsx` へのモジュールスクリプトのみを持つ。
