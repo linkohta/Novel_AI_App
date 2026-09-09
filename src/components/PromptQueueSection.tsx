@@ -220,6 +220,8 @@ interface PromptQueueSectionProps {
   bulkCount: string;
   setBulkCount: (value: string) => void;
   onApplyBulkCount: () => void;
+  onApplyBulkVibeTransferImage: (e: ChangeEvent<HTMLInputElement>) => void;
+  onApplyBulkVibeTransferSetFile: (e: ChangeEvent<HTMLInputElement>) => void;
   onChangeItem: QueueItemCardProps['onChange'];
   onRemoveItem: (index: number) => void;
   onMoveItemUp: (index: number) => void;
@@ -254,6 +256,8 @@ export default function PromptQueueSection({
   bulkCount,
   setBulkCount,
   onApplyBulkCount,
+  onApplyBulkVibeTransferImage,
+  onApplyBulkVibeTransferSetFile,
   onChangeItem,
   onRemoveItem,
   onMoveItemUp,
@@ -301,6 +305,25 @@ export default function PromptQueueSection({
           <button type="button" className="secondary" onClick={onApplyBulkCount}>
             全行に反映
           </button>
+        </div>
+      </div>
+
+      <label>AIポーション（Vibe Transfer）を全行にまとめて追加</label>
+      <p className="hint">
+        選択した参照画像・ポーションセットファイルを、既存の行ごとの参照画像は残したまま全行に追加します。
+      </p>
+      <div className="row">
+        <div>
+          <label>＋ 参照画像を全行に追加</label>
+          <input type="file" accept="image/*" onChange={onApplyBulkVibeTransferImage} />
+        </div>
+        <div>
+          <label>＋ ポーションセットファイルを全行に追加（.naiv4vibe / .naiv4vibeBundle）</label>
+          <input
+            type="file"
+            accept=".naiv4vibe,.naiv4vibebundle,.naiv4vibeBundle"
+            onChange={onApplyBulkVibeTransferSetFile}
+          />
         </div>
       </div>
 

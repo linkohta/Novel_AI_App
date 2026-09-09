@@ -190,6 +190,57 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     );
   }
 
+  // 選択した画像・ポーションセットファイルを全行の参照画像一覧にまとめて追加する。
+  // bulkCount/applyBulkCountと同様「全行に反映」操作だが、既存の参照画像を
+  // 上書きするのではなく追加する（行ごとに異なる参照画像を持たせたい場合に
+  // 個別追加した分を消さないため）。行ごとに一意なidを新規採番するため、
+  // 各行に同じ画像のコピーがそれぞれ独立して追加される。
+  async function applyBulkVibeTransferImage(file: File) {
+    try {
+      const image = await fileToBase64(file);
+      setQueueItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          vibeTransferImages: [
+            ...(item.vibeTransferImages || []),
+            {
+              id: window.crypto.randomUUID(),
+              image,
+              informationExtracted: 1,
+              referenceStrength: 0.6,
+              source: 'image' as const,
+            },
+          ],
+        }))
+      );
+    } catch (err) {
+      setStatus?.(`エラー: ${(err as Error).message}`);
+    }
+  }
+
+  async function applyBulkVibeTransferSetFile(file: File) {
+    try {
+      const entries = await parseNaiv4VibeFile(file);
+      setQueueItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          vibeTransferImages: [
+            ...(item.vibeTransferImages || []),
+            ...entries.map((entry) => ({
+              id: window.crypto.randomUUID(),
+              image: entry.encoding,
+              informationExtracted: entry.informationExtracted,
+              referenceStrength: entry.referenceStrength ?? 0.6,
+              source: 'vibeFile' as const,
+            })),
+          ],
+        }))
+      );
+    } catch (err) {
+      setStatus?.(`エラー: ${(err as Error).message}`);
+    }
+  }
+
   function updateQueueItemVibeTransferField(
     itemIndex: number,
     vibeId: string,
@@ -224,5 +275,7 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     addQueueItemVibeTransferSetFile,
     removeQueueItemVibeTransferImage,
     updateQueueItemVibeTransferField,
+    applyBulkVibeTransferImage,
+    applyBulkVibeTransferSetFile,
   };
 }
