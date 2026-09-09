@@ -123,9 +123,11 @@ function QueueItemCard({
 }: QueueItemCardProps) {
   const characters = item.characters || [];
   const vibeTransferImages = item.vibeTransferImages || [];
+  const previewText = item.prompt.trim() || '(プロンプト未入力)';
 
   return (
-    <div className="char-card">
+    <details className="char-card">
+      <summary>{`${index + 1}. ${previewText}`}</summary>
       <button type="button" className="remove-char" onClick={() => onRemove(index)}>
         削除
       </button>
@@ -209,7 +211,7 @@ function QueueItemCard({
           onChange={(e) => onAddVibeTransferSetFile(index, e)}
         />
       </details>
-    </div>
+    </details>
   );
 }
 

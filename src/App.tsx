@@ -634,7 +634,11 @@ export default function App() {
         </div>
 
         <div className="generate-sticky">
-          <button onClick={handleGenerate} disabled={generating || batchRunning || queueRunning}>
+          <button
+            onClick={handleGenerate}
+            disabled={generating || batchRunning || queueRunning}
+            hidden={activeTab !== 'prompt'}
+          >
             生成する
           </button>
           <button className="secondary" onClick={() => window.api.openOutputFolder()}>
