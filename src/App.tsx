@@ -139,6 +139,7 @@ export default function App() {
     addQueueItemVibeTransferImage,
     addQueueItemVibeTransferSetFile,
     removeQueueItemVibeTransferImage,
+    balanceQueueItemVibeTransferStrengths,
     updateQueueItemVibeTransferField,
     applyBulkVibeTransferImage,
     applyBulkVibeTransferSetFile,
@@ -192,6 +193,7 @@ export default function App() {
     addVibeTransferSetFile,
     removeVibeTransferImage,
     updateVibeTransferImageField,
+    balanceVibeTransferStrengths,
   } = useVibeTransfer(setStatus);
 
   const { encodeVibeImages } = useVibeEncoding(setStatus);
@@ -539,6 +541,7 @@ export default function App() {
             }}
             onRemoveImage={removeVibeTransferImage}
             onChangeImageField={updateVibeTransferImageField}
+            onBalanceStrengths={balanceVibeTransferStrengths}
           />
         </div>
 
@@ -623,6 +626,7 @@ export default function App() {
               e.target.value = '';
             }}
             onRemoveItemVibeTransferImage={removeQueueItemVibeTransferImage}
+            onBalanceItemVibeTransferStrengths={balanceQueueItemVibeTransferStrengths}
             onChangeItemVibeTransferField={updateQueueItemVibeTransferField}
             onFocusField={setFocusedFieldKey}
             queueInterval={queueInterval}

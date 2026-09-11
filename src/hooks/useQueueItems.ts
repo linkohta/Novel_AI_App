@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { QueueCharacter, QueueItem } from '../types/domain';
 import { parseNaiv4VibeFile } from '../utils/naiv4vibe';
+import { balanceVibeTransferImages } from '../utils/vibeBalance';
 
 function makeQueueItem(): QueueItem {
   return {
@@ -246,6 +247,21 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     }
   }
 
+  // 行ごとに「参照強度をバランス調整」を行う（useVibeTransfer.tsの
+  // balanceVibeTransferStrengthsと同じ処理を、その行のvibeTransferImagesにのみ適用）。
+  function balanceQueueItemVibeTransferStrengths(itemIndex: number) {
+    setQueueItems((prev) =>
+      prev.map((item, i) =>
+        i === itemIndex
+          ? {
+              ...item,
+              vibeTransferImages: balanceVibeTransferImages(item.vibeTransferImages || []),
+            }
+          : item
+      )
+    );
+  }
+
   function updateQueueItemVibeTransferField(
     itemIndex: number,
     vibeId: string,
@@ -280,6 +296,7 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     addQueueItemVibeTransferImage,
     addQueueItemVibeTransferSetFile,
     removeQueueItemVibeTransferImage,
+    balanceQueueItemVibeTransferStrengths,
     updateQueueItemVibeTransferField,
     applyBulkVibeTransferImage,
     applyBulkVibeTransferSetFile,
