@@ -64,6 +64,11 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     setQueueItems((prev) => prev.filter((_, i) => i !== index));
   }
 
+  // リストを空のプロンプト1件のみの初期状態に戻す（一括削除）。
+  function clearQueueItems() {
+    setQueueItems([makeQueueItem()]);
+  }
+
   function moveQueueItem(index: number, direction: number) {
     const target = index + direction;
     setQueueItems((prev) => {
@@ -267,6 +272,7 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     updateQueueItemField,
     addQueueItem,
     removeQueueItem,
+    clearQueueItems,
     moveQueueItem,
     updateQueueItemCharacterField,
     addQueueItemCharacter,

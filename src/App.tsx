@@ -131,6 +131,7 @@ export default function App() {
     updateQueueItemField,
     addQueueItem,
     removeQueueItem,
+    clearQueueItems,
     moveQueueItem,
     updateQueueItemCharacterField,
     addQueueItemCharacter,
@@ -602,6 +603,11 @@ export default function App() {
             onMoveItemUp={(index) => moveQueueItem(index, -1)}
             onMoveItemDown={(index) => moveQueueItem(index, 1)}
             onAddItem={addQueueItem}
+            onClearItems={() => {
+              if (window.confirm('複数プロンプト連続生成のリストをすべて削除しますか？')) {
+                clearQueueItems();
+              }
+            }}
             onAddItemCharacter={addQueueItemCharacter}
             onRemoveItemCharacter={removeQueueItemCharacter}
             onChangeItemCharacter={updateQueueItemCharacterField}

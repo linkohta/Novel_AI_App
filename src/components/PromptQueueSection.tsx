@@ -229,6 +229,7 @@ interface PromptQueueSectionProps {
   onMoveItemUp: (index: number) => void;
   onMoveItemDown: (index: number) => void;
   onAddItem: () => void;
+  onClearItems: () => void;
   onAddItemCharacter: (index: number) => void;
   onRemoveItemCharacter: (index: number, charIndex: number) => void;
   onChangeItemCharacter: QueueItemCardProps['onChangeCharacter'];
@@ -265,6 +266,7 @@ export default function PromptQueueSection({
   onMoveItemUp,
   onMoveItemDown,
   onAddItem,
+  onClearItems,
   onAddItemCharacter,
   onRemoveItemCharacter,
   onChangeItemCharacter,
@@ -350,9 +352,23 @@ export default function PromptQueueSection({
         />
       ))}
 
-      <button type="button" onClick={onAddItem} disabled={queueRunning}>
-        ＋ プロンプトを追加
-      </button>
+      <div className="row">
+        <div>
+          <button type="button" onClick={onAddItem} disabled={queueRunning}>
+            ＋ プロンプトを追加
+          </button>
+        </div>
+        <div>
+          <button
+            type="button"
+            className="secondary"
+            onClick={onClearItems}
+            disabled={queueRunning}
+          >
+            全行を削除
+          </button>
+        </div>
+      </div>
 
       <label>複数プロンプトテンプレート</label>
       <button
