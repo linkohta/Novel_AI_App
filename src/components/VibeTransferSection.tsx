@@ -83,6 +83,7 @@ interface VibeTransferSectionProps {
   onAddSetFile: (e: ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: (id: string) => void;
   onChangeImageField: VibeTransferCardProps['onChangeField'];
+  onBalanceStrengths: () => void;
 }
 
 export default function VibeTransferSection({
@@ -93,6 +94,7 @@ export default function VibeTransferSection({
   onAddSetFile,
   onRemoveImage,
   onChangeImageField,
+  onBalanceStrengths,
 }: VibeTransferSectionProps) {
   return (
     <Section id="vibeSection" title="AIポーション（Vibe Transfer）" open={open} onToggle={onToggle}>
@@ -111,6 +113,11 @@ export default function VibeTransferSection({
           />
         ))}
       </div>
+      {vibeTransferImages.length > 1 && (
+        <button type="button" className="secondary" onClick={onBalanceStrengths}>
+          参照強度をバランス調整
+        </button>
+      )}
       <label>＋ 参照画像を追加</label>
       <input type="file" accept="image/*" onChange={onAddImage} />
       <label>＋ ポーションセットファイルを読み込む</label>

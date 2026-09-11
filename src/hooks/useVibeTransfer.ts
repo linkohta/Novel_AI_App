@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { VibeTransferImage } from '../types/domain';
 import { parseNaiv4VibeFile } from '../utils/naiv4vibe';
+import { balanceVibeTransferImages } from '../utils/vibeBalance';
 
 // PickされたPNG/JPEG等の画像ファイルをbase64文字列（data URLのprefixなし）に
 // 変換する。FileReader.readAsDataURLの結果から "data:image/png;base64," 等の
@@ -80,6 +81,12 @@ export function useVibeTransfer(setStatus?: (status: string) => void) {
     setVibeTransferImages((prev) => prev.map((v) => (v.id === id ? { ...v, [field]: value } : v)));
   }
 
+  // NovelAI公式サイトの「参照強度をバランス調整」に相当。各画像のReference
+  // Strengthの比率を保ったまま合計が1になるよう正規化する。
+  function balanceVibeTransferStrengths() {
+    setVibeTransferImages((prev) => balanceVibeTransferImages(prev));
+  }
+
   return {
     vibeTransferImages,
     setVibeTransferImages,
@@ -87,5 +94,6 @@ export function useVibeTransfer(setStatus?: (status: string) => void) {
     addVibeTransferSetFile,
     removeVibeTransferImage,
     updateVibeTransferImageField,
+    balanceVibeTransferStrengths,
   };
 }

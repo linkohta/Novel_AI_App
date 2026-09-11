@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { QueueCharacter, QueueItem } from '../types/domain';
 import { parseNaiv4VibeFile } from '../utils/naiv4vibe';
+import { balanceVibeTransferImages } from '../utils/vibeBalance';
 
 function makeQueueItem(): QueueItem {
   return {
@@ -62,6 +63,11 @@ export function useQueueItems(setStatus?: (status: string) => void) {
 
   function removeQueueItem(index: number) {
     setQueueItems((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // リストを空のプロンプト1件のみの初期状態に戻す（一括削除）。
+  function clearQueueItems() {
+    setQueueItems([makeQueueItem()]);
   }
 
   function moveQueueItem(index: number, direction: number) {
@@ -241,6 +247,21 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     }
   }
 
+  // 行ごとに「参照強度をバランス調整」を行う（useVibeTransfer.tsの
+  // balanceVibeTransferStrengthsと同じ処理を、その行のvibeTransferImagesにのみ適用）。
+  function balanceQueueItemVibeTransferStrengths(itemIndex: number) {
+    setQueueItems((prev) =>
+      prev.map((item, i) =>
+        i === itemIndex
+          ? {
+              ...item,
+              vibeTransferImages: balanceVibeTransferImages(item.vibeTransferImages || []),
+            }
+          : item
+      )
+    );
+  }
+
   function updateQueueItemVibeTransferField(
     itemIndex: number,
     vibeId: string,
@@ -267,6 +288,7 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     updateQueueItemField,
     addQueueItem,
     removeQueueItem,
+    clearQueueItems,
     moveQueueItem,
     updateQueueItemCharacterField,
     addQueueItemCharacter,
@@ -274,6 +296,7 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     addQueueItemVibeTransferImage,
     addQueueItemVibeTransferSetFile,
     removeQueueItemVibeTransferImage,
+    balanceQueueItemVibeTransferStrengths,
     updateQueueItemVibeTransferField,
     applyBulkVibeTransferImage,
     applyBulkVibeTransferSetFile,

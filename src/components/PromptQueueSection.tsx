@@ -96,6 +96,7 @@ interface QueueItemCardProps {
   onAddVibeTransferImage: (index: number, e: ChangeEvent<HTMLInputElement>) => void;
   onAddVibeTransferSetFile: (index: number, e: ChangeEvent<HTMLInputElement>) => void;
   onRemoveVibeTransferImage: (index: number, vibeId: string) => void;
+  onBalanceVibeTransferStrengths: (index: number) => void;
   onChangeVibeTransferField: (
     index: number,
     vibeId: string,
@@ -119,6 +120,7 @@ function QueueItemCard({
   onAddVibeTransferImage,
   onAddVibeTransferSetFile,
   onRemoveVibeTransferImage,
+  onBalanceVibeTransferStrengths,
   onChangeVibeTransferField,
 }: QueueItemCardProps) {
   const characters = item.characters || [];
@@ -202,6 +204,15 @@ function QueueItemCard({
             onRemove={(vibeId) => onRemoveVibeTransferImage(index, vibeId)}
           />
         ))}
+        {vibeTransferImages.length > 1 && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => onBalanceVibeTransferStrengths(index)}
+          >
+            参照強度をバランス調整
+          </button>
+        )}
         <label>＋ 参照画像を追加</label>
         <input type="file" accept="image/*" onChange={(e) => onAddVibeTransferImage(index, e)} />
         <label>＋ ポーションセットファイルを読み込む（.naiv4vibe / .naiv4vibeBundle）</label>
@@ -229,6 +240,7 @@ interface PromptQueueSectionProps {
   onMoveItemUp: (index: number) => void;
   onMoveItemDown: (index: number) => void;
   onAddItem: () => void;
+  onClearItems: () => void;
   onAddItemCharacter: (index: number) => void;
   onRemoveItemCharacter: (index: number, charIndex: number) => void;
   onChangeItemCharacter: QueueItemCardProps['onChangeCharacter'];
@@ -236,6 +248,7 @@ interface PromptQueueSectionProps {
   onAddItemVibeTransferImage: QueueItemCardProps['onAddVibeTransferImage'];
   onAddItemVibeTransferSetFile: QueueItemCardProps['onAddVibeTransferSetFile'];
   onRemoveItemVibeTransferImage: QueueItemCardProps['onRemoveVibeTransferImage'];
+  onBalanceItemVibeTransferStrengths: QueueItemCardProps['onBalanceVibeTransferStrengths'];
   onChangeItemVibeTransferField: QueueItemCardProps['onChangeVibeTransferField'];
   onFocusField: (key: string) => void;
   queueInterval: string;
@@ -265,6 +278,7 @@ export default function PromptQueueSection({
   onMoveItemUp,
   onMoveItemDown,
   onAddItem,
+  onClearItems,
   onAddItemCharacter,
   onRemoveItemCharacter,
   onChangeItemCharacter,
@@ -272,6 +286,7 @@ export default function PromptQueueSection({
   onAddItemVibeTransferImage,
   onAddItemVibeTransferSetFile,
   onRemoveItemVibeTransferImage,
+  onBalanceItemVibeTransferStrengths,
   onChangeItemVibeTransferField,
   onFocusField,
   queueInterval,
@@ -346,13 +361,28 @@ export default function PromptQueueSection({
           onAddVibeTransferImage={onAddItemVibeTransferImage}
           onAddVibeTransferSetFile={onAddItemVibeTransferSetFile}
           onRemoveVibeTransferImage={onRemoveItemVibeTransferImage}
+          onBalanceVibeTransferStrengths={onBalanceItemVibeTransferStrengths}
           onChangeVibeTransferField={onChangeItemVibeTransferField}
         />
       ))}
 
-      <button type="button" onClick={onAddItem} disabled={queueRunning}>
-        ＋ プロンプトを追加
-      </button>
+      <div className="row">
+        <div>
+          <button type="button" onClick={onAddItem} disabled={queueRunning}>
+            ＋ プロンプトを追加
+          </button>
+        </div>
+        <div>
+          <button
+            type="button"
+            className="secondary"
+            onClick={onClearItems}
+            disabled={queueRunning}
+          >
+            全行を削除
+          </button>
+        </div>
+      </div>
 
       <label>複数プロンプトテンプレート</label>
       <button
