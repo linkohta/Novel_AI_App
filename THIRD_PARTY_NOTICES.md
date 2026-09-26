@@ -8,17 +8,11 @@
 | --- | --- | --- |
 | `react` | MIT | UIフレームワーク本体 |
 | `react-dom` | MIT | Reactのブラウザ向けレンダラー |
-| `@capacitor/core` | MIT | Android版のランタイム基盤 |
-| `@capacitor/android` | MIT | Android版ネイティブプロジェクト |
-| `@capacitor/filesystem` | MIT | Android版のファイル保存 |
-| `@capacitor/preferences` | MIT | Android版の設定・チャンク・テンプレート・お気に入り永続化 |
-| `@capacitor/share` | MIT | Android版の画像共有（保存フォルダを開く機能の代替） |
-| `fflate` | MIT | NovelAI APIレスポンス（ZIP）の展開（Electron・Android共通） |
+| `fflate` | MIT | NovelAI APIレスポンス（ZIP）の展開 |
 | `vite` | MIT | `src/` のビルド（devDependency） |
 | `@vitejs/plugin-react` | MIT | ViteでのJSXトランスパイル（devDependency） |
 | `electron` | MIT | デスクトップ版のランタイム（devDependency） |
 | `electron-builder` | MIT | デスクトップ版の単独アプリ化・インストーラー生成（devDependency） |
-| `@capacitor/cli` | MIT | Androidプロジェクトの同期用CLI（devDependency） |
 | `typescript` | Apache-2.0 | TypeScriptコンパイラ（devDependency） |
 | `@types/react` | MIT | Reactの型定義（devDependency） |
 | `@types/react-dom` | MIT | react-domの型定義（devDependency） |

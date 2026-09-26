@@ -35,7 +35,7 @@ const SKIP_CFG_ABOVE_SIGMA: Record<string, number | null> = {
 // （例: "queue_123/prompt1"）をサニタイズする。ネストしたサブフォルダが
 // 機能し続けるよう、各セグメントごとに個別に不正な文字を取り除く。
 // 生成画像を出力ディレクトリ配下の任意のbatch/queueサブフォルダに書き込む
-// main.js（Electron）とcapacitorBridge.js（Android）の両方で共有される。
+// Electronメインプロセス（electron/generation-handlers.ts）から使われる。
 export function sanitizeBatchFolder(batchFolder?: string | null): string {
   if (!batchFolder) return '';
   return String(batchFolder)

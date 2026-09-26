@@ -17,15 +17,6 @@ out-dev/
 electron-dist/
 *.tsbuildinfo
 
-# Androidのビルド成果物（`npx cap sync` / Gradle で再生成）
-android/app/build/
-android/build/
-android/.gradle/
-android/local.properties
-android/captures/
-android/*.iml
-android/app/*.iml
-
 # electron-builder の出力（`npm run dist` で再生成）
 dist/
 

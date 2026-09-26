@@ -10,7 +10,7 @@ process.env.ELECTRON_ENTRY = 'out-dev/main/main.js';
 
 // `npm run dev`（electron-vite dev）専用: main.tsとpreload.tsをビルド+watchし、
 // src/ 用のVite開発サーバーを起動して、それを指すElectronを起動する。
-// 本番パイプライン（npm start / npm run build:web / npm run cap:sync）は
+// 本番パイプライン（npm start / npm run build:web / npm run dist）は
 // このファイルを使わない —— 本番は `tsc -p tsconfig.electron.json` で
 // main.ts/electron/**/*.ts/shared/novelai.mts を electron-dist/ にコンパイルし、
 // バンドルされていない状態のまま読み込む（package.jsonの"main"を参照）。

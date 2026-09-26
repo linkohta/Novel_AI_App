@@ -428,8 +428,6 @@ export default function App() {
     currentSettings,
   });
 
-  const openFolderLabel = window.isNativeApp ? '最新の画像を共有' : '保存フォルダを開く';
-
   return (
     <>
       <div className="panel left">
@@ -601,7 +599,7 @@ export default function App() {
             生成する
           </button>
           <button className="secondary" onClick={() => window.api.openOutputFolder()}>
-            {openFolderLabel}
+            保存フォルダを開く
           </button>
           <div id="status">{status}</div>
         </div>

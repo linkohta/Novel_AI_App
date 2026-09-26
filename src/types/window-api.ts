@@ -1,7 +1,6 @@
-// preload.js（Electron）と src/platform/capacitorBridge.js（Android）の
-// 両実装が満たすべき window.api の共通インターフェース。
-// main.js側のIPCハンドラの戻り値と一致させる（IPC境界のため、細部は
-// 意図的に緩め=anyを許容している箇所がある）。
+// preload.ts が contextBridge で公開する window.api のインターフェース。
+// electron/*-handlers.ts のIPCハンドラの戻り値と一致させる（IPC境界のため、
+// 細部は意図的に緩め=anyを許容している箇所がある）。
 
 export type JsonValue = any;
 
@@ -72,10 +71,9 @@ export interface WindowApi {
   generateImage(params: GenerateImageParams): Promise<GenerateImageResult>;
   savePromptInfo(params: GenerateImageParams): Promise<boolean>;
   getSubscriptionInfo(apiKey: string): Promise<SubscriptionInfo>;
-  // Electronでは保存先フォルダを開いた結果（エラー文字列 or 空文字列）を返すが、
-  // Androidでは直近に保存した画像を共有するのみで戻り値を返さない実装になっている
-  // （挙動差はTypeScript移行時に判明したもので本移行では変更していない。PR参照）。
-  openOutputFolder(): Promise<string | void>;
+  // 保存先フォルダをOS標準のファイルマネージャーで開く。shell.openPathの結果
+  // （失敗時はエラー文字列、成功時は空文字列）を返す。
+  openOutputFolder(): Promise<string>;
   chooseOutputFolder(): Promise<string | null>;
   loadChunks(): Promise<NamedListItem[]>;
   saveChunk(chunk: { name: string; text: string }): Promise<NamedListItem[]>;
@@ -103,15 +101,13 @@ export interface WindowApi {
     model: string,
     informationExtracted: number
   ): Promise<string>;
-  // テンプレート等のテキストをtxtファイルとして書き出す。Electronでは保存先を
-  // 選ぶダイアログを表示し、Androidでは端末内のDocuments/templates/配下に保存する。
-  // 保存したファイルのパス（キャンセル時はnull）を返す。
+  // テンプレート等のテキストをtxtファイルとして書き出す。保存先を選ぶダイアログを
+  // 表示し、保存したファイルのパス（キャンセル時はnull）を返す。
   exportTextFile(fileName: string, text: string): Promise<string | null>;
 }
 
 declare global {
   interface Window {
     api: WindowApi;
-    isNativeApp?: boolean;
   }
 }

@@ -1,7 +1,6 @@
 import https from 'https';
 
-// shared/novelai.mts はネイティブESMモジュールであり（ブラウザ側の
-// src/platform/capacitorBridge.js からもViteを介して直接importされている）、
+// shared/novelai.mts はネイティブESMモジュールであり、
 // このCommonJSファイルからrequire()で読み込むことはできないため、
 // キャッシュ付きの動的importを使用する。
 type NovelaiModule = typeof import('../shared/novelai.mjs');

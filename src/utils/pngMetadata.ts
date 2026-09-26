@@ -3,8 +3,7 @@
 // PNGのテキストチャンク（"Description" / "Comment" / "Source" / "Software"）
 // として埋め込んでいるため、ユーザーが選択したFileを読み取り、window.apiを
 // 経由することなく抽出したプロンプト・パラメータを返す——解析にはファイルの
-// バイト列だけあれば十分なので、Electronのmain.jsやcapacitorBridge.js側に
-// プラットフォーム固有の実装は不要である。
+// バイト列だけあれば十分なので、Electronメインプロセス側の実装は不要である。
 
 const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
 
