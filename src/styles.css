@@ -325,10 +325,20 @@ button.secondary {
 .modal textarea {
   min-height: 100px;
 }
+/* ダイアログの内容が長くスクロールしても「保存」「閉じる」等のボタンが常に
+   見えるよう、スクロール領域（.modal）の下端に固定する。bottom・左右下の負の
+   marginは.modalのpadding（20px）分を打ち消して下端・左右端まで背景で覆うため。 */
 .modal-buttons {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  position: sticky;
+  bottom: -20px;
+  z-index: 1;
+  margin: 12px -20px -20px;
+  padding: 12px 20px 20px;
+  background: #26272e;
+  border-top: 1px solid #383944;
 }
 .modal-buttons button {
   width: auto;
@@ -361,6 +371,7 @@ button.secondary {
   background: #6c8cff;
 }
 .template-chip .template-edit,
+.template-chip .template-export,
 .template-chip .template-delete {
   background: #3c3d47;
 }

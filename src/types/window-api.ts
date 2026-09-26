@@ -103,6 +103,10 @@ export interface WindowApi {
     model: string,
     informationExtracted: number
   ): Promise<string>;
+  // テンプレート等のテキストをtxtファイルとして書き出す。Electronでは保存先を
+  // 選ぶダイアログを表示し、Androidでは端末内のDocuments/templates/配下に保存する。
+  // 保存したファイルのパス（キャンセル時はnull）を返す。
+  exportTextFile(fileName: string, text: string): Promise<string | null>;
 }
 
 declare global {

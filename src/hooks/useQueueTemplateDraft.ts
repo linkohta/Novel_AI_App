@@ -6,7 +6,14 @@ import type {
   QueueTemplateApplyState,
   QueueTemplateDraft,
   QueueTemplateDraftCharacter,
+  QueueTemplateDraftRow,
 } from '../types/domain';
+import { parseQueueTemplate, serializeQueueTemplate } from '../utils/templateTextFormat';
+import {
+  exportTemplateFile,
+  formatImportStatus,
+  importTemplateFiles,
+} from '../utils/templateFileIO';
 
 interface UseQueueTemplateDraftParams {
   queueItems: QueueItem[];
@@ -165,6 +172,34 @@ export function useQueueTemplateDraft({
     setQueueTemplateDraft(null);
   }
 
+  async function handleExportQueueTemplate(template: QueueTemplate) {
+    try {
+      setStatus(
+        await exportTemplateFile(
+          template.name,
+          serializeQueueTemplate({
+            name: template.name,
+            rows: template.rows as QueueTemplateDraftRow[],
+          })
+        )
+      );
+    } catch (err) {
+      setStatus(`エクスポートに失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // 同名のテンプレートが既にある場合は内容を上書きする。
+  async function handleImportQueueTemplateFiles(files: File[]) {
+    if (!files.length) return;
+    try {
+      setStatus(
+        formatImportStatus(await importTemplateFiles(files, parseQueueTemplate, queueTemplatesList))
+      );
+    } catch (err) {
+      setStatus(`インポートに失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   function handleApplyQueueTemplate(template: QueueTemplate) {
     setQueueTemplateApplyState({ template });
   }
@@ -206,6 +241,8 @@ export function useQueueTemplateDraft({
     addQueueTemplateDraftCharacter,
     removeQueueTemplateDraftCharacter,
     handleSaveQueueTemplate,
+    handleExportQueueTemplate,
+    handleImportQueueTemplateFiles,
     handleApplyQueueTemplate,
     handleQueueTemplateApplyConfirm,
   };
