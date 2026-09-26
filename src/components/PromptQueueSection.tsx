@@ -1,80 +1,9 @@
 import type { ChangeEvent } from 'react';
 import Section from './Section';
 import CharacterCard from './CharacterCard';
-import type { QueueCharacter, QueueItem, QueueTemplate, VibeTransferImage } from '../types/domain';
-
-interface QueueVibeTransferCardProps {
-  image: VibeTransferImage;
-  onChangeField: (
-    id: string,
-    field: 'informationExtracted' | 'referenceStrength',
-    value: number
-  ) => void;
-  onRemove: (id: string) => void;
-}
-
-function QueueVibeTransferCard({ image, onChangeField, onRemove }: QueueVibeTransferCardProps) {
-  const isVibeFile = image.source === 'vibeFile';
-  return (
-    <div className="char-card">
-      <button type="button" className="remove-char" onClick={() => onRemove(image.id)}>
-        削除
-      </button>
-      {isVibeFile ? (
-        <div
-          style={{
-            width: '120px',
-            height: '120px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '8px',
-            border: '1px dashed #888',
-            fontSize: '12px',
-            textAlign: 'center',
-          }}
-        >
-          ポーションセット
-        </div>
-      ) : (
-        <img
-          src={`data:image/png;base64,${image.image}`}
-          alt="参照画像"
-          style={{ maxWidth: '120px', maxHeight: '120px', display: 'block', marginBottom: '8px' }}
-        />
-      )}
-      {isVibeFile ? (
-        <>
-          <label>Information Extracted（{image.informationExtracted.toFixed(2)}）</label>
-          <p className="hint">ポーションセットファイルに含まれる値のため変更できません。</p>
-        </>
-      ) : (
-        <>
-          <label>Information Extracted（{image.informationExtracted.toFixed(2)}）</label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={image.informationExtracted}
-            onChange={(e) =>
-              onChangeField(image.id, 'informationExtracted', Number(e.target.value))
-            }
-          />
-        </>
-      )}
-      <label>Reference Strength（{image.referenceStrength.toFixed(2)}）</label>
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        value={image.referenceStrength}
-        onChange={(e) => onChangeField(image.id, 'referenceStrength', Number(e.target.value))}
-      />
-    </div>
-  );
-}
+import VibeTransferCard, { type VibeTransferField } from './VibeTransferCard';
+import type { QueueCharacter, QueueItem, QueueTemplate } from '../types/domain';
+import { handleMultipleFiles } from '../utils/fileInput';
 
 interface QueueItemCardProps {
   index: number;
@@ -100,7 +29,7 @@ interface QueueItemCardProps {
   onChangeVibeTransferField: (
     index: number,
     vibeId: string,
-    field: 'informationExtracted' | 'referenceStrength',
+    field: VibeTransferField,
     value: number
   ) => void;
 }
@@ -195,7 +124,7 @@ function QueueItemCard({
       <details className="char-fold">
         <summary>AIポーション（Vibe Transfer）</summary>
         {vibeTransferImages.map((image) => (
-          <QueueVibeTransferCard
+          <VibeTransferCard
             key={image.id}
             image={image}
             onChangeField={(vibeId, field, value) =>
@@ -403,11 +332,7 @@ export default function PromptQueueSection({
         type="file"
         accept=".txt,text/plain"
         multiple
-        onChange={(e) => {
-          onImportQueueTemplateFiles(Array.from(e.target.files || []));
-          // 同じファイルを続けて選び直せるよう選択状態をリセットする。
-          e.target.value = '';
-        }}
+        onChange={(e) => handleMultipleFiles(e, onImportQueueTemplateFiles)}
       />
 
       <div id="queueTemplateList">

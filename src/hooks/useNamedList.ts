@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-interface UseNamedListParams<TItem, TNewItem> {
+export interface UseNamedListParams<TItem, TNewItem> {
   load: () => Promise<TItem[]>;
   save: (item: TNewItem) => Promise<TItem[]>;
   update: (item: TItem) => Promise<TItem[]>;

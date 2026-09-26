@@ -1,6 +1,7 @@
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import { extractNovelAiMetadata } from '../utils/pngMetadata';
 import type { Character, QueueItem } from '../types/domain';
+import { errorMessage } from '../utils/errorMessage';
 
 interface UseImageMetadataLoaderParams {
   setPrompt: Dispatch<SetStateAction<string>>;
@@ -71,7 +72,7 @@ export function useImageMetadataLoader({
           : '画像からプロンプト情報を読み込みました'
       );
     } catch (err) {
-      setStatus(`画像の読み込みに失敗しました: ${(err as Error).message}`);
+      setStatus(`画像の読み込みに失敗しました: ${errorMessage(err)}`);
     }
   }
 
@@ -112,7 +113,7 @@ export function useImageMetadataLoader({
           : `${index + 1}行目に画像からプロンプト情報を読み込みました`
       );
     } catch (err) {
-      setStatus(`画像の読み込みに失敗しました: ${(err as Error).message}`);
+      setStatus(`画像の読み込みに失敗しました: ${errorMessage(err)}`);
     }
   }
 

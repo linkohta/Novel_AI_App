@@ -1,18 +1,15 @@
 import { Dispatch, SetStateAction, useRef, useState } from 'react';
 import { waitWithCountdown } from '../utils/sleep';
-import type { QueueItem } from '../types/domain';
+import type { GenerateParamsExtra, QueueItem } from '../types/domain';
 import type { GenerateImageParams, GenerateImageResult, Settings } from '../types/window-api';
+import { errorMessage } from '../utils/errorMessage';
 
 interface UseQueueGenerationParams {
   queueItems: QueueItem[];
   queueInterval: string;
   setQueueRunning: Dispatch<SetStateAction<boolean>>;
   batchRunning: boolean;
-  buildGenerateParams: (
-    extra?: Partial<Omit<GenerateImageParams, 'vibeTransferImages'>> & {
-      vibeTransferImages?: QueueItem['vibeTransferImages'];
-    }
-  ) => Promise<GenerateImageParams>;
+  buildGenerateParams: (extra?: GenerateParamsExtra) => Promise<GenerateImageParams>;
   recordResult: (result: GenerateImageResult) => void;
   currentSettings: () => Settings;
 }
@@ -74,7 +71,7 @@ export function useQueueGeneration({
           })
         );
       } catch (err) {
-        setQueueStatus(`プロンプト情報の保存でエラー: ${(err as Error).message}（中断しました）`);
+        setQueueStatus(`プロンプト情報の保存でエラー: ${errorMessage(err)}（中断しました）`);
         stopped = true;
         continue;
       }
@@ -103,7 +100,7 @@ export function useQueueGeneration({
           setQueueStatus(`${done}/${totalCount} 枚生成しました（保存先: output/${queueFolder}）`);
         } catch (err) {
           setQueueStatus(
-            `${done}/${totalCount} 枚完了後にエラー: ${(err as Error).message}（中断しました）`
+            `${done}/${totalCount} 枚完了後にエラー: ${errorMessage(err)}（中断しました）`
           );
           stopped = true;
           break;

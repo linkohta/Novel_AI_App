@@ -1,20 +1,23 @@
+# 依存パッケージ（`npm install` で再取得）
 node_modules/
-output/*.png
-output/*.json
-output/batch_*/
+
+# 開発時に生成画像・リクエストJSONを書き出していた旧保存先。現在の保存先は
+# ドキュメントフォルダ配下（CLAUDE.md参照）だが、誤コミット防止のため
+# フォルダ構成用の .gitkeep 以外はすべて無視する（batch_*/queue_* 等のサブフォルダ含む）。
+output/*
 !output/.gitkeep
 
-# Vite build output — regenerate via `npm run build:web` (`vite build`)
+# Viteのビルド成果物（`npm run build:web` で再生成）
 www/
 
-# electron-vite dev-mode build output (regenerate via `npm run dev`)
+# electron-vite dev の一時ビルド成果物（`npm run dev` で再生成）
 out-dev/
 
-# tsc build output for main.ts/preload.ts/electron/shared (regenerate via `npm run build:electron`)
+# main.ts/preload.ts/electron/shared の tsc ビルド成果物（`npm run build:electron` で再生成）
 electron-dist/
 *.tsbuildinfo
 
-# Android build artifacts (regenerate via `npx cap sync`)
+# Androidのビルド成果物（`npx cap sync` / Gradle で再生成）
 android/app/build/
 android/build/
 android/.gradle/
@@ -23,8 +26,22 @@ android/captures/
 android/*.iml
 android/app/*.iml
 
-# electron-builder output (regenerate via `npm run dist`)
+# electron-builder の出力（`npm run dist` で再生成）
 dist/
 
-# stray log files from manual test runs
+# 手動実行時のログファイル
 *.log
+
+# Claude Code がローカルで作る作業用ファイル（サブエージェント用のgit worktreeと
+# 個人設定）。共有したい設定（.claude/settings.json 等）は追跡対象のまま残す。
+.claude/worktrees/
+.claude/settings.local.json
+
+# OS・エディタが自動生成するファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/

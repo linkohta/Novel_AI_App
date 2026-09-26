@@ -375,6 +375,24 @@ button.secondary {
 .template-chip .template-delete {
   background: #3c3d47;
 }
+/* AIポーション（Vibe Transfer）参照画像カードのサムネイル。
+   ポーションセット由来は画像を持たないため同サイズのプレースホルダーを表示する。 */
+.vibe-thumb {
+  display: block;
+  max-width: 120px;
+  max-height: 120px;
+  margin-bottom: 8px;
+}
+.vibe-thumb-placeholder {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #888;
+  font-size: 12px;
+  text-align: center;
+}
 .modal .template-var-field {
   margin-bottom: 4px;
 }

@@ -1,4 +1,5 @@
 import type { NamedItem } from '../types/domain';
+import { handleMultipleFiles } from '../utils/fileInput';
 
 interface TemplatesSectionProps {
   templates: NamedItem[];
@@ -52,11 +53,7 @@ export default function TemplatesSection({
         type="file"
         accept=".txt,text/plain"
         multiple
-        onChange={(e) => {
-          onImportTemplateFiles(Array.from(e.target.files || []));
-          // 同じファイルを続けて選び直せるよう選択状態をリセットする。
-          e.target.value = '';
-        }}
+        onChange={(e) => handleMultipleFiles(e, onImportTemplateFiles)}
       />
 
       <div id="templateList">
