@@ -3,6 +3,8 @@
 // 連続生成のリストなど、settings.json / *.json に永続化される形をおおむね
 // そのまま反映している。IPC境界の緩い型（src/types/window-api.ts）を再利用する。
 
+import type { GenerateImageParams } from './window-api';
+
 export interface Character {
   id: string;
   prompt: string;
@@ -56,10 +58,15 @@ export interface FavoriteCharacter {
   [key: string]: JsonValue;
 }
 
+// 保存済みの複数プロンプトテンプレートの1行。実際にはQueueTemplateDraftRowの
+// 形のまま保存されるが、古い保存データやtxtインポート由来のデータでは
+// count/enabledが欠けている可能性があるため省略可能として扱い、利用側で
+// 既定値（枚数1・有効）を補う。
 export interface QueueTemplateRow {
   prompt: string;
   negativePrompt: string;
-  characters: { prompt: string; negativePrompt: string }[];
+  count?: number | string;
+  characters: { prompt: string; negativePrompt: string; enabled?: boolean }[];
 }
 
 export interface QueueTemplate {
@@ -103,7 +110,7 @@ export interface TemplateApplyState {
   onApply: (value: string) => void;
 }
 
-// 左パネルの各<details>セクションの開閉状態（App.jsxのDEFAULT_SECTION_STATE
+// 左パネルの各<details>セクションの開閉状態（App.tsxのDEFAULT_SECTION_STATE
 // を参照）。将来セクションが増える可能性があるためインデックスシグネチャも許容する。
 export interface SectionState {
   promptSection?: boolean;
@@ -123,3 +130,11 @@ export interface NamedListApi<TItem, TNewItem = TItem> {
   removeItem: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
+
+// App.tsxのbuildGenerateParamsに渡す上書き用パラメータ。vibeTransferImagesは
+// 送信直前のエンコード要否（画像アップロード由来かどうか）を判定できるよう、
+// IPC送信用の絞り込んだ型ではなくVibeTransferImage（source等を含む）で受け取る。
+// 連続生成・複数プロンプト連続生成のフックも同じ型でbuildGenerateParamsを呼ぶ。
+export type GenerateParamsExtra = Partial<Omit<GenerateImageParams, 'vibeTransferImages'>> & {
+  vibeTransferImages?: VibeTransferImage[];
+};

@@ -6,6 +6,7 @@ import {
   formatImportStatus,
   importTemplateFiles,
 } from '../utils/templateFileIO';
+import { errorMessage } from '../utils/errorMessage';
 
 interface UsePromptLibraryParams {
   prompt: string;
@@ -22,9 +23,9 @@ interface UsePromptLibraryParams {
 // 編集・保存ドラフト、およびテンプレートの適用（変数入力モーダルを開き、
 // 確定後にresolveFocusedField経由でその時点でフォーカスされているフィールド
 // へ結果を書き込む）。`templateApplyState`/`setTemplateApplyState` はこの
-// フックではなくApp.jsxが所有している。useCharacters側の「テンプレ
+// フックではなくApp.tsxが所有している。useCharacters側の「テンプレ
 // ートで組み合わせる」の組み合わせ元も同じモーダルを開くため——この状態が
-// どちらのフックにも属さない理由についてはuseCharacters.jsを参照。
+// どちらのフックにも属さない理由についてはuseCharacters.tsを参照。
 export function usePromptLibrary({
   prompt,
   chunksList,
@@ -91,7 +92,7 @@ export function usePromptLibrary({
     try {
       setStatus(await exportTemplateFile(template.name, serializePromptTemplate(template)));
     } catch (err) {
-      setStatus(`エクスポートに失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+      setStatus(`エクスポートに失敗しました: ${errorMessage(err)}`);
     }
   }
 
@@ -103,7 +104,7 @@ export function usePromptLibrary({
         formatImportStatus(await importTemplateFiles(files, parsePromptTemplate, templatesList))
       );
     } catch (err) {
-      setStatus(`インポートに失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+      setStatus(`インポートに失敗しました: ${errorMessage(err)}`);
     }
   }
 

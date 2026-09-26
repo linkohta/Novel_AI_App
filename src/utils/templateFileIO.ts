@@ -4,6 +4,7 @@
 // 上書き判定だけを行う。
 import type { NamedListApi } from '../types/domain';
 import { fileNameToTemplateName, templateNameToFileName } from './templateTextFormat';
+import { errorMessage } from './errorMessage';
 
 export interface TemplateImportResult {
   added: number;
@@ -29,7 +30,7 @@ export async function importTemplateFiles<
       const parsed = parse(await file.text(), fileNameToTemplateName(file.name));
       parsedByName.set(parsed.name, parsed);
     } catch (err) {
-      result.errors.push(`${file.name}: ${err instanceof Error ? err.message : String(err)}`);
+      result.errors.push(`${file.name}: ${errorMessage(err)}`);
     }
   }
   for (const parsed of parsedByName.values()) {

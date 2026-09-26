@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNamedList } from './useNamedList';
+import { useNamedList, type UseNamedListParams } from './useNamedList';
 import type { FavoriteKind, GenericListItem, JsonValue } from '../types/window-api';
 
 // 呼び出し側（FavoriteArtist/FavoriteCharacter）が期待する具体的な形は
@@ -16,5 +16,11 @@ export function useFavoritesList<TItem extends GenericListItem = GenericListItem
   );
   const remove = useCallback((id: string) => window.api.deleteFavorite(kind, id), [kind]);
 
-  return useNamedList<TItem, JsonValue>({ load, save, update, remove } as any);
+  // window.apiは緩い型（GenericListItem）を返すため、ここ（IPC境界）で呼び出し側の型へ読み替える。
+  return useNamedList<TItem, JsonValue>({
+    load,
+    save,
+    update,
+    remove,
+  } as unknown as UseNamedListParams<TItem, JsonValue>);
 }

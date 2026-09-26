@@ -1,14 +1,8 @@
 import { Dispatch, SetStateAction, useRef, useState } from 'react';
 import { waitWithCountdown } from '../utils/sleep';
-import type { VibeTransferImage } from '../types/domain';
+import type { GenerateParamsExtra } from '../types/domain';
 import type { GenerateImageParams, GenerateImageResult, Settings } from '../types/window-api';
-
-// App.tsxのbuildGenerateParamsと同じextra型（vibeTransferImagesのみ、
-// 送信直前のエンコード要否判定に必要なsource等を含むVibeTransferImageで
-// 受け取る）。
-type GenerateParamsExtra = Partial<Omit<GenerateImageParams, 'vibeTransferImages'>> & {
-  vibeTransferImages?: VibeTransferImage[];
-};
+import { errorMessage } from '../utils/errorMessage';
 
 interface UseBatchGenerationParams {
   batchCount: string;
@@ -54,7 +48,7 @@ export function useBatchGeneration({
         await buildGenerateParams({ batchFolder, fileName: 'prompt' })
       );
     } catch (err) {
-      setBatchStatus(`プロンプト情報の保存でエラー: ${(err as Error).message}（中断しました）`);
+      setBatchStatus(`プロンプト情報の保存でエラー: ${errorMessage(err)}（中断しました）`);
       setBatchRunning(false);
       return;
     }
@@ -72,7 +66,7 @@ export function useBatchGeneration({
         recordResult(result);
         setBatchStatus(`${i}/${count} 枚生成しました（保存先: output/${batchFolder}）`);
       } catch (err) {
-        setBatchStatus(`${i}/${count} 枚目でエラー: ${(err as Error).message}（中断しました）`);
+        setBatchStatus(`${i}/${count} 枚目でエラー: ${errorMessage(err)}（中断しました）`);
         break;
       }
       if (i < count && !batchStopRef.current) {

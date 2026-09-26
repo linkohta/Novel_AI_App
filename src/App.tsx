@@ -9,6 +9,7 @@ import ResultPanel from './components/ResultPanel';
 import AppModals from './components/AppModals';
 import ManagementModal from './components/ManagementModal';
 import TabBar from './components/TabBar';
+import SettingsTab from './components/SettingsTab';
 import { useNamedList } from './hooks/useNamedList';
 import { useFavoritesList } from './hooks/useFavoritesList';
 import { useQueueItems } from './hooks/useQueueItems';
@@ -23,14 +24,18 @@ import { useBatchGeneration } from './hooks/useBatchGeneration';
 import { useQueueGeneration } from './hooks/useQueueGeneration';
 import { useSettingsPersistence } from './hooks/useSettingsPersistence';
 import { useImageMetadataLoader } from './hooks/useImageMetadataLoader';
+import { errorMessage } from './utils/errorMessage';
+import { handleSingleFile } from './utils/fileInput';
 import type {
   FavoriteArtist,
   FavoriteCharacter,
+  GenerateParamsExtra,
   HistoryItem,
   NamedItem,
+  QueueTemplate,
+  QueueTemplateDraftRow,
   SectionState,
   TemplateApplyState,
-  VibeTransferImage,
 } from './types/domain';
 import type {
   GenerateImageParams,
@@ -92,11 +97,19 @@ export default function App() {
     remove: window.api.deleteTemplate,
   });
 
-  const queueTemplatesList = useNamedList<any, { name: string; rows: unknown }>({
-    load: window.api.loadQueueTemplates,
-    save: window.api.saveQueueTemplate,
-    update: window.api.updateQueueTemplate,
-    remove: window.api.deleteQueueTemplate,
+  // window.apiの複数プロンプトテンプレートCRUDは項目形式が可変な緩い型
+  // （GenericListItem）を返すため、ここ（IPC境界）でUI側の型へ読み替える。
+  const queueTemplatesList = useNamedList<
+    QueueTemplate,
+    { name: string; rows: QueueTemplateDraftRow[] }
+  >({
+    load: window.api.loadQueueTemplates as () => Promise<QueueTemplate[]>,
+    save: window.api.saveQueueTemplate as (item: {
+      name: string;
+      rows: QueueTemplateDraftRow[];
+    }) => Promise<QueueTemplate[]>,
+    update: window.api.updateQueueTemplate as (item: QueueTemplate) => Promise<QueueTemplate[]>,
+    remove: window.api.deleteQueueTemplate as (id: string) => Promise<QueueTemplate[]>,
   });
   const favoriteArtists = useFavoritesList<FavoriteArtist>('artist');
   const favoriteCharacters = useFavoritesList<FavoriteCharacter>('character');
@@ -339,20 +352,13 @@ export default function App() {
       setSubscriptionInfo(info);
       setSubscriptionStatus('');
     } catch (err) {
-      setSubscriptionStatus(`エラー: ${(err as Error).message}`);
+      setSubscriptionStatus(`エラー: ${errorMessage(err)}`);
     }
   }
 
   function handleSectionToggle(id: string, isOpen: boolean) {
     setSectionState((prev) => ({ ...prev, [id]: isOpen }));
   }
-
-  // extraのvibeTransferImagesは、送信直前のエンコード要否（画像アップロード
-  // 由来かどうか）を判定できるよう、IPC送信用の絞り込んだ型ではなく
-  // VibeTransferImage（source等を含む）で受け取る。
-  type GenerateParamsExtra = Partial<Omit<GenerateImageParams, 'vibeTransferImages'>> & {
-    vibeTransferImages?: VibeTransferImage[];
-  };
 
   async function buildGenerateParams(extra?: GenerateParamsExtra): Promise<GenerateImageParams> {
     const { vibeTransferImages: extraVibeTransferImages, ...restExtra } = extra || {};
@@ -384,10 +390,7 @@ export default function App() {
   function recordResult(result: GenerateImageResult) {
     setResultImage(result.dataUrl);
     setFileInfo(`${result.fileName} (seed: ${result.seed})`);
-    setHistory((prev) => [
-      { ...result, dataUrl: result.dataUrl, fileName: result.fileName },
-      ...prev,
-    ]);
+    setHistory((prev) => [result, ...prev]);
   }
 
   async function handleGenerate() {
@@ -399,7 +402,7 @@ export default function App() {
       recordResult(result);
       setStatus(`保存しました: ${result.filePath}`);
     } catch (err) {
-      setStatus(`エラー: ${(err as Error).message}`);
+      setStatus(`エラー: ${errorMessage(err)}`);
     } finally {
       setGenerating(false);
     }
@@ -441,59 +444,17 @@ export default function App() {
         </button>
 
         <div className="tab-panel" hidden={activeTab !== 'settings'}>
-          <label>NovelAI API キー (persistent token)</label>
-          <input
-            type="password"
-            placeholder="pst-..."
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+          <SettingsTab
+            apiKey={apiKey}
+            setApiKey={setApiKey}
+            onCheckSubscription={handleCheckSubscription}
+            subscriptionStatus={subscriptionStatus}
+            subscriptionInfo={subscriptionInfo}
+            outputDir={outputDir}
+            onChooseOutputDir={handleChooseOutputDir}
+            onResetOutputDir={() => setOutputDir('')}
+            onLoadImageMetadata={handleLoadImageMetadata}
           />
-          <button type="button" onClick={handleCheckSubscription}>
-            Anlas / Opus残量を確認
-          </button>
-          {subscriptionStatus && <p className="hint">{subscriptionStatus}</p>}
-          {subscriptionInfo && (
-            <p className="hint">
-              Anlas残量: {subscriptionInfo.anlas}
-              {subscriptionInfo.opusPerks.length > 0 && (
-                <>
-                  <br />
-                  Opus無料生成枠:{' '}
-                  {subscriptionInfo.opusPerks
-                    .map(
-                      (p) =>
-                        `解像度${p.resolution}以下 ${p.maxPrompts}回まで（${Math.round(p.resetAfter / 3600)}時間ごとにリセット）`
-                    )
-                    .join(' / ')}
-                </>
-              )}
-            </p>
-          )}
-
-          <label>画像の保存先フォルダ</label>
-          {window.isNativeApp ? (
-            <p className="hint">
-              Android版では保存先は端末内のドキュメントフォルダに固定されています。
-            </p>
-          ) : (
-            <div className="output-dir-row">
-              <input type="text" readOnly value={outputDir || '（既定のフォルダを使用）'} />
-              <button type="button" onClick={handleChooseOutputDir}>
-                参照...
-              </button>
-              {outputDir && (
-                <button type="button" onClick={() => setOutputDir('')}>
-                  既定に戻す
-                </button>
-              )}
-            </div>
-          )}
-
-          <label>画像からプロンプトを読み込む</label>
-          <p className="hint">
-            NovelAIで生成されたPNG画像を選択すると、埋め込まれた生成情報（プロンプト・ネガティブプロンプト・サイズ・ステップ数・スケール・サンプラー・シード・キャラクタープロンプト）を読み取って自動入力します。
-          </p>
-          <input type="file" accept="image/png" onChange={handleLoadImageMetadata} />
         </div>
 
         <div className="tab-panel" hidden={activeTab !== 'prompt'}>
@@ -533,16 +494,8 @@ export default function App() {
             open={!!sectionState.vibeSection}
             onToggle={handleSectionToggle}
             vibeTransferImages={vibeTransferImages}
-            onAddImage={(e) => {
-              const file = e.target.files?.[0];
-              if (file) addVibeTransferImage(file);
-              e.target.value = '';
-            }}
-            onAddSetFile={(e) => {
-              const file = e.target.files?.[0];
-              if (file) addVibeTransferSetFile(file);
-              e.target.value = '';
-            }}
+            onAddImage={(e) => handleSingleFile(e, addVibeTransferImage)}
+            onAddSetFile={(e) => handleSingleFile(e, addVibeTransferSetFile)}
             onRemoveImage={removeVibeTransferImage}
             onChangeImageField={updateVibeTransferImageField}
             onBalanceStrengths={balanceVibeTransferStrengths}
@@ -595,16 +548,10 @@ export default function App() {
             bulkCount={bulkCount}
             setBulkCount={setBulkCount}
             onApplyBulkCount={applyBulkCount}
-            onApplyBulkVibeTransferImage={(e) => {
-              const file = e.target.files?.[0];
-              if (file) applyBulkVibeTransferImage(file);
-              e.target.value = '';
-            }}
-            onApplyBulkVibeTransferSetFile={(e) => {
-              const file = e.target.files?.[0];
-              if (file) applyBulkVibeTransferSetFile(file);
-              e.target.value = '';
-            }}
+            onApplyBulkVibeTransferImage={(e) => handleSingleFile(e, applyBulkVibeTransferImage)}
+            onApplyBulkVibeTransferSetFile={(e) =>
+              handleSingleFile(e, applyBulkVibeTransferSetFile)
+            }
             onChangeItem={updateQueueItemField}
             onRemoveItem={removeQueueItem}
             onMoveItemUp={(index) => moveQueueItem(index, -1)}
@@ -619,16 +566,12 @@ export default function App() {
             onRemoveItemCharacter={removeQueueItemCharacter}
             onChangeItemCharacter={updateQueueItemCharacterField}
             onLoadItemImageMetadata={handleLoadQueueItemImageMetadata}
-            onAddItemVibeTransferImage={(index, e) => {
-              const file = e.target.files?.[0];
-              if (file) addQueueItemVibeTransferImage(index, file);
-              e.target.value = '';
-            }}
-            onAddItemVibeTransferSetFile={(index, e) => {
-              const file = e.target.files?.[0];
-              if (file) addQueueItemVibeTransferSetFile(index, file);
-              e.target.value = '';
-            }}
+            onAddItemVibeTransferImage={(index, e) =>
+              handleSingleFile(e, (file) => addQueueItemVibeTransferImage(index, file))
+            }
+            onAddItemVibeTransferSetFile={(index, e) =>
+              handleSingleFile(e, (file) => addQueueItemVibeTransferSetFile(index, file))
+            }
             onRemoveItemVibeTransferImage={removeQueueItemVibeTransferImage}
             onBalanceItemVibeTransferStrengths={balanceQueueItemVibeTransferStrengths}
             onChangeItemVibeTransferField={updateQueueItemVibeTransferField}

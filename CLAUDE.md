@@ -61,11 +61,14 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
     - `src/hooks/useSettingsPersistence.ts` — 画面上のフォーム入力全般の起動時読み込み・デバウンス自動保存・`currentSettings()`の組み立てと、「保存先フォルダ」の変更ハンドラ。永続化すべき入力欄を追加する際は、このフック内の起動時読み込み処理と`currentSettings`（および依存配列）の両方に追加する必要がある（前掲の「設定の永続化」の節を参照）。
     - `src/hooks/useImageMetadataLoader.ts` — 「画像からプロンプトを読み込む」機能の2つのハンドラ（単一プロンプト用・複数プロンプト連続生成の行用）。いずれも`src/utils/pngMetadata.ts`で抽出した値を対応するsetterへ反映するだけの自己完結した処理のため、他のフックの状態を必要としない。
     - 上記いずれの機能領域にも当てはまらない一枚岩の状態（`templateApplyState`等）は、複数のフックから共有される場合に限りApp.tsx側で保持し、フックには値とsetterを渡す。
-  - `src/components/*.tsx` — 機能ごとのプレゼンテーションコンポーネント（`Section`, `PromptSection`, `TemplatesSection`, `FavoritesSection`, `CharactersSection`/`CharacterCard`, `ModelSection`, `BatchSection`, `PromptQueueSection`, `ResultPanel`）。状態は持たず、props経由でApp.tsxの状態とハンドラを受け取る。`AppModals.tsx`は編集・適用系モーダル7種（下記`src/components/modals/*.tsx`）をまとめてレンダリングするだけの束ね役で、App.tsxのJSXから独立させている。
+  - `src/components/*.tsx` — 機能ごとのプレゼンテーションコンポーネント（`Section`, `SettingsTab`, `PromptSection`, `TemplatesSection`, `FavoritesSection`, `CharactersSection`/`CharacterCard`, `VibeTransferSection`/`VibeTransferCard`, `ModelSection`, `BatchSection`, `PromptQueueSection`, `ResultPanel`）。`SettingsTab`は左パネル「設定」タブの中身（APIキー・残量確認・保存先フォルダ・画像からの読み込み）、`VibeTransferCard`はAIポーション参照画像1枚分のカードで、単一プロンプト用（`VibeTransferSection`）と複数プロンプト連続生成の各行（`PromptQueueSection`）で共用している。状態は持たず、props経由でApp.tsxの状態とハンドラを受け取る。`AppModals.tsx`は編集・適用系モーダル7種（下記`src/components/modals/*.tsx`）をまとめてレンダリングするだけの束ね役で、App.tsxのJSXから独立させている。
   - `src/components/modals/*.tsx` — 編集・適用モーダル（`ChunkEditModal`, `TemplateEditModal`, `TemplateApplyModal`, `QueueTemplateEditModal`, `QueueTemplateApplyModal`, `FavArtistEditModal`, `FavCharEditModal`）。共通の `ModalOverlay` は `open` が falsy なら何も描画しない（旧実装のような `.open` クラス切り替えではなく、条件付きレンダリングで開閉する）。各モーダル（管理モーダル含む）の「保存」「キャンセル」「閉じる」等のボタン行（`.modal-buttons`）は、内容が長くダイアログがスクロールしても常に見えるよう、CSSの `position: sticky` でスクロール領域（`.modal`）の下端に固定表示している。新しいモーダルを追加する際も、ボタン行は `.modal` 直下（または直下のFragment内）の末尾に `.modal-buttons` として置くこと（別のラッパー要素の中に入れるとstickyの効く範囲がそのラッパー内に限定され、固定されなくなる）。
   - `src/hooks/useNamedList.ts` — チャンク・テンプレート・お気に入り・複数プロンプトテンプレートに共通する「読み込み→追加→編集→削除のたびにサーバー側の最新リストで置き換える」パターンを提供するフック。`src/hooks/useFavoritesList.ts` はこれを`kind`（`'artist'`/`'character'`）でラップしてお気に入りに使う。
   - `src/utils/templateVariables.ts` — `"変数名"` プレースホルダーの抽出・置換ロジック（純粋関数、Reactに依存しない）。
   - `src/utils/templateTextFormat.ts` / `src/utils/templateFileIO.ts` — テンプレートのtxtインポート・エクスポート用の書式変換（純粋関数）と、ファイル読み込み・同名上書き・書き出しの共通処理（前掲「テンプレートのtxtインポート・エクスポート」を参照）。
+  - `src/utils/vibeTransferFiles.ts` — AIポーションの参照画像ファイル（画像／ポーションセット）を`VibeTransferImage`へ変換する共通処理（`readVibeTransferImageFile`/`readVibeTransferSetFile`/`withNewIds`と既定値`DEFAULT_REFERENCE_STRENGTH`等）。`useVibeTransfer`（単一プロンプト用）と`useQueueItems`（行ごと・全行一括）の両方から使う。
+  - `src/utils/errorMessage.ts` — catchした値からユーザー向けメッセージを取り出す`errorMessage(err)`。`(err as Error).message`とは書かず、必ずこれを使う。
+  - `src/utils/fileInput.ts` — `<input type="file">`のonChange用ヘルパー（`handleSingleFile`/`handleMultipleFiles`）。選択ファイルの取り出しと、同じファイルを選び直せるようにする`value`のリセットをまとめている。
   - `src/utils/sleep.ts` — `useBatchGeneration`/`useQueueGeneration`が生成間隔の待機に使う共通の`sleep(ms)`と、待機中のカウントダウン表示に使う`waitWithCountdown(totalSeconds, { onTick, shouldStop })`。後者は残り秒数を`setTimeout`の呼び出し回数で数えるのではなく、開始時刻からの経過時間（`Date.now()`）で毎回計算し直しており、ウィンドウの非アクティブ化等で1回の`sleep`呼び出しが1秒より長くかかった場合でも、本来の終了時刻に追いつく形でカウントダウンが進む（後述の`backgroundThrottling: false`と合わせて「非アクティブ時に待機カウントが進まなくなる」問題への対策）。
   - `src/styles.css` — 全体のスタイル（旧 `www/index.html` の `<style>` をそのまま移植）。折りたたみセクションは `<details className="section">` をReactの `open`/`onToggle` で制御しており、CSSの矢印回転等はHTML版と同じ仕組み。**`#root { display: flex; height: 100vh; }` は必須**（旧HTML版では`body`が`.left`/`.right`の直接の親でこのスタイルを持っていたが、Reactは`#root`配下にマウントするため、`body`ではなく`#root`にflexレイアウトを持たせる必要がある。これを外すと`.left`/`.right`が横並びでなく縦積みになり、`.left`が高さの制約を失って`.generate-sticky`の固定表示や生成画像の表示位置が壊れる）。
   - `src/platform/capacitorBridge.ts` — 旧 `src/capacitor-bridge.ts` と同内容（後述）。
@@ -165,6 +168,18 @@ npm run lint           # 上記対象を ESLint で検査（eslint.config.js。@
 - **Hooksのルール**: `eslint-plugin-react-hooks`（`react-hooks/rules-of-hooks` / `react-hooks/exhaustive-deps`）が `src/**/*.tsx` に適用されており、`npm run lint` で検査される。`useEffect`/`useCallback`/`useMemo` の依存配列は原則としてlintの指摘通り過不足なく書く（意図的に外す場合のみ理由をコメントで残す）。
 - **リストの `key`**: `Array.prototype.map` でリストをレンダリングする際、要素の並び替え・削除が起こり得る配列（`characters` 等）では配列のインデックスではなく、要素が持つ安定した一意のID（例: 生成時に付与する `crypto.randomUUID()`）を `key` に使う。並び替え・削除が起こらない固定リスト（`MODEL_OPTIONS` 等の定数配列）はインデックスキーでも問題ない。
 
+## リファクタリング方針
+
+コードを整理・改善する際は次の方針に従う。**挙動を変えないこと**を大前提とし、機能変更とリファクタリングは同じコミットに混ぜない（混ぜるとレビュー時にどちらの差分か判別できなくなるため）。
+
+- **重複は共通モジュールへ切り出す**: 同じ処理が2か所以上にコピーされている場合、Reactに依存しない処理は `src/utils/`（純粋関数）へ、画面部品は `src/components/` の共通コンポーネントへ切り出す（例: 参照画像ファイルの読み込み `vibeTransferFiles.ts`、参照画像カード `VibeTransferCard.tsx`、ファイル選択ハンドラ `fileInput.ts`、エラーメッセージの取り出し `errorMessage.ts`）。Electron・Android両方で必要なロジックは `shared/novelai.mts` に置く（「開発ルール」参照）。「フックを自己完結させるためにあえて重複させている」といった理由の重複も、共通モジュール化で自己完結性を損なわずに解消できるなら解消する（過去に `fileToBase64` がこの理由で2か所に重複していた）。
+- **App.tsxを肥大化させない**: App.tsxは各フックの呼び出し・横断的な少数の状態・JSXの組み立てに限る。まとまった状態とハンドラはカスタムフック（`src/hooks/`）へ、まとまったJSX（例: 「設定」タブの中身 `SettingsTab.tsx`）はコンポーネントへ切り出す。propsの受け渡しが増えることは許容し、Context等の新しい仕組みは導入しない（コンポーネントが状態を持たずpropsだけで完結する現在の構成を保つため）。
+- **定型コードは小さなヘルパーで畳む**: 配列の特定要素だけを更新する `prev.map((item, i) => (i === index ? ... : item))` のような定型は、フック内に `updateItemAt` / `updateDraftRowAt` のようなローカル関数を用意して使う。ただし1〜2回しか使わないものまで無理に抽象化しない。
+- **型を正確にする**: `any` / `as any` は使わない。`window.api` が返す緩い型（`GenericListItem` 等）をUI側の具体的な型へ読み替える必要がある場合は、IPC境界（`useNamedList` に渡す直前など）で1回だけ明示的にキャストし、理由をコメントに残す（例: App.tsxの `queueTemplatesList`、`useFavoritesList`）。保存データの実際の形と食い違う型定義は、古いデータで欠け得るフィールドを省略可能にするなど実態に合わせ、利用側で既定値を補う（例: `QueueTemplateRow` と `useQueueTemplateDraft` の `toDraftRows`）。同じ型を複数ファイルで再定義せず、`src/types/domain.ts` に置いて共有する（例: `GenerateParamsExtra`）。
+- **スタイルはCSSへ**: JSX内のインラインスタイル（`style={{...}}`）は増やさず、`src/styles.css` にクラスとして定義する（例: 参照画像サムネイルの `.vibe-thumb`）。
+- **コメントは日本語で、理由を書く**: 「何をしているか」よりも「なぜそうしているか」（公式サイトの挙動に合わせた、過去に不具合があった等）を残す。旧ファイル名（`App.jsx` / `main.js` 等、JavaScript時代の名前）への言及を見つけたら、そのファイルを編集する際に現在のファイル名に直す。
+- **検証**: リファクタリング後は `npm run typecheck` / `npm run lint` / `npm run format:check` / `npm run build:web` / `npm run build:electron` がすべて通ることを確認する。自動テストは無いため、切り出した純粋関数は必要に応じて入出力を確認し、UIに関わる変更は実際に画面を表示して確認する。`npm run build:web` 後に `npx vite preview` でブラウザ表示すると、`capacitorBridge.ts` が `window.api` を提供するためElectronなしでも画面の描画を確認できる（NovelAI APIやファイル保存はElectron/Android固有の挙動になるため、それらは実アプリで確認する）。
+
 ## 開発ルール
 
 - **セキュリティ**: `preload.ts` の `contextBridge` によるAPI公開パターンを維持し、`nodeIntegration` をレンダラーで有効化しない。APIキーなどの機密情報をログ出力・平文でリポジトリにコミットしない。
@@ -173,7 +188,7 @@ npm run lint           # 上記対象を ESLint で検査（eslint.config.js。@
 - **共通ロジックは `shared/` に置く**: NovelAI APIのリクエスト形式など、Electron・Android両方で必要になるロジックは`shared/novelai.mts`のようにネイティブESMモジュールとして切り出し、`main.ts`からは動的`import()`、`capacitorBridge.ts`からは通常の`import`で読み込む。同じロジックを両側に重複実装しない。
 - **小さな変更を積み重ねる**: 過剰な抽象化は避け、必要になってから一般化する。ただしUI層のビルドツール（Vite）・フレームワーク（React）は本アプリの明示的な方針として既に採用済みであり、「ビルドツールを増やさない」原則は適用しない——新しい依存追加はREADME/CLAUDE.mdの更新とセットで検討すること。
 - **エラーハンドリング**: API呼び出し失敗時は `App.tsx` の `try/catch` で捕捉し、`status` の状態に反映してユーザー向けメッセージを表示する既存パターンに従う。
-- **コミット前確認**: `output/` ディレクトリに生成された画像ファイルや、APIキーを含む設定ファイルを誤ってコミットしないよう `.gitignore` を確認する。
+- **コミット前確認**: `output/` ディレクトリに生成された画像ファイルや、APIキーを含む設定ファイルを誤ってコミットしないよう `.gitignore` を確認する。`.gitignore` は「再生成できるもの（ビルド成果物・依存パッケージ）」「実行時に生成されるもの（生成画像・ログ）」「個人環境に依存するもの（Claude Codeのworktree・個人設定、OS/エディタの自動生成ファイル）」を追跡対象外にする方針で、各項目に再生成方法や理由をコメントで残している。新しい生成物・一時ファイルが出る仕組みを追加した場合は同じ方針で追記すること。一度コミットされたファイルは `.gitignore` に追加しても追跡され続けるため、`git rm --cached <path>` で追跡対象から外すこと（`out2.log` がこの状態で残っていたため外した）。
 - **連続リクエストへの配慮**: NovelAI APIへの連続リクエストはAnlas消費とレート制限のリスクがあるため、間隔を空けずに大量リクエストする機能は追加しない。バッチ処理を実装する場合は生成間隔（待機時間）を必須にし、中断できる手段を用意する。
 - 機能を追加・修正したときは、必ずCLAUDE.mdとREADMEに反映すること。依存関係を追加・更新した場合は `THIRD_PARTY_NOTICES.md` のライセンス一覧も見直すこと。
 - **Gitワークフロー**: `master` ブランチへの直接コミット・直接プッシュは行わない。変更は必ず作業用ブランチを作成した上でコミットし、`master` へはプルリクエスト経由でのみ反映する。

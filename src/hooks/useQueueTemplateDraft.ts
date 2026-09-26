@@ -7,6 +7,7 @@ import type {
   QueueTemplateDraft,
   QueueTemplateDraftCharacter,
   QueueTemplateDraftRow,
+  QueueTemplateRow,
 } from '../types/domain';
 import { parseQueueTemplate, serializeQueueTemplate } from '../utils/templateTextFormat';
 import {
@@ -14,20 +15,36 @@ import {
   formatImportStatus,
   importTemplateFiles,
 } from '../utils/templateFileIO';
+import { errorMessage } from '../utils/errorMessage';
 
 interface UseQueueTemplateDraftParams {
   queueItems: QueueItem[];
   setQueueItems: Dispatch<SetStateAction<QueueItem[]>>;
-  queueTemplatesList: NamedListApi<QueueTemplate, { name: string; rows: unknown }>;
+  queueTemplatesList: NamedListApi<QueueTemplate, { name: string; rows: QueueTemplateDraftRow[] }>;
   setStatus: (status: string) => void;
 }
 
 type DraftField = 'prompt' | 'negativePrompt' | 'count';
 type DraftCharacterField = keyof QueueTemplateDraftCharacter;
 
+// 保存済みテンプレートの行（count/enabledが欠けている可能性がある）を、編集
+// ダイアログ・txtエクスポートで扱う完全な形に揃える（枚数1・有効を既定値とする）。
+function toDraftRows(rows: QueueTemplateRow[]): QueueTemplateDraftRow[] {
+  return (rows || []).map((row) => ({
+    prompt: row.prompt || '',
+    negativePrompt: row.negativePrompt || '',
+    count: row.count || '1',
+    characters: (row.characters || []).map((c) => ({
+      prompt: c.prompt || '',
+      negativePrompt: c.negativePrompt || '',
+      enabled: c.enabled !== false,
+    })),
+  }));
+}
+
 // 複数プロンプトテンプレート（queue templates）の保存・編集ダイアログの
 // ドラフトと適用ダイアログの状態、およびそれらを操作する全ハンドラをまとめる。
-// キューアイテムのstateと、App.jsxから渡される queueTemplatesList のCRUD
+// キューアイテムのstateと、App.tsxから渡される queueTemplatesList のCRUD
 // （useNamedList）、バリデーションメッセージ用の setStatus に依存している——
 // これらは再導出せずpropsとして渡すことで、このフックが既存ロジックを
 // そのまま切り出した純粋な抽出にとどまるようにしている（挙動の変更なし）。
@@ -62,20 +79,25 @@ export function useQueueTemplateDraft({
     setQueueTemplateDraft({
       id: template.id,
       name: template.name,
-
-      rows: template.rows as any,
+      rows: toDraftRows(template.rows),
     });
   }
 
+  // ダイアログが開いている間だけ、ドラフトの行配列をupdaterで更新する。
+  function updateDraftRows(updater: (rows: QueueTemplateDraftRow[]) => QueueTemplateDraftRow[]) {
+    setQueueTemplateDraft((prev) => (prev ? { ...prev, rows: updater(prev.rows) } : prev));
+  }
+
+  // 指定した行だけをupdaterで更新する。
+  function updateDraftRowAt(
+    rowIndex: number,
+    updater: (row: QueueTemplateDraftRow) => QueueTemplateDraftRow
+  ) {
+    updateDraftRows((rows) => rows.map((row, i) => (i === rowIndex ? updater(row) : row)));
+  }
+
   function updateQueueTemplateDraftRow(rowIndex: number, field: DraftField, value: string) {
-    setQueueTemplateDraft((prev) =>
-      prev
-        ? {
-            ...prev,
-            rows: prev.rows.map((row, i) => (i === rowIndex ? { ...row, [field]: value } : row)),
-          }
-        : prev
-    );
+    updateDraftRowAt(rowIndex, (row) => ({ ...row, [field]: value }));
   }
 
   function updateQueueTemplateDraftCharacter(
@@ -84,73 +106,37 @@ export function useQueueTemplateDraft({
     field: DraftCharacterField,
     value: string | boolean
   ) {
-    setQueueTemplateDraft((prev) =>
-      prev
-        ? {
-            ...prev,
-            rows: prev.rows.map((row, i) => {
-              if (i !== rowIndex) return row;
-              const characters = (row.characters || []).map((c, ci) =>
-                ci === charIndex ? { ...c, [field]: value } : c
-              );
-              return { ...row, characters };
-            }),
-          }
-        : prev
-    );
+    updateDraftRowAt(rowIndex, (row) => ({
+      ...row,
+      characters: (row.characters || []).map((c, ci) =>
+        ci === charIndex ? { ...c, [field]: value } : c
+      ),
+    }));
   }
 
   function addQueueTemplateDraftRow() {
-    setQueueTemplateDraft((prev) =>
-      prev
-        ? {
-            ...prev,
-            rows: [...prev.rows, { prompt: '', negativePrompt: '', count: '1', characters: [] }],
-          }
-        : prev
-    );
+    updateDraftRows((rows) => [
+      ...rows,
+      { prompt: '', negativePrompt: '', count: '1', characters: [] },
+    ]);
   }
 
   function removeQueueTemplateDraftRow(rowIndex: number) {
-    setQueueTemplateDraft((prev) =>
-      prev ? { ...prev, rows: prev.rows.filter((_, i) => i !== rowIndex) } : prev
-    );
+    updateDraftRows((rows) => rows.filter((_, i) => i !== rowIndex));
   }
 
   function addQueueTemplateDraftCharacter(rowIndex: number) {
-    setQueueTemplateDraft((prev) =>
-      prev
-        ? {
-            ...prev,
-            rows: prev.rows.map((row, i) =>
-              i === rowIndex
-                ? {
-                    ...row,
-                    characters: [
-                      ...(row.characters || []),
-                      { prompt: '', negativePrompt: '', enabled: true },
-                    ],
-                  }
-                : row
-            ),
-          }
-        : prev
-    );
+    updateDraftRowAt(rowIndex, (row) => ({
+      ...row,
+      characters: [...(row.characters || []), { prompt: '', negativePrompt: '', enabled: true }],
+    }));
   }
 
   function removeQueueTemplateDraftCharacter(rowIndex: number, charIndex: number) {
-    setQueueTemplateDraft((prev) =>
-      prev
-        ? {
-            ...prev,
-            rows: prev.rows.map((row, i) =>
-              i === rowIndex
-                ? { ...row, characters: (row.characters || []).filter((_, ci) => ci !== charIndex) }
-                : row
-            ),
-          }
-        : prev
-    );
+    updateDraftRowAt(rowIndex, (row) => ({
+      ...row,
+      characters: (row.characters || []).filter((_, ci) => ci !== charIndex),
+    }));
   }
 
   async function handleSaveQueueTemplate() {
@@ -179,12 +165,12 @@ export function useQueueTemplateDraft({
           template.name,
           serializeQueueTemplate({
             name: template.name,
-            rows: template.rows as QueueTemplateDraftRow[],
+            rows: toDraftRows(template.rows),
           })
         )
       );
     } catch (err) {
-      setStatus(`エクスポートに失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+      setStatus(`エクスポートに失敗しました: ${errorMessage(err)}`);
     }
   }
 
@@ -196,7 +182,7 @@ export function useQueueTemplateDraft({
         formatImportStatus(await importTemplateFiles(files, parseQueueTemplate, queueTemplatesList))
       );
     } catch (err) {
-      setStatus(`インポートに失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+      setStatus(`インポートに失敗しました: ${errorMessage(err)}`);
     }
   }
 
@@ -204,20 +190,14 @@ export function useQueueTemplateDraft({
     setQueueTemplateApplyState({ template });
   }
 
-  function handleQueueTemplateApplyConfirm(rows: any[]) {
+  function handleQueueTemplateApplyConfirm(rows: QueueTemplateRow[]) {
     setQueueItems(
-      rows.map((row) => ({
+      toDraftRows(rows).map((row) => ({
         id: window.crypto.randomUUID(),
-        prompt: row.prompt || '',
-        negativePrompt: row.negativePrompt || '',
-        count: row.count || '1',
-
-        characters: (row.characters || []).map((c: any) => ({
-          id: window.crypto.randomUUID(),
-          prompt: c.prompt || '',
-          negativePrompt: c.negativePrompt || '',
-          enabled: c.enabled !== false,
-        })),
+        prompt: row.prompt,
+        negativePrompt: row.negativePrompt,
+        count: row.count,
+        characters: row.characters.map((c) => ({ id: window.crypto.randomUUID(), ...c })),
         // 複数プロンプトテンプレートはAIポーション参照画像を保存対象に
         // 含めない（テンプレートは文字列プロンプトのみを対象とする設計の
         // ため）。適用時は常に空配列から開始する。
