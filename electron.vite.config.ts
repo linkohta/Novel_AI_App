@@ -1,3 +1,4 @@
+import { resolve } from 'path';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 
@@ -36,7 +37,11 @@ export default defineConfig({
     build: {
       outDir: '../out-dev/renderer',
       rollupOptions: {
-        input: 'src/index.html',
+        // rootを'src'にしているため、相対パスで'src/index.html'と書くとrootからの
+        // 相対（src/src/index.html）として解決され、依存関係の事前バンドル時の
+        // スキャンが「failed to resolve rolldownOptions.input」で失敗する。
+        // 設定ファイルの場所を基準にした絶対パスで指定する。
+        input: resolve(__dirname, 'src/index.html'),
       },
     },
   },
