@@ -159,6 +159,8 @@ export default function App() {
     addQueueTemplateDraftCharacter,
     removeQueueTemplateDraftCharacter,
     handleSaveQueueTemplate,
+    handleExportQueueTemplate,
+    handleImportQueueTemplateFiles,
     handleApplyQueueTemplate,
     handleQueueTemplateApplyConfirm,
   } = useQueueTemplateDraft({ queueItems, setQueueItems, queueTemplatesList, setStatus });
@@ -225,6 +227,8 @@ export default function App() {
     templateEditDraft,
     setTemplateEditDraft,
     handleSaveTemplateEdit,
+    handleExportTemplate,
+    handleImportTemplateFiles,
     handleApplyTemplate,
     handleTemplateApplyConfirm,
   } = usePromptLibrary({
@@ -640,6 +644,8 @@ export default function App() {
             onApplyQueueTemplate={handleApplyQueueTemplate}
             onEditQueueTemplate={openQueueTemplateEditDialog}
             onDeleteQueueTemplate={queueTemplatesList.removeItem}
+            onExportQueueTemplate={handleExportQueueTemplate}
+            onImportQueueTemplateFiles={handleImportQueueTemplateFiles}
           />
         </div>
 
@@ -687,6 +693,8 @@ export default function App() {
         onApplyTemplate={handleApplyTemplate}
         onEditTemplate={(template) => setTemplateEditDraft({ ...template })}
         onDeleteTemplate={(id) => templatesList.removeItem(id)}
+        onExportTemplate={handleExportTemplate}
+        onImportTemplateFiles={handleImportTemplateFiles}
         favArtists={favoriteArtists.items}
         favArtistNameInput={favArtistNameInput}
         setFavArtistNameInput={setFavArtistNameInput}

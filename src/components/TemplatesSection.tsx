@@ -10,6 +10,8 @@ interface TemplatesSectionProps {
   onApplyTemplate: (template: NamedItem) => void;
   onEditTemplate: (template: NamedItem) => void;
   onDeleteTemplate: (id: string) => void;
+  onExportTemplate: (template: NamedItem) => void;
+  onImportTemplateFiles: (files: File[]) => void;
 }
 
 export default function TemplatesSection({
@@ -22,6 +24,8 @@ export default function TemplatesSection({
   onApplyTemplate,
   onEditTemplate,
   onDeleteTemplate,
+  onExportTemplate,
+  onImportTemplateFiles,
 }: TemplatesSectionProps) {
   return (
     <div className="manage-block">
@@ -43,6 +47,18 @@ export default function TemplatesSection({
         テンプレートを保存
       </button>
 
+      <label>txtファイルからインポート（同名のテンプレートは上書きされます）</label>
+      <input
+        type="file"
+        accept=".txt,text/plain"
+        multiple
+        onChange={(e) => {
+          onImportTemplateFiles(Array.from(e.target.files || []));
+          // 同じファイルを続けて選び直せるよう選択状態をリセットする。
+          e.target.value = '';
+        }}
+      />
+
       <div id="templateList">
         {templates.map((template) => (
           <div className="template-chip" key={template.id}>
@@ -62,6 +78,13 @@ export default function TemplatesSection({
               onClick={() => onEditTemplate(template)}
             >
               編集
+            </button>
+            <button
+              type="button"
+              className="template-export"
+              onClick={() => onExportTemplate(template)}
+            >
+              エクスポート
             </button>
             <button
               type="button"

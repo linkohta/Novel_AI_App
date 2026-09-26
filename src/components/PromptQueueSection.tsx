@@ -262,6 +262,8 @@ interface PromptQueueSectionProps {
   onApplyQueueTemplate: (template: QueueTemplate) => void;
   onEditQueueTemplate: (template: QueueTemplate) => void;
   onDeleteQueueTemplate: (id: string) => void;
+  onExportQueueTemplate: (template: QueueTemplate) => void;
+  onImportQueueTemplateFiles: (files: File[]) => void;
 }
 
 export default function PromptQueueSection({
@@ -300,6 +302,8 @@ export default function PromptQueueSection({
   onApplyQueueTemplate,
   onEditQueueTemplate,
   onDeleteQueueTemplate,
+  onExportQueueTemplate,
+  onImportQueueTemplateFiles,
 }: PromptQueueSectionProps) {
   return (
     <Section id="promptQueueSection" title="複数プロンプト連続生成" open={open} onToggle={onToggle}>
@@ -394,6 +398,18 @@ export default function PromptQueueSection({
         現在の内容をテンプレートとして保存
       </button>
 
+      <label>txtファイルからインポート（同名のテンプレートは上書きされます）</label>
+      <input
+        type="file"
+        accept=".txt,text/plain"
+        multiple
+        onChange={(e) => {
+          onImportQueueTemplateFiles(Array.from(e.target.files || []));
+          // 同じファイルを続けて選び直せるよう選択状態をリセットする。
+          e.target.value = '';
+        }}
+      />
+
       <div id="queueTemplateList">
         {queueTemplates.map((template) => (
           <div className="template-chip" key={template.id}>
@@ -412,6 +428,13 @@ export default function PromptQueueSection({
               onClick={() => onEditQueueTemplate(template)}
             >
               編集
+            </button>
+            <button
+              type="button"
+              className="template-export"
+              onClick={() => onExportQueueTemplate(template)}
+            >
+              エクスポート
             </button>
             <button
               type="button"

@@ -361,6 +361,7 @@ button.secondary {
   background: #6c8cff;
 }
 .template-chip .template-edit,
+.template-chip .template-export,
 .template-chip .template-delete {
   background: #3c3d47;
 }

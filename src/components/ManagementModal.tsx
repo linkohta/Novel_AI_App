@@ -23,6 +23,8 @@ interface ManagementModalProps {
   onApplyTemplate: (template: NamedItem) => void;
   onEditTemplate: (template: NamedItem) => void;
   onDeleteTemplate: (id: string) => void;
+  onExportTemplate: (template: NamedItem) => void;
+  onImportTemplateFiles: (files: File[]) => void;
   favArtists: FavoriteArtist[];
   favArtistNameInput: string;
   setFavArtistNameInput: (value: string) => void;
@@ -64,6 +66,8 @@ export default function ManagementModal({
   onApplyTemplate,
   onEditTemplate,
   onDeleteTemplate,
+  onExportTemplate,
+  onImportTemplateFiles,
   favArtists,
   favArtistNameInput,
   setFavArtistNameInput,
@@ -104,6 +108,8 @@ export default function ManagementModal({
         onApplyTemplate={onApplyTemplate}
         onEditTemplate={onEditTemplate}
         onDeleteTemplate={onDeleteTemplate}
+        onExportTemplate={onExportTemplate}
+        onImportTemplateFiles={onImportTemplateFiles}
       />
       <FavoritesSection
         favArtists={favArtists}

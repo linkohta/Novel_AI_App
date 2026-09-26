@@ -27,6 +27,7 @@ const api: WindowApi = {
   deleteFavorite: (kind, id) => ipcRenderer.invoke('delete-favorite', { kind, id }),
   encodeVibe: (apiKey, image, model, informationExtracted) =>
     ipcRenderer.invoke('encode-vibe', { apiKey, image, model, informationExtracted }),
+  exportTextFile: (fileName, text) => ipcRenderer.invoke('export-text-file', { fileName, text }),
 };
 
 contextBridge.exposeInMainWorld('api', api);

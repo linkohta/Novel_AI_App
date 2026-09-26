@@ -274,6 +274,30 @@ if (!window.api) {
     await Share.share({ url: lastSavedUri });
   }
 
+  // テンプレート等のtxtエクスポート（main.jsのexport-text-fileハンドラと同じ
+  // 役割）。Androidには保存先を選ぶ汎用ダイアログが無いため、画像と同じ
+  // Documents配下のtemplates/フォルダに固定で保存する（同名ファイルは上書き）。
+  async function exportTextFile(fileName: string, text: string): Promise<string | null> {
+    const relativePath = `templates/${fileName.replace(/[\\/]/g, '_')}`;
+    await Filesystem.writeFile({
+      path: relativePath,
+      data: text,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+      recursive: true,
+    });
+    try {
+      const uriResult = await Filesystem.getUri({
+        path: relativePath,
+        directory: Directory.Documents,
+      });
+      return uriResult.uri;
+    } catch {
+      // getUriはベストエフォートであり、失敗した場合は表示用に相対パスへフォールバックする。
+      return `Documents/${relativePath}`;
+    }
+  }
+
   const chunksApi = makeNamedListApi(CHUNKS_KEY);
   const templatesApi = makeNamedListApi(TEMPLATES_KEY);
   const queueTemplatesApi = makeGenericListApi(QUEUE_TEMPLATES_KEY);
@@ -307,6 +331,7 @@ if (!window.api) {
     updateFavorite: (kind, item) => favoritesApis[kind].update(item),
     deleteFavorite: (kind, id) => favoritesApis[kind].remove(id),
     encodeVibe,
+    exportTextFile,
   };
 
   window.api = api;

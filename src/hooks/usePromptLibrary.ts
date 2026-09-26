@@ -1,5 +1,11 @@
 import { Dispatch, SetStateAction, useState } from 'react';
 import type { NamedItem, NamedListApi, TemplateApplyState } from '../types/domain';
+import { parsePromptTemplate, serializePromptTemplate } from '../utils/templateTextFormat';
+import {
+  exportTemplateFile,
+  formatImportStatus,
+  importTemplateFiles,
+} from '../utils/templateFileIO';
 
 interface UsePromptLibraryParams {
   prompt: string;
@@ -81,6 +87,26 @@ export function usePromptLibrary({
     setTemplateEditDraft(null);
   }
 
+  async function handleExportTemplate(template: NamedItem) {
+    try {
+      setStatus(await exportTemplateFile(template.name, serializePromptTemplate(template)));
+    } catch (err) {
+      setStatus(`エクスポートに失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // 同名のテンプレートが既にある場合は内容を上書きする。
+  async function handleImportTemplateFiles(files: File[]) {
+    if (!files.length) return;
+    try {
+      setStatus(
+        formatImportStatus(await importTemplateFiles(files, parsePromptTemplate, templatesList))
+      );
+    } catch (err) {
+      setStatus(`インポートに失敗しました: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   function handleApplyTemplate(template: NamedItem) {
     setTemplateApplyState({
       template,
@@ -112,6 +138,8 @@ export function usePromptLibrary({
     templateEditDraft,
     setTemplateEditDraft,
     handleSaveTemplateEdit,
+    handleExportTemplate,
+    handleImportTemplateFiles,
     handleApplyTemplate,
     handleTemplateApplyConfirm,
   };
