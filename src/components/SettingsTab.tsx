@@ -61,23 +61,17 @@ export default function SettingsTab({
       )}
 
       <label>画像の保存先フォルダ</label>
-      {window.isNativeApp ? (
-        <p className="hint">
-          Android版では保存先は端末内のドキュメントフォルダに固定されています。
-        </p>
-      ) : (
-        <div className="output-dir-row">
-          <input type="text" readOnly value={outputDir || '（既定のフォルダを使用）'} />
-          <button type="button" onClick={onChooseOutputDir}>
-            参照...
+      <div className="output-dir-row">
+        <input type="text" readOnly value={outputDir || '（既定のフォルダを使用）'} />
+        <button type="button" onClick={onChooseOutputDir}>
+          参照...
+        </button>
+        {outputDir && (
+          <button type="button" onClick={onResetOutputDir}>
+            既定に戻す
           </button>
-          {outputDir && (
-            <button type="button" onClick={onResetOutputDir}>
-              既定に戻す
-            </button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       <label>画像からプロンプトを読み込む</label>
       <p className="hint">

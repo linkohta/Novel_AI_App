@@ -28,7 +28,6 @@ module.exports = [
   {
     ignores: [
       'node_modules/**',
-      'android/**',
       'dist/**',
       'output/**',
       'www/**',
@@ -61,7 +60,7 @@ module.exports = [
     rules: { ...tsRules, 'no-undef': 'off' },
   },
   {
-    // React + Capacitorブリッジのソース。Viteでバンドルされる（ESM + ブラウザ環境、TypeScript）。
+    // Reactのソース。Viteでバンドルされる（ESM + ブラウザ環境、TypeScript）。
     files: ['src/**/*.ts', 'src/**/*.tsx'],
     languageOptions: {
       ecmaVersion: 2022,

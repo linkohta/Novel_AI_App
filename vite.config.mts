@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// ElectronはビルドをVia file://で読み込み、Capacitorはローカルwebviewから配信する
-// —— どちらも相対アセットURLが必要なため base: './' としている。
+// Electronはビルド成果物（www/index.html）を file:// で読み込むため、
+// 相対アセットURLになるよう base: './' としている。
 export default defineConfig({
   root: 'src',
   base: './',
