@@ -9,8 +9,7 @@ export interface UseNamedListParams<TItem, TNewItem> {
 
 // プロンプトチャンク、プロンプトテンプレート、および（useFavoritesList経由で）
 // お気に入りアーティスト／キャラクターで共有されるload/save/update/deleteの
-// リスト処理。旧renderChunks/renderTemplatesのパターンを踏襲しており、
-// 変更のたびに楽観的なローカルstateを信用せず、window.apiから正となる
+// リスト処理。変更のたびに楽観的なローカルstateを信用せず、window.apiから正となる
 // リストを再取得する。
 export function useNamedList<TItem, TNewItem = TItem>({
   load,

@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction, useState } from 'react';
 import type { Character, NamedItem, NamedListApi, TemplateApplyState } from '../types/domain';
+import { makeCharacter } from '../utils/characters';
 
 interface UseCharactersParams {
   chunksList: NamedListApi<NamedItem, { name: string; text: string }>;
@@ -14,7 +15,7 @@ interface UseCharactersParams {
 // chunksList/templatesList（組み合わせるソースを解決するため）と
 // setTemplateApplyStateに依存しており、これによって組み合わせるテンプレート
 // ソースがusePromptLibraryと同じ変数入力モーダルを開けるようにしている——
-// このstateはApp.jsxが持つ（このフックにもusePromptLibraryにも持たせない）
+// このstateはApp.tsxが持つ（このフックにもusePromptLibraryにも持たせない）
 // のは、両者の間で循環依存になるのを避けるためである。
 export function useCharacters({
   chunksList,
@@ -37,21 +38,13 @@ export function useCharacters({
   }
 
   function addBlankCharacter() {
-    setCharacters((prev) => [
-      ...prev,
-      { id: window.crypto.randomUUID(), prompt: '', negativePrompt: '', enabled: true },
-    ]);
+    setCharacters((prev) => [...prev, makeCharacter()]);
   }
 
   function finishAddCharacterByName(promptText: string, negativePromptText: string) {
     setCharacters((prev) => [
       ...prev,
-      {
-        id: window.crypto.randomUUID(),
-        prompt: promptText,
-        negativePrompt: negativePromptText || '',
-        enabled: true,
-      },
+      makeCharacter({ prompt: promptText, negativePrompt: negativePromptText || '' }),
     ]);
     setCharNameByName('');
     setCharSeriesByName('');

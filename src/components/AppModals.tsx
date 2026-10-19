@@ -56,7 +56,7 @@ interface AppModalsProps {
   handleSaveFavCharEdit: () => void;
 }
 
-// App.jsxが持つ編集・適用系の状態を渡すだけの、モーダル7種のまとめ役。
+// App.tsxが持つ編集・適用系の状態を渡すだけの、モーダル7種のまとめ役。
 // 各モーダル自体は状態を持たず、開閉は draft/applyState が truthy かどうかで
 // 決まる（ModalOverlay側の条件付きレンダリング）。
 export default function AppModals({

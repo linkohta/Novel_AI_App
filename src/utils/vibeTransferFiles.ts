@@ -10,6 +10,10 @@ import { parseNaiv4VibeFile } from './naiv4vibe';
 export const DEFAULT_INFORMATION_EXTRACTED = 1;
 export const DEFAULT_REFERENCE_STRENGTH = 0.6;
 
+// ポーションセットファイル用の<input type="file">のaccept属性。拡張子の
+// 大文字小文字の揺れ（.naiv4vibeBundle / .naiv4vibebundle）の両方を受け付ける。
+export const VIBE_SET_FILE_ACCEPT = '.naiv4vibe,.naiv4vibebundle,.naiv4vibeBundle';
+
 // 選択された画像ファイルをbase64文字列（data URLのprefixなし）に変換する。
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

@@ -7,6 +7,8 @@ import {
   withNewIds,
 } from '../utils/vibeTransferFiles';
 import { errorMessage } from '../utils/errorMessage';
+import { makeCharacter } from '../utils/characters';
+import { clampCount } from '../utils/numbers';
 
 function makeQueueItem(): QueueItem {
   return {
@@ -58,7 +60,7 @@ export function useQueueItems(setStatus?: (status: string) => void) {
   }
 
   function applyBulkCount() {
-    const clamped = String(Math.max(1, Math.min(100, parseInt(bulkCount, 10) || 1)));
+    const clamped = String(clampCount(bulkCount));
     setQueueItems((prev) => prev.map((item) => ({ ...item, count: clamped })));
   }
 
@@ -106,10 +108,7 @@ export function useQueueItems(setStatus?: (status: string) => void) {
   function addQueueItemCharacter(itemIndex: number) {
     updateItemAt(itemIndex, (item) => ({
       ...item,
-      characters: [
-        ...(item.characters || []),
-        { id: window.crypto.randomUUID(), prompt: '', negativePrompt: '', enabled: true },
-      ],
+      characters: [...(item.characters || []), makeCharacter()],
     }));
   }
 

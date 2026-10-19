@@ -3,6 +3,8 @@ import { waitWithCountdown } from '../utils/sleep';
 import type { GenerateParamsExtra, QueueItem } from '../types/domain';
 import type { GenerateImageParams, GenerateImageResult, Settings } from '../types/window-api';
 import { errorMessage } from '../utils/errorMessage';
+import { clampCount, parseIntervalSec } from '../utils/numbers';
+import { activeCharacters } from '../utils/characters';
 
 interface UseQueueGenerationParams {
   queueItems: QueueItem[];
@@ -34,12 +36,9 @@ export function useQueueGeneration({
   async function handleStartQueue() {
     if (batchRunning) return;
     window.api.saveSettings(currentSettings());
-    const intervalSec = Math.max(1, parseInt(queueInterval, 10) || 5);
+    const intervalSec = parseIntervalSec(queueInterval);
     const items = queueItems
-      .map((item) => ({
-        ...item,
-        count: Math.max(1, Math.min(100, parseInt(String(item.count), 10) || 1)),
-      }))
+      .map((item) => ({ ...item, count: clampCount(item.count) }))
       .filter((item) => item.prompt.trim());
     if (!items.length) return;
     const queueFolder = `queue_${Date.now()}`;
@@ -52,9 +51,7 @@ export function useQueueGeneration({
     let stopped = false;
     for (let itemIndex = 0; itemIndex < items.length && !stopped; itemIndex += 1) {
       const item = items[itemIndex];
-      const itemCharacterPrompts = (item.characters || []).filter(
-        (c) => c.enabled !== false && c.prompt?.trim()
-      );
+      const itemCharacterPrompts = activeCharacters(item.characters);
       const itemVibeTransferImages = item.vibeTransferImages || [];
 
       for (let i = 1; i <= item.count; i += 1) {

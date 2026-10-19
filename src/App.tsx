@@ -26,6 +26,7 @@ import { useSettingsPersistence } from './hooks/useSettingsPersistence';
 import { useImageMetadataLoader } from './hooks/useImageMetadataLoader';
 import { errorMessage } from './utils/errorMessage';
 import { handleSingleFile } from './utils/fileInput';
+import { activeCharacters } from './utils/characters';
 import type {
   FavoriteArtist,
   FavoriteCharacter,
@@ -381,7 +382,7 @@ export default function App() {
       seed,
       qualityToggle,
       varietyPlus,
-      characterPrompts: characters.filter((c) => c.enabled !== false && c.prompt?.trim()),
+      characterPrompts: activeCharacters(characters),
       vibeTransferImages: encodedVibeImages,
       ...restExtra,
     };
