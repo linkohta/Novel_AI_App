@@ -41,8 +41,6 @@ export interface GenerateImageParams {
     referenceStrength?: number;
   }[];
   batchFolder?: string;
-  skipJsonOutput?: boolean;
-  fileName?: string;
 }
 
 export interface GenerateImageResult {
@@ -69,7 +67,6 @@ export interface WindowApi {
   loadSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<boolean>;
   generateImage(params: GenerateImageParams): Promise<GenerateImageResult>;
-  savePromptInfo(params: GenerateImageParams): Promise<boolean>;
   getSubscriptionInfo(apiKey: string): Promise<SubscriptionInfo>;
   // 保存先フォルダをOS標準のファイルマネージャーで開く。shell.openPathの結果
   // （失敗時はエラー文字列、成功時は空文字列）を返す。

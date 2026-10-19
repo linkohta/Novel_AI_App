@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react';
 import Section from './Section';
 
 interface PromptSectionProps {
@@ -8,6 +9,7 @@ interface PromptSectionProps {
   negativePrompt: string;
   setNegativePrompt: (value: string) => void;
   onFocusField: (key: string) => void;
+  onLoadImageMetadata: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function PromptSection({
@@ -18,6 +20,7 @@ export default function PromptSection({
   negativePrompt,
   setNegativePrompt,
   onFocusField,
+  onLoadImageMetadata,
 }: PromptSectionProps) {
   return (
     <Section id="promptSection" title="プロンプト" open={open} onToggle={onToggle}>
@@ -36,6 +39,13 @@ export default function PromptSection({
         onChange={(e) => setNegativePrompt(e.target.value)}
         onFocus={() => onFocusField('negativePrompt')}
       />
+
+      {/* 読み込んだ内容が反映される先（プロンプト欄）のすぐ近くに置く。 */}
+      <label>画像からプロンプトを読み込む</label>
+      <p className="hint">
+        NovelAIで生成されたPNG画像を選択すると、埋め込まれた生成情報（プロンプト・ネガティブプロンプト・サイズ・ステップ数・スケール・サンプラー・シード・キャラクタープロンプト）を読み取って自動入力します。
+      </p>
+      <input type="file" accept="image/png" onChange={onLoadImageMetadata} />
     </Section>
   );
 }

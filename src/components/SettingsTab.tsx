@@ -1,4 +1,3 @@
-import type { ChangeEvent } from 'react';
 import type { SubscriptionInfo } from '../types/window-api';
 
 interface SettingsTabProps {
@@ -10,7 +9,6 @@ interface SettingsTabProps {
   outputDir: string;
   onChooseOutputDir: () => void;
   onResetOutputDir: () => void;
-  onLoadImageMetadata: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
 function formatOpusPerks(info: SubscriptionInfo): string {
@@ -22,8 +20,7 @@ function formatOpusPerks(info: SubscriptionInfo): string {
     .join(' / ');
 }
 
-// 左パネル「設定」タブの中身：APIキー・Anlas/Opus残量の確認・画像の保存先フォルダ・
-// 画像からのプロンプト読み込み。他のタブと同様、状態は持たずApp.tsxからpropsで受け取る。
+// 左パネル「設定」タブの中身：APIキー・Anlas/Opus残量の確認・画像の保存先フォルダ。他のタブと同様、状態は持たずApp.tsxからpropsで受け取る。
 export default function SettingsTab({
   apiKey,
   setApiKey,
@@ -33,7 +30,6 @@ export default function SettingsTab({
   outputDir,
   onChooseOutputDir,
   onResetOutputDir,
-  onLoadImageMetadata,
 }: SettingsTabProps) {
   return (
     <>
@@ -72,12 +68,6 @@ export default function SettingsTab({
           </button>
         )}
       </div>
-
-      <label>画像からプロンプトを読み込む</label>
-      <p className="hint">
-        NovelAIで生成されたPNG画像を選択すると、埋め込まれた生成情報（プロンプト・ネガティブプロンプト・サイズ・ステップ数・スケール・サンプラー・シード・キャラクタープロンプト）を読み取って自動入力します。
-      </p>
-      <input type="file" accept="image/png" onChange={onLoadImageMetadata} />
     </>
   );
 }
