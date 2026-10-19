@@ -1,4 +1,5 @@
 import ModalOverlay from './ModalOverlay';
+import ModalButtons from './ModalButtons';
 import type { FavoriteCharacter } from '../../types/domain';
 
 interface FavCharEditModalProps {
@@ -29,14 +30,7 @@ export default function FavCharEditModal({
         value={draft?.series || ''}
         onChange={(e) => onChange({ ...(draft as FavoriteCharacter), series: e.target.value })}
       />
-      <div className="modal-buttons">
-        <button type="button" className="secondary" onClick={onCancel}>
-          キャンセル
-        </button>
-        <button type="button" onClick={onSave}>
-          保存
-        </button>
-      </div>
+      <ModalButtons onCancel={onCancel} onConfirm={onSave} />
     </ModalOverlay>
   );
 }

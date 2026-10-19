@@ -1,6 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import ChunkEditModal from './modals/ChunkEditModal';
-import TemplateEditModal from './modals/TemplateEditModal';
+import NamedItemEditModal from './modals/NamedItemEditModal';
 import TemplateApplyModal from './modals/TemplateApplyModal';
 import QueueTemplateEditModal from './modals/QueueTemplateEditModal';
 import QueueTemplateApplyModal from './modals/QueueTemplateApplyModal';
@@ -90,17 +89,23 @@ export default function AppModals({
 }: AppModalsProps) {
   return (
     <>
-      <ChunkEditModal
+      <NamedItemEditModal
         draft={chunkEditDraft}
         onChange={setChunkEditDraft}
         onCancel={() => setChunkEditDraft(null)}
         onSave={handleSaveChunkEdit}
+        title="プロンプトチャンクを編集"
+        nameLabel="チャンク名"
+        textLabel="プロンプト"
       />
-      <TemplateEditModal
+      <NamedItemEditModal
         draft={templateEditDraft}
         onChange={setTemplateEditDraft}
         onCancel={() => setTemplateEditDraft(null)}
         onSave={handleSaveTemplateEdit}
+        title="プロンプトテンプレートを編集"
+        nameLabel="テンプレート名"
+        textLabel='テンプレート本文（変数は "変数名" の形式）'
       />
       <TemplateApplyModal
         applyState={templateApplyState}

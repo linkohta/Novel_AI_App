@@ -1,3 +1,4 @@
+import TemplateChipList from './TemplateChipList';
 import type { NamedItem } from '../types/domain';
 import { handleMultipleFiles } from '../utils/fileInput';
 
@@ -56,43 +57,15 @@ export default function TemplatesSection({
         onChange={(e) => handleMultipleFiles(e, onImportTemplateFiles)}
       />
 
-      <div id="templateList">
-        {templates.map((template) => (
-          <div className="template-chip" key={template.id}>
-            <span className="template-name" title={template.text}>
-              {template.name}
-            </span>
-            <button
-              type="button"
-              className="template-apply"
-              onClick={() => onApplyTemplate(template)}
-            >
-              適用
-            </button>
-            <button
-              type="button"
-              className="template-edit"
-              onClick={() => onEditTemplate(template)}
-            >
-              編集
-            </button>
-            <button
-              type="button"
-              className="template-export"
-              onClick={() => onExportTemplate(template)}
-            >
-              エクスポート
-            </button>
-            <button
-              type="button"
-              className="template-delete"
-              onClick={() => onDeleteTemplate(template.id)}
-            >
-              削除
-            </button>
-          </div>
-        ))}
-      </div>
+      <TemplateChipList
+        listId="templateList"
+        templates={templates}
+        titleOf={(template) => template.text}
+        onApply={onApplyTemplate}
+        onEdit={onEditTemplate}
+        onExport={onExportTemplate}
+        onDelete={onDeleteTemplate}
+      />
     </div>
   );
 }

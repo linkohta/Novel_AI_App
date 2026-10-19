@@ -1,6 +1,7 @@
 import type { ChangeEvent } from 'react';
 import Section from './Section';
-import VibeTransferCard, { type VibeTransferCardProps } from './VibeTransferCard';
+import VibeTransferList from './VibeTransferList';
+import type { VibeTransferCardProps } from './VibeTransferCard';
 import type { VibeTransferImage } from '../types/domain';
 
 interface VibeTransferSectionProps {
@@ -31,33 +32,22 @@ export default function VibeTransferSection({
         Transfer機能）。Information Extractedは参照画像からどれだけ情報を抽出するか、Reference
         Strengthはその情報をどれだけ強く反映するかを表します。
       </p>
-      <div id="vibeTransferList">
-        {vibeTransferImages.map((image) => (
-          <VibeTransferCard
-            key={image.id}
-            image={image}
-            onChangeField={onChangeImageField}
-            onRemove={onRemoveImage}
-          />
-        ))}
-      </div>
-      {vibeTransferImages.length > 1 && (
-        <button type="button" className="secondary" onClick={onBalanceStrengths}>
-          参照強度をバランス調整
-        </button>
-      )}
-      <label>＋ 参照画像を追加</label>
-      <input type="file" accept="image/*" onChange={onAddImage} />
-      <label>＋ ポーションセットファイルを読み込む</label>
-      <p className="hint">
-        NovelAI公式サイトで書き出した「ポーションセット」ファイル（.naiv4vibe）、および複数の
-        ポーションをまとめてExportした「ポーションセットバンドル」ファイル（.naiv4vibeBundle）を
-        読み込みます。
-      </p>
-      <input
-        type="file"
-        accept=".naiv4vibe,.naiv4vibebundle,.naiv4vibeBundle"
-        onChange={onAddSetFile}
+      <VibeTransferList
+        listId="vibeTransferList"
+        images={vibeTransferImages}
+        onChangeField={onChangeImageField}
+        onRemove={onRemoveImage}
+        onBalance={onBalanceStrengths}
+        onAddImage={onAddImage}
+        onAddSetFile={onAddSetFile}
+        setFileLabel="＋ ポーションセットファイルを読み込む"
+        setFileHint={
+          <p className="hint">
+            NovelAI公式サイトで書き出した「ポーションセット」ファイル（.naiv4vibe）、および複数の
+            ポーションをまとめてExportした「ポーションセットバンドル」ファイル（.naiv4vibeBundle）を
+            読み込みます。
+          </p>
+        }
       />
     </Section>
   );
