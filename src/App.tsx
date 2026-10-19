@@ -553,30 +553,30 @@ export default function App() {
             onApplyBulkVibeTransferSetFile={(e) =>
               handleSingleFile(e, applyBulkVibeTransferSetFile)
             }
-            onChangeItem={updateQueueItemField}
-            onRemoveItem={removeQueueItem}
-            onMoveItemUp={(index) => moveQueueItem(index, -1)}
-            onMoveItemDown={(index) => moveQueueItem(index, 1)}
+            itemHandlers={{
+              onChange: updateQueueItemField,
+              onRemove: removeQueueItem,
+              onMoveUp: (index) => moveQueueItem(index, -1),
+              onMoveDown: (index) => moveQueueItem(index, 1),
+              onFocusField: setFocusedFieldKey,
+              onAddCharacter: addQueueItemCharacter,
+              onRemoveCharacter: removeQueueItemCharacter,
+              onChangeCharacter: updateQueueItemCharacterField,
+              onLoadImageMetadata: handleLoadQueueItemImageMetadata,
+              onAddVibeTransferImage: (index, e) =>
+                handleSingleFile(e, (file) => addQueueItemVibeTransferImage(index, file)),
+              onAddVibeTransferSetFile: (index, e) =>
+                handleSingleFile(e, (file) => addQueueItemVibeTransferSetFile(index, file)),
+              onRemoveVibeTransferImage: removeQueueItemVibeTransferImage,
+              onBalanceVibeTransferStrengths: balanceQueueItemVibeTransferStrengths,
+              onChangeVibeTransferField: updateQueueItemVibeTransferField,
+            }}
             onAddItem={addQueueItem}
             onClearItems={() => {
               if (window.confirm('複数プロンプト連続生成のリストをすべて削除しますか？')) {
                 clearQueueItems();
               }
             }}
-            onAddItemCharacter={addQueueItemCharacter}
-            onRemoveItemCharacter={removeQueueItemCharacter}
-            onChangeItemCharacter={updateQueueItemCharacterField}
-            onLoadItemImageMetadata={handleLoadQueueItemImageMetadata}
-            onAddItemVibeTransferImage={(index, e) =>
-              handleSingleFile(e, (file) => addQueueItemVibeTransferImage(index, file))
-            }
-            onAddItemVibeTransferSetFile={(index, e) =>
-              handleSingleFile(e, (file) => addQueueItemVibeTransferSetFile(index, file))
-            }
-            onRemoveItemVibeTransferImage={removeQueueItemVibeTransferImage}
-            onBalanceItemVibeTransferStrengths={balanceQueueItemVibeTransferStrengths}
-            onChangeItemVibeTransferField={updateQueueItemVibeTransferField}
-            onFocusField={setFocusedFieldKey}
             queueInterval={queueInterval}
             setQueueInterval={setQueueInterval}
             onStartQueue={handleStartQueue}
