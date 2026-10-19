@@ -19,12 +19,17 @@
 | `@types/node` | MIT | Node.js組み込みAPIの型定義（devDependency） |
 | `@typescript-eslint/parser` | MIT | ESLintでTypeScriptを解析するためのパーサー（devDependency） |
 | `@typescript-eslint/eslint-plugin` | MIT | TypeScript向けESLintルール（devDependency） |
+| `eslint` | MIT | 静的解析ツール本体（devDependency） |
+| `@eslint/js` | MIT | ESLintの推奨ルールセット（devDependency） |
+| `eslint-plugin-react-hooks` | MIT | React Hooksのルール検査（devDependency） |
+| `prettier` | MIT | コードフォーマッタ（devDependency） |
+| `electron-vite` | MIT | 開発時（`npm run dev`）のランチャー（devDependency） |
 
 `typescript` のみApache-2.0、それ以外はすべてMITライセンスであり、いずれも商用・私的利用を含め改変・再配布が許可されています（著作権表示の保持が条件）。
 
 ## 依存関係全体（間接依存を含む）
 
-`node_modules` 配下の全パッケージ（約420件、devDependency由来のビルドツール群を含む）のライセンスを確認した結果、以下のライセンスのみで構成されており、GPL/AGPL/LGPL等の強いコピーレフト・ライセンスは含まれていません。
+`node_modules` 配下の全パッケージ（約410件、devDependency由来のビルドツール群を含む）のライセンスを確認した結果、以下のライセンスのみで構成されており、GPL/AGPL/LGPL等の強いコピーレフト・ライセンスは含まれていません。
 
 - MIT
 - ISC
@@ -35,9 +40,10 @@
 - Unlicense
 - WTFPL
 - Python-2.0（PSFベースの許諾型ライセンス。`argparse` のみ）
+- CC-BY-4.0（`caniuse-lite`。ブラウザ対応状況のデータベースで、Viteがビルド時に参照するのみ。生成物には含まれない）
 - MPL-2.0（`lightningcss`。Viteが内部で使うCSS処理系。ファイル単位の弱いコピーレフトで、本アプリのソース自体をMPLにする必要はない。ビルドツールとしてのみ使用しており、生成物には含まれない）
 
-上記のうちMPL-2.0を除く全てが改変・商用利用・再配布を無条件に許可する許諾型（permissive）ライセンスです。ライセンス一覧を再確認する場合は、`npm ls --all` で依存関係を確認したうえで、各パッケージの `package.json` の `license` フィールドを参照してください。
+上記のうちMPL-2.0・CC-BY-4.0を除く全てが改変・商用利用・再配布を無条件に許可する許諾型（permissive）ライセンスです。ライセンス一覧を再確認する場合は、`npm ls --all` で依存関係を確認したうえで、各パッケージの `package.json` の `license` フィールドを参照してください。
 
 ## デスクトップ版（Electron）パッケージに同梱されるライセンス
 
