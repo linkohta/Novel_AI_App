@@ -110,3 +110,6 @@ export function useCharacters({
     handleAddByName,
   };
 }
+
+// フックの戻り値の型。タブコンポーネント等へまとめて渡すために公開する。
+export type UseCharactersResult = ReturnType<typeof useCharacters>;

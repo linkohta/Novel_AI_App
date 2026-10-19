@@ -5,104 +5,49 @@ import QueueTemplateEditModal from './modals/QueueTemplateEditModal';
 import QueueTemplateApplyModal from './modals/QueueTemplateApplyModal';
 import FavArtistEditModal from './modals/FavArtistEditModal';
 import FavCharEditModal from './modals/FavCharEditModal';
-import type {
-  FavoriteArtist,
-  FavoriteCharacter,
-  NamedItem,
-  QueueTemplateApplyState,
-  QueueTemplateDraft,
-  QueueTemplateDraftCharacter,
-  QueueTemplateRow,
-  TemplateApplyState,
-} from '../types/domain';
+import type { TemplateApplyState } from '../types/domain';
+import type { UsePromptLibraryResult } from '../hooks/usePromptLibrary';
+import type { UseQueueTemplateDraftResult } from '../hooks/useQueueTemplateDraft';
+import type { UseFavoritesHandlersResult } from '../hooks/useFavoritesHandlers';
 
 interface AppModalsProps {
-  chunkEditDraft: NamedItem | null;
-  setChunkEditDraft: Dispatch<SetStateAction<NamedItem | null>>;
-  handleSaveChunkEdit: () => void;
-  templateEditDraft: NamedItem | null;
-  setTemplateEditDraft: Dispatch<SetStateAction<NamedItem | null>>;
-  handleSaveTemplateEdit: () => void;
+  // チャンク／テンプレートの編集ドラフトとテンプレート適用の確定処理。
+  promptLibrary: UsePromptLibraryResult;
+  // テンプレート適用モーダルの状態（App.tsxが所有。usePromptLibraryとuseCharactersで共有）。
   templateApplyState: TemplateApplyState | null;
   setTemplateApplyState: Dispatch<SetStateAction<TemplateApplyState | null>>;
-  handleTemplateApplyConfirm: (result: string) => void;
-  queueTemplateDraft: QueueTemplateDraft | null;
-  setQueueTemplateDraft: Dispatch<SetStateAction<QueueTemplateDraft | null>>;
-  updateQueueTemplateDraftRow: (
-    rowIndex: number,
-    field: 'prompt' | 'negativePrompt',
-    value: string
-  ) => void;
-  updateQueueTemplateDraftCharacter: (
-    rowIndex: number,
-    charIndex: number,
-    field: keyof QueueTemplateDraftCharacter,
-    value: string | boolean
-  ) => void;
-  addQueueTemplateDraftRow: () => void;
-  removeQueueTemplateDraftRow: (rowIndex: number) => void;
-  addQueueTemplateDraftCharacter: (rowIndex: number) => void;
-  removeQueueTemplateDraftCharacter: (rowIndex: number, charIndex: number) => void;
-  handleSaveQueueTemplate: () => void;
-  queueTemplateApplyState: QueueTemplateApplyState | null;
-  setQueueTemplateApplyState: Dispatch<SetStateAction<QueueTemplateApplyState | null>>;
-  handleQueueTemplateApplyConfirm: (rows: QueueTemplateRow[]) => void;
-  favArtistEditDraft: FavoriteArtist | null;
-  setFavArtistEditDraft: Dispatch<SetStateAction<FavoriteArtist | null>>;
-  handleSaveFavArtistEdit: () => void;
-  favCharEditDraft: FavoriteCharacter | null;
-  setFavCharEditDraft: Dispatch<SetStateAction<FavoriteCharacter | null>>;
-  handleSaveFavCharEdit: () => void;
+  // 複数プロンプトテンプレートの編集ドラフト・適用状態。
+  queueTemplateApi: UseQueueTemplateDraftResult;
+  // お気に入りアーティスト／キャラクターの編集ドラフト。
+  favorites: UseFavoritesHandlersResult;
 }
 
-// App.tsxが持つ編集・適用系の状態を渡すだけの、モーダル7種のまとめ役。
+// App.tsxが持つ編集・適用系の状態を渡すだけの、モーダル6種のまとめ役。
 // 各モーダル自体は状態を持たず、開閉は draft/applyState が truthy かどうかで
 // 決まる（ModalOverlay側の条件付きレンダリング）。
 export default function AppModals({
-  chunkEditDraft,
-  setChunkEditDraft,
-  handleSaveChunkEdit,
-  templateEditDraft,
-  setTemplateEditDraft,
-  handleSaveTemplateEdit,
+  promptLibrary,
   templateApplyState,
   setTemplateApplyState,
-  handleTemplateApplyConfirm,
-  queueTemplateDraft,
-  setQueueTemplateDraft,
-  updateQueueTemplateDraftRow,
-  updateQueueTemplateDraftCharacter,
-  addQueueTemplateDraftRow,
-  removeQueueTemplateDraftRow,
-  addQueueTemplateDraftCharacter,
-  removeQueueTemplateDraftCharacter,
-  handleSaveQueueTemplate,
-  queueTemplateApplyState,
-  setQueueTemplateApplyState,
-  handleQueueTemplateApplyConfirm,
-  favArtistEditDraft,
-  setFavArtistEditDraft,
-  handleSaveFavArtistEdit,
-  favCharEditDraft,
-  setFavCharEditDraft,
-  handleSaveFavCharEdit,
+  queueTemplateApi,
+  favorites,
 }: AppModalsProps) {
   return (
     <>
       <NamedItemEditModal
-        draft={chunkEditDraft}
-        onChange={setChunkEditDraft}
-        onCancel={() => setChunkEditDraft(null)}
-        onSave={handleSaveChunkEdit}
+        draft={promptLibrary.chunkEditDraft}
+        onChange={promptLibrary.setChunkEditDraft}
+        onCancel={() => promptLibrary.setChunkEditDraft(null)}
+        onSave={promptLibrary.handleSaveChunkEdit}
         title="プロンプトチャンクを編集"
         nameLabel="チャンク名"
         textLabel="プロンプト"
       />
       <NamedItemEditModal
-        draft={templateEditDraft}
-        onChange={setTemplateEditDraft}
-        onCancel={() => setTemplateEditDraft(null)}
-        onSave={handleSaveTemplateEdit}
+        draft={promptLibrary.templateEditDraft}
+        onChange={promptLibrary.setTemplateEditDraft}
+        onCancel={() => promptLibrary.setTemplateEditDraft(null)}
+        onSave={promptLibrary.handleSaveTemplateEdit}
         title="プロンプトテンプレートを編集"
         nameLabel="テンプレート名"
         textLabel='テンプレート本文（変数は "変数名" の形式）'
@@ -110,36 +55,36 @@ export default function AppModals({
       <TemplateApplyModal
         applyState={templateApplyState}
         onCancel={() => setTemplateApplyState(null)}
-        onConfirm={handleTemplateApplyConfirm}
+        onConfirm={promptLibrary.handleTemplateApplyConfirm}
       />
       <QueueTemplateEditModal
-        draft={queueTemplateDraft}
-        onChange={setQueueTemplateDraft}
-        onChangeRow={updateQueueTemplateDraftRow}
-        onChangeCharacter={updateQueueTemplateDraftCharacter}
-        onAddRow={addQueueTemplateDraftRow}
-        onRemoveRow={removeQueueTemplateDraftRow}
-        onAddCharacter={addQueueTemplateDraftCharacter}
-        onRemoveCharacter={removeQueueTemplateDraftCharacter}
-        onCancel={() => setQueueTemplateDraft(null)}
-        onSave={handleSaveQueueTemplate}
+        draft={queueTemplateApi.queueTemplateDraft}
+        onChange={queueTemplateApi.setQueueTemplateDraft}
+        onChangeRow={queueTemplateApi.updateQueueTemplateDraftRow}
+        onChangeCharacter={queueTemplateApi.updateQueueTemplateDraftCharacter}
+        onAddRow={queueTemplateApi.addQueueTemplateDraftRow}
+        onRemoveRow={queueTemplateApi.removeQueueTemplateDraftRow}
+        onAddCharacter={queueTemplateApi.addQueueTemplateDraftCharacter}
+        onRemoveCharacter={queueTemplateApi.removeQueueTemplateDraftCharacter}
+        onCancel={() => queueTemplateApi.setQueueTemplateDraft(null)}
+        onSave={queueTemplateApi.handleSaveQueueTemplate}
       />
       <QueueTemplateApplyModal
-        applyState={queueTemplateApplyState}
-        onCancel={() => setQueueTemplateApplyState(null)}
-        onConfirm={handleQueueTemplateApplyConfirm}
+        applyState={queueTemplateApi.queueTemplateApplyState}
+        onCancel={() => queueTemplateApi.setQueueTemplateApplyState(null)}
+        onConfirm={queueTemplateApi.handleQueueTemplateApplyConfirm}
       />
       <FavArtistEditModal
-        draft={favArtistEditDraft}
-        onChange={setFavArtistEditDraft}
-        onCancel={() => setFavArtistEditDraft(null)}
-        onSave={handleSaveFavArtistEdit}
+        draft={favorites.favArtistEditDraft}
+        onChange={favorites.setFavArtistEditDraft}
+        onCancel={() => favorites.setFavArtistEditDraft(null)}
+        onSave={favorites.handleSaveFavArtistEdit}
       />
       <FavCharEditModal
-        draft={favCharEditDraft}
-        onChange={setFavCharEditDraft}
-        onCancel={() => setFavCharEditDraft(null)}
-        onSave={handleSaveFavCharEdit}
+        draft={favorites.favCharEditDraft}
+        onChange={favorites.setFavCharEditDraft}
+        onCancel={() => favorites.setFavCharEditDraft(null)}
+        onSave={favorites.handleSaveFavCharEdit}
       />
     </>
   );

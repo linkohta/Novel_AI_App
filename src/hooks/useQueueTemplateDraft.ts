@@ -235,3 +235,6 @@ export function useQueueTemplateDraft({
     handleQueueTemplateApplyConfirm,
   };
 }
+
+// フックの戻り値の型。タブコンポーネント等へまとめて渡すために公開する。
+export type UseQueueTemplateDraftResult = ReturnType<typeof useQueueTemplateDraft>;

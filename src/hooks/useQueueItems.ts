@@ -206,3 +206,6 @@ export function useQueueItems(setStatus?: (status: string) => void) {
     applyBulkVibeTransferSetFile,
   };
 }
+
+// フックの戻り値の型。タブコンポーネント等へまとめて渡すために公開する。
+export type UseQueueItemsResult = ReturnType<typeof useQueueItems>;
