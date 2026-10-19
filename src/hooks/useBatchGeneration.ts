@@ -41,18 +41,6 @@ export function useBatchGeneration({
     batchStopRef.current = false;
     setBatchRunning(true);
 
-    try {
-      // 画像ごとではなく、このプロンプト1件について1つだけリクエスト内容を
-      // 保存する（各画像の実際のシード値は保存対象に含めない）。
-      await window.api.savePromptInfo(
-        await buildGenerateParams({ batchFolder, fileName: 'prompt' })
-      );
-    } catch (err) {
-      setBatchStatus(`プロンプト情報の保存でエラー: ${errorMessage(err)}（中断しました）`);
-      setBatchRunning(false);
-      return;
-    }
-
     for (let i = 1; i <= count; i += 1) {
       if (batchStopRef.current) {
         setBatchStatus(`${i - 1}/${count} 枚生成後に中断しました（保存先: output/${batchFolder}）`);
@@ -60,8 +48,11 @@ export function useBatchGeneration({
       }
       setBatchStatus(`${i}/${count} 枚目を生成中...`);
       try {
+        // 連続生成では「モデル」タブのシード値によらず毎回ランダムなシードで
+        // 生成する（同じシードで同じ画像が何枚も生成されるのを防ぐため。
+        // seed: 0 はbuildRequestBodyでランダムを意味する）。
         const result = await window.api.generateImage(
-          await buildGenerateParams({ batchFolder, skipJsonOutput: true })
+          await buildGenerateParams({ batchFolder, seed: 0 })
         );
         recordResult(result);
         setBatchStatus(`${i}/${count} 枚生成しました（保存先: output/${batchFolder}）`);

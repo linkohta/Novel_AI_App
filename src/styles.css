@@ -126,6 +126,15 @@ button.secondary {
 .generate-sticky button:first-child {
   margin-top: 0;
 }
+.left-top-sticky {
+  position: sticky;
+  top: -16px;
+  margin: -16px -16px 0 -16px;
+  padding: 16px 16px 0;
+  background: #26272e;
+  border-bottom: 1px solid #383944;
+  z-index: 10;
+}
 .tab-bar {
   display: flex;
   gap: 4px;

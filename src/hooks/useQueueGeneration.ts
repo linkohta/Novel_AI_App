@@ -18,7 +18,7 @@ interface UseQueueGenerationParams {
 // 各行のプロンプトを`count`回、生成の間に待機を挟みながら生成し、
 // （全行にわたる）すべての画像を1つの共有`queue_<timestamp>/`フォルダに
 // 保存する。単一プロンプトの連続生成ループと同時実行されないようガードして
-// いる（useBatchGeneration.js参照）。
+// いる（useBatchGeneration.ts参照）。
 export function useQueueGeneration({
   queueItems,
   queueInterval,
@@ -57,25 +57,6 @@ export function useQueueGeneration({
       );
       const itemVibeTransferImages = item.vibeTransferImages || [];
 
-      try {
-        // 画像ごとではなく、この行のプロンプト1件について1つだけリクエスト
-        // 内容を保存する（各画像の実際のシード値は保存対象に含めない）。
-        await window.api.savePromptInfo(
-          await buildGenerateParams({
-            prompt: item.prompt,
-            negativePrompt: item.negativePrompt,
-            characterPrompts: itemCharacterPrompts,
-            vibeTransferImages: itemVibeTransferImages,
-            batchFolder: queueFolder,
-            fileName: `prompt${itemIndex + 1}`,
-          })
-        );
-      } catch (err) {
-        setQueueStatus(`プロンプト情報の保存でエラー: ${errorMessage(err)}（中断しました）`);
-        stopped = true;
-        continue;
-      }
-
       for (let i = 1; i <= item.count; i += 1) {
         if (queueStopRef.current) {
           stopped = true;
@@ -92,7 +73,8 @@ export function useQueueGeneration({
               characterPrompts: itemCharacterPrompts,
               vibeTransferImages: itemVibeTransferImages,
               batchFolder: queueFolder,
-              skipJsonOutput: true,
+              // 連続生成と同様、毎回ランダムなシードで生成する（0=ランダム）。
+              seed: 0,
             })
           );
           recordResult(result);

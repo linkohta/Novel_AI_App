@@ -431,15 +431,17 @@ export default function App() {
   return (
     <>
       <div className="panel left">
-        <TabBar items={TAB_ITEMS} activeKey={activeTab} onChange={setActiveTab} />
-
-        <button
-          type="button"
-          className="secondary manage-open-button"
-          onClick={() => setManagementModalOpen(true)}
-        >
-          チャンク・テンプレート・お気に入りを管理...
-        </button>
+        {/* タブバーと管理ボタンはパネルをスクロールしても常に操作できるよう上端に固定する。 */}
+        <div className="left-top-sticky">
+          <TabBar items={TAB_ITEMS} activeKey={activeTab} onChange={setActiveTab} />
+          <button
+            type="button"
+            className="secondary manage-open-button"
+            onClick={() => setManagementModalOpen(true)}
+          >
+            チャンク・テンプレート・お気に入りを管理...
+          </button>
+        </div>
 
         <div className="tab-panel" hidden={activeTab !== 'settings'}>
           <SettingsTab
@@ -451,7 +453,6 @@ export default function App() {
             outputDir={outputDir}
             onChooseOutputDir={handleChooseOutputDir}
             onResetOutputDir={() => setOutputDir('')}
-            onLoadImageMetadata={handleLoadImageMetadata}
           />
         </div>
 
@@ -464,6 +465,7 @@ export default function App() {
             negativePrompt={negativePrompt}
             setNegativePrompt={setNegativePrompt}
             onFocusField={setFocusedFieldKey}
+            onLoadImageMetadata={handleLoadImageMetadata}
           />
 
           <CharactersSection

@@ -5,6 +5,17 @@ import VibeTransferCard, { type VibeTransferField } from './VibeTransferCard';
 import type { QueueCharacter, QueueItem, QueueTemplate } from '../types/domain';
 import { handleMultipleFiles } from '../utils/fileInput';
 
+// 折りたたみ時の見出しに表示するプロンプト冒頭の最大文字数。長いプロンプトを
+// そのまま出すと見出しが何行にもなり、行をしまい込んだ意味が薄れるため切り詰める。
+const PREVIEW_MAX_LENGTH = 40;
+
+function truncatePreview(text: string): string {
+  const chars = Array.from(text);
+  return chars.length > PREVIEW_MAX_LENGTH
+    ? `${chars.slice(0, PREVIEW_MAX_LENGTH).join('')}…`
+    : text;
+}
+
 interface QueueItemCardProps {
   index: number;
   item: QueueItem;
@@ -54,7 +65,7 @@ function QueueItemCard({
 }: QueueItemCardProps) {
   const characters = item.characters || [];
   const vibeTransferImages = item.vibeTransferImages || [];
-  const previewText = item.prompt.trim() || '(プロンプト未入力)';
+  const previewText = truncatePreview(item.prompt.trim() || '(プロンプト未入力)');
 
   return (
     <details className="char-card">
