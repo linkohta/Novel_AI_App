@@ -1,4 +1,5 @@
 import Section from './Section';
+import RunControls from './RunControls';
 
 interface BatchSectionProps {
   open: boolean;
@@ -49,26 +50,13 @@ export default function BatchSection({
           />
         </div>
       </div>
-      <div className="row">
-        <div>
-          <button type="button" onClick={onStartBatch} disabled={batchRunning}>
-            連続生成する
-          </button>
-        </div>
-        <div>
-          <button
-            type="button"
-            className="secondary"
-            onClick={onStopBatch}
-            disabled={!batchRunning}
-          >
-            中断する
-          </button>
-        </div>
-      </div>
-      <div id="batchStatus" className="file-info">
-        {batchStatus}
-      </div>
+      <RunControls
+        running={batchRunning}
+        onStart={onStartBatch}
+        onStop={onStopBatch}
+        status={batchStatus}
+        statusId="batchStatus"
+      />
     </Section>
   );
 }

@@ -16,6 +16,7 @@ import {
   importTemplateFiles,
 } from '../utils/templateFileIO';
 import { errorMessage } from '../utils/errorMessage';
+import { makeCharacter } from '../utils/characters';
 
 interface UseQueueTemplateDraftParams {
   queueItems: QueueItem[];
@@ -27,6 +28,21 @@ interface UseQueueTemplateDraftParams {
 type DraftField = 'prompt' | 'negativePrompt' | 'count';
 type DraftCharacterField = keyof QueueTemplateDraftCharacter;
 
+// キャラクター1件を、編集ダイアログで扱う完全な形（id無し・enabled必須）に揃える。
+// 保存済みテンプレート（enabledが欠けている可能性がある）と複数プロンプト連続
+// 生成のリスト（idを持つ）の両方から使う。
+function toDraftCharacter(c: {
+  prompt?: string;
+  negativePrompt?: string;
+  enabled?: boolean;
+}): QueueTemplateDraftCharacter {
+  return {
+    prompt: c.prompt || '',
+    negativePrompt: c.negativePrompt || '',
+    enabled: c.enabled !== false,
+  };
+}
+
 // 保存済みテンプレートの行（count/enabledが欠けている可能性がある）を、編集
 // ダイアログ・txtエクスポートで扱う完全な形に揃える（枚数1・有効を既定値とする）。
 function toDraftRows(rows: QueueTemplateRow[]): QueueTemplateDraftRow[] {
@@ -34,11 +50,7 @@ function toDraftRows(rows: QueueTemplateRow[]): QueueTemplateDraftRow[] {
     prompt: row.prompt || '',
     negativePrompt: row.negativePrompt || '',
     count: row.count || '1',
-    characters: (row.characters || []).map((c) => ({
-      prompt: c.prompt || '',
-      negativePrompt: c.negativePrompt || '',
-      enabled: c.enabled !== false,
-    })),
+    characters: (row.characters || []).map(toDraftCharacter),
   }));
 }
 
@@ -66,11 +78,7 @@ export function useQueueTemplateDraft({
         prompt: item.prompt,
         negativePrompt: item.negativePrompt,
         count: item.count,
-        characters: (item.characters || []).map((c) => ({
-          prompt: c.prompt || '',
-          negativePrompt: c.negativePrompt || '',
-          enabled: c.enabled !== false,
-        })),
+        characters: (item.characters || []).map(toDraftCharacter),
       })),
     });
   }
@@ -197,7 +205,7 @@ export function useQueueTemplateDraft({
         prompt: row.prompt,
         negativePrompt: row.negativePrompt,
         count: row.count,
-        characters: row.characters.map((c) => ({ id: window.crypto.randomUUID(), ...c })),
+        characters: row.characters.map((c) => makeCharacter(c)),
         // 複数プロンプトテンプレートはAIポーション参照画像を保存対象に
         // 含めない（テンプレートは文字列プロンプトのみを対象とする設計の
         // ため）。適用時は常に空配列から開始する。
@@ -227,3 +235,6 @@ export function useQueueTemplateDraft({
     handleQueueTemplateApplyConfirm,
   };
 }
+
+// フックの戻り値の型。タブコンポーネント等へまとめて渡すために公開する。
+export type UseQueueTemplateDraftResult = ReturnType<typeof useQueueTemplateDraft>;

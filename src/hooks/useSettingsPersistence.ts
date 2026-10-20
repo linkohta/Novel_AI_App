@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
 import type { Character, QueueItem, SectionState, VibeTransferImage } from '../types/domain';
+import { ensureId } from '../utils/ids';
 
 interface UseSettingsPersistenceParams {
   apiKey: string;
@@ -113,19 +114,13 @@ export function useSettingsPersistence({
         // 古い保存済み設定はキャラクターごとのid（Reactのリストキーとして
         // 使用）より前のものなので、既存のキャラクターにも安定したキーが
         // つくように補完する。
-        setCharacters(
-          settings.characters.map((c: Character) =>
-            c.id ? c : { ...c, id: window.crypto.randomUUID() }
-          )
-        );
+        setCharacters(settings.characters.map((c: Character) => ensureId(c)));
       }
       if (Array.isArray(settings.vibeTransferImages)) {
         // 古い保存済み設定はidより前のものなので、既存の参照画像にも
         // 安定したキーがつくように補完する。
         setVibeTransferImages(
-          settings.vibeTransferImages.map((v: VibeTransferImage) =>
-            v.id ? v : { ...v, id: window.crypto.randomUUID() }
-          )
+          settings.vibeTransferImages.map((v: VibeTransferImage) => ensureId(v))
         );
       }
       if (Array.isArray(settings.queueItems) && settings.queueItems.length > 0) {
@@ -135,14 +130,9 @@ export function useSettingsPersistence({
         // 補完する。
         setQueueItems(
           settings.queueItems.map((item: QueueItem) => ({
-            ...item,
-            id: item.id || window.crypto.randomUUID(),
-            characters: (item.characters || []).map((c) =>
-              c.id ? c : { ...c, id: window.crypto.randomUUID() }
-            ),
-            vibeTransferImages: (item.vibeTransferImages || []).map((v) =>
-              v.id ? v : { ...v, id: window.crypto.randomUUID() }
-            ),
+            ...ensureId(item),
+            characters: (item.characters || []).map(ensureId),
+            vibeTransferImages: (item.vibeTransferImages || []).map(ensureId),
           }))
         );
       }
@@ -155,7 +145,7 @@ export function useSettingsPersistence({
       if (settings.activeTab) setActiveTab(settings.activeTab);
       setSettingsLoaded(true);
     })();
-    // 起動時に1回だけ読み込む処理であり、setXxx群はすべてApp.jsx側の
+    // 起動時に1回だけ読み込む処理であり、setXxx群はすべてApp.tsx側の
     // useStateが返す安定した関数（呼び出し元をまたいでも同一性が変わらない）
     // なので依存配列には含めない。setQueueItems/setCharactersのみ、その値を
     // 読み込み後の補完処理内で直接参照しているため明示している。

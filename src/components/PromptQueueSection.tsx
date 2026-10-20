@@ -1,196 +1,23 @@
 import type { ChangeEvent } from 'react';
 import Section from './Section';
-import CharacterCard from './CharacterCard';
-import VibeTransferCard, { type VibeTransferField } from './VibeTransferCard';
-import type { QueueCharacter, QueueItem, QueueTemplate } from '../types/domain';
-import { handleMultipleFiles } from '../utils/fileInput';
-
-// 折りたたみ時の見出しに表示するプロンプト冒頭の最大文字数。長いプロンプトを
-// そのまま出すと見出しが何行にもなり、行をしまい込んだ意味が薄れるため切り詰める。
-const PREVIEW_MAX_LENGTH = 40;
-
-function truncatePreview(text: string): string {
-  const chars = Array.from(text);
-  return chars.length > PREVIEW_MAX_LENGTH
-    ? `${chars.slice(0, PREVIEW_MAX_LENGTH).join('')}…`
-    : text;
-}
-
-interface QueueItemCardProps {
-  index: number;
-  item: QueueItem;
-  onChange: (index: number, field: 'prompt' | 'negativePrompt' | 'count', value: string) => void;
-  onRemove: (index: number) => void;
-  onMoveUp: (index: number) => void;
-  onMoveDown: (index: number) => void;
-  onFocusField: (key: string) => void;
-  onAddCharacter: (index: number) => void;
-  onRemoveCharacter: (index: number, charIndex: number) => void;
-  onChangeCharacter: (
-    index: number,
-    charIndex: number,
-    field: keyof QueueCharacter,
-    value: string | boolean
-  ) => void;
-  onLoadImageMetadata: (index: number, e: ChangeEvent<HTMLInputElement>) => void;
-  onAddVibeTransferImage: (index: number, e: ChangeEvent<HTMLInputElement>) => void;
-  onAddVibeTransferSetFile: (index: number, e: ChangeEvent<HTMLInputElement>) => void;
-  onRemoveVibeTransferImage: (index: number, vibeId: string) => void;
-  onBalanceVibeTransferStrengths: (index: number) => void;
-  onChangeVibeTransferField: (
-    index: number,
-    vibeId: string,
-    field: VibeTransferField,
-    value: number
-  ) => void;
-}
-
-function QueueItemCard({
-  index,
-  item,
-  onChange,
-  onRemove,
-  onMoveUp,
-  onMoveDown,
-  onFocusField,
-  onAddCharacter,
-  onRemoveCharacter,
-  onChangeCharacter,
-  onLoadImageMetadata,
-  onAddVibeTransferImage,
-  onAddVibeTransferSetFile,
-  onRemoveVibeTransferImage,
-  onBalanceVibeTransferStrengths,
-  onChangeVibeTransferField,
-}: QueueItemCardProps) {
-  const characters = item.characters || [];
-  const vibeTransferImages = item.vibeTransferImages || [];
-  const previewText = truncatePreview(item.prompt.trim() || '(プロンプト未入力)');
-
-  return (
-    <details className="char-card">
-      <summary>{`${index + 1}. ${previewText}`}</summary>
-      <button type="button" className="remove-char" onClick={() => onRemove(index)}>
-        削除
-      </button>
-
-      <div className="row">
-        <div>
-          <button type="button" className="secondary" onClick={() => onMoveUp(index)}>
-            ↑
-          </button>
-          <button type="button" className="secondary" onClick={() => onMoveDown(index)}>
-            ↓
-          </button>
-        </div>
-        <div>
-          <label>枚数</label>
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={item.count}
-            onChange={(e) => onChange(index, 'count', e.target.value)}
-          />
-        </div>
-      </div>
-
-      <label>画像から読み込み</label>
-      <p className="hint">
-        NovelAIで生成されたPNG画像を選択すると、この行のプロンプト・ネガティブプロンプト・キャラクタープロンプトを読み込んだ内容で置き換えます。
-      </p>
-      <input type="file" accept="image/png" onChange={(e) => onLoadImageMetadata(index, e)} />
-
-      <label>{`${index + 1}. プロンプト`}</label>
-      <textarea
-        value={item.prompt}
-        onChange={(e) => onChange(index, 'prompt', e.target.value)}
-        onFocus={() => onFocusField(`queue:${item.id}:prompt`)}
-      />
-
-      <label>ネガティブプロンプト</label>
-      <textarea
-        value={item.negativePrompt}
-        onChange={(e) => onChange(index, 'negativePrompt', e.target.value)}
-        onFocus={() => onFocusField(`queue:${item.id}:negativePrompt`)}
-      />
-
-      <label>キャラクタープロンプト</label>
-      {characters.map((character, charIndex) => (
-        <details className="char-fold" key={character.id}>
-          <summary>{`キャラクター${charIndex + 1}`}</summary>
-          <CharacterCard
-            index={charIndex}
-            character={character}
-            onChange={(ci, field, value) => onChangeCharacter(index, ci, field, value)}
-            onRemove={(ci) => onRemoveCharacter(index, ci)}
-            onFocusField={(fieldKey) => onFocusField(`queue:${item.id}:${fieldKey}`)}
-          />
-        </details>
-      ))}
-      <button type="button" className="secondary" onClick={() => onAddCharacter(index)}>
-        ＋ キャラクターを追加
-      </button>
-
-      <details className="char-fold">
-        <summary>AIポーション（Vibe Transfer）</summary>
-        {vibeTransferImages.map((image) => (
-          <VibeTransferCard
-            key={image.id}
-            image={image}
-            onChangeField={(vibeId, field, value) =>
-              onChangeVibeTransferField(index, vibeId, field, value)
-            }
-            onRemove={(vibeId) => onRemoveVibeTransferImage(index, vibeId)}
-          />
-        ))}
-        {vibeTransferImages.length > 1 && (
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => onBalanceVibeTransferStrengths(index)}
-          >
-            参照強度をバランス調整
-          </button>
-        )}
-        <label>＋ 参照画像を追加</label>
-        <input type="file" accept="image/*" onChange={(e) => onAddVibeTransferImage(index, e)} />
-        <label>＋ ポーションセットファイルを読み込む（.naiv4vibe / .naiv4vibeBundle）</label>
-        <input
-          type="file"
-          accept=".naiv4vibe,.naiv4vibebundle,.naiv4vibeBundle"
-          onChange={(e) => onAddVibeTransferSetFile(index, e)}
-        />
-      </details>
-    </details>
-  );
-}
+import RunControls from './RunControls';
+import QueueItemCard, { type QueueItemHandlers } from './queue/QueueItemCard';
+import QueueBulkControls from './queue/QueueBulkControls';
+import QueueTemplatePanel from './queue/QueueTemplatePanel';
+import type { QueueItem, QueueTemplate } from '../types/domain';
 
 interface PromptQueueSectionProps {
   open: boolean;
   onToggle: (id: string, open: boolean) => void;
   queueItems: QueueItem[];
+  itemHandlers: QueueItemHandlers;
   bulkCount: string;
   setBulkCount: (value: string) => void;
   onApplyBulkCount: () => void;
   onApplyBulkVibeTransferImage: (e: ChangeEvent<HTMLInputElement>) => void;
   onApplyBulkVibeTransferSetFile: (e: ChangeEvent<HTMLInputElement>) => void;
-  onChangeItem: QueueItemCardProps['onChange'];
-  onRemoveItem: (index: number) => void;
-  onMoveItemUp: (index: number) => void;
-  onMoveItemDown: (index: number) => void;
   onAddItem: () => void;
   onClearItems: () => void;
-  onAddItemCharacter: (index: number) => void;
-  onRemoveItemCharacter: (index: number, charIndex: number) => void;
-  onChangeItemCharacter: QueueItemCardProps['onChangeCharacter'];
-  onLoadItemImageMetadata: QueueItemCardProps['onLoadImageMetadata'];
-  onAddItemVibeTransferImage: QueueItemCardProps['onAddVibeTransferImage'];
-  onAddItemVibeTransferSetFile: QueueItemCardProps['onAddVibeTransferSetFile'];
-  onRemoveItemVibeTransferImage: QueueItemCardProps['onRemoveVibeTransferImage'];
-  onBalanceItemVibeTransferStrengths: QueueItemCardProps['onBalanceVibeTransferStrengths'];
-  onChangeItemVibeTransferField: QueueItemCardProps['onChangeVibeTransferField'];
-  onFocusField: (key: string) => void;
   queueInterval: string;
   setQueueInterval: (value: string) => void;
   onStartQueue: () => void;
@@ -206,31 +33,21 @@ interface PromptQueueSectionProps {
   onImportQueueTemplateFiles: (files: File[]) => void;
 }
 
+// 「複数プロンプト連続生成」セクション。全行一括操作（QueueBulkControls）・
+// 行カード（QueueItemCard）・複数プロンプトテンプレート（QueueTemplatePanel）・
+// 実行操作（RunControls）を組み合わせる。
 export default function PromptQueueSection({
   open,
   onToggle,
   queueItems,
+  itemHandlers,
   bulkCount,
   setBulkCount,
   onApplyBulkCount,
   onApplyBulkVibeTransferImage,
   onApplyBulkVibeTransferSetFile,
-  onChangeItem,
-  onRemoveItem,
-  onMoveItemUp,
-  onMoveItemDown,
   onAddItem,
   onClearItems,
-  onAddItemCharacter,
-  onRemoveItemCharacter,
-  onChangeItemCharacter,
-  onLoadItemImageMetadata,
-  onAddItemVibeTransferImage,
-  onAddItemVibeTransferSetFile,
-  onRemoveItemVibeTransferImage,
-  onBalanceItemVibeTransferStrengths,
-  onChangeItemVibeTransferField,
-  onFocusField,
   queueInterval,
   setQueueInterval,
   onStartQueue,
@@ -251,63 +68,16 @@ export default function PromptQueueSection({
         指定した順番でプロンプトを切り替えながら、それぞれ指定した枚数だけ連続生成します。
       </p>
 
-      <div className="row">
-        <div>
-          <label>生成枚数を全行にまとめて指定</label>
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={bulkCount}
-            onChange={(e) => setBulkCount(e.target.value)}
-          />
-        </div>
-        <div>
-          <button type="button" className="secondary" onClick={onApplyBulkCount}>
-            全行に反映
-          </button>
-        </div>
-      </div>
-
-      <label>AIポーション（Vibe Transfer）を全行にまとめて追加</label>
-      <p className="hint">
-        選択した参照画像・ポーションセットファイルを、既存の行ごとの参照画像は残したまま全行に追加します。
-      </p>
-      <div className="row">
-        <div>
-          <label>＋ 参照画像を全行に追加</label>
-          <input type="file" accept="image/*" onChange={onApplyBulkVibeTransferImage} />
-        </div>
-        <div>
-          <label>＋ ポーションセットファイルを全行に追加（.naiv4vibe / .naiv4vibeBundle）</label>
-          <input
-            type="file"
-            accept=".naiv4vibe,.naiv4vibebundle,.naiv4vibeBundle"
-            onChange={onApplyBulkVibeTransferSetFile}
-          />
-        </div>
-      </div>
+      <QueueBulkControls
+        bulkCount={bulkCount}
+        setBulkCount={setBulkCount}
+        onApplyBulkCount={onApplyBulkCount}
+        onApplyBulkVibeTransferImage={onApplyBulkVibeTransferImage}
+        onApplyBulkVibeTransferSetFile={onApplyBulkVibeTransferSetFile}
+      />
 
       {queueItems.map((item, index) => (
-        <QueueItemCard
-          key={item.id}
-          index={index}
-          item={item}
-          onChange={onChangeItem}
-          onRemove={onRemoveItem}
-          onMoveUp={onMoveItemUp}
-          onMoveDown={onMoveItemDown}
-          onFocusField={onFocusField}
-          onAddCharacter={onAddItemCharacter}
-          onRemoveCharacter={onRemoveItemCharacter}
-          onChangeCharacter={onChangeItemCharacter}
-          onLoadImageMetadata={onLoadItemImageMetadata}
-          onAddVibeTransferImage={onAddItemVibeTransferImage}
-          onAddVibeTransferSetFile={onAddItemVibeTransferSetFile}
-          onRemoveVibeTransferImage={onRemoveItemVibeTransferImage}
-          onBalanceVibeTransferStrengths={onBalanceItemVibeTransferStrengths}
-          onChangeVibeTransferField={onChangeItemVibeTransferField}
-        />
+        <QueueItemCard key={item.id} index={index} item={item} handlers={itemHandlers} />
       ))}
 
       <div className="row">
@@ -328,60 +98,16 @@ export default function PromptQueueSection({
         </div>
       </div>
 
-      <label>複数プロンプトテンプレート</label>
-      <button
-        type="button"
-        className="secondary"
-        onClick={onSaveAsQueueTemplate}
-        disabled={queueRunning}
-      >
-        現在の内容をテンプレートとして保存
-      </button>
-
-      <label>txtファイルからインポート（同名のテンプレートは上書きされます）</label>
-      <input
-        type="file"
-        accept=".txt,text/plain"
-        multiple
-        onChange={(e) => handleMultipleFiles(e, onImportQueueTemplateFiles)}
+      <QueueTemplatePanel
+        queueTemplates={queueTemplates}
+        queueRunning={queueRunning}
+        onSaveAsQueueTemplate={onSaveAsQueueTemplate}
+        onApplyQueueTemplate={onApplyQueueTemplate}
+        onEditQueueTemplate={onEditQueueTemplate}
+        onDeleteQueueTemplate={onDeleteQueueTemplate}
+        onExportQueueTemplate={onExportQueueTemplate}
+        onImportQueueTemplateFiles={onImportQueueTemplateFiles}
       />
-
-      <div id="queueTemplateList">
-        {queueTemplates.map((template) => (
-          <div className="template-chip" key={template.id}>
-            <span className="template-name">{template.name}</span>
-            <button
-              type="button"
-              className="template-apply"
-              onClick={() => onApplyQueueTemplate(template)}
-              disabled={queueRunning}
-            >
-              適用
-            </button>
-            <button
-              type="button"
-              className="template-edit"
-              onClick={() => onEditQueueTemplate(template)}
-            >
-              編集
-            </button>
-            <button
-              type="button"
-              className="template-export"
-              onClick={() => onExportQueueTemplate(template)}
-            >
-              エクスポート
-            </button>
-            <button
-              type="button"
-              className="template-delete"
-              onClick={() => onDeleteQueueTemplate(template.id)}
-            >
-              削除
-            </button>
-          </div>
-        ))}
-      </div>
 
       <div className="row">
         <div>
@@ -396,30 +122,14 @@ export default function PromptQueueSection({
         </div>
       </div>
 
-      <div className="row">
-        <div>
-          <button
-            type="button"
-            onClick={onStartQueue}
-            disabled={queueRunning || queueItems.length === 0}
-          >
-            連続生成する
-          </button>
-        </div>
-        <div>
-          <button
-            type="button"
-            className="secondary"
-            onClick={onStopQueue}
-            disabled={!queueRunning}
-          >
-            中断する
-          </button>
-        </div>
-      </div>
-      <div id="promptQueueStatus" className="file-info">
-        {queueStatus}
-      </div>
+      <RunControls
+        running={queueRunning}
+        startDisabled={queueItems.length === 0}
+        onStart={onStartQueue}
+        onStop={onStopQueue}
+        status={queueStatus}
+        statusId="promptQueueStatus"
+      />
     </Section>
   );
 }

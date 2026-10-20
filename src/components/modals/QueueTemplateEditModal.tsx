@@ -1,4 +1,6 @@
 import ModalOverlay from './ModalOverlay';
+import ModalButtons from './ModalButtons';
+import CharacterCard from '../CharacterCard';
 import type {
   QueueTemplateDraft,
   QueueTemplateDraftCharacter,
@@ -49,35 +51,16 @@ function QueueTemplateRowFields({
         onChange={(e) => onChangeRow(rowIndex, 'negativePrompt', e.target.value)}
       />
 
+      {/* 行数・キャラクター数が増えてもダイアログが縦に長くなりすぎないよう、
+          各キャラクターは既定で折りたたむ（複数プロンプト連続生成の行と同じ構成）。 */}
       {(row.characters || []).map((character, charIndex) => (
-        <details className="char-card" key={charIndex}>
+        <details className="char-fold" key={charIndex}>
           <summary>{`キャラクター${charIndex + 1}`}</summary>
-          <button
-            type="button"
-            className="remove-char"
-            onClick={() => onRemoveCharacter(rowIndex, charIndex)}
-          >
-            削除
-          </button>
-          <label className="char-enable">
-            <input
-              type="checkbox"
-              checked={character.enabled !== false}
-              onChange={(e) => onChangeCharacter(rowIndex, charIndex, 'enabled', e.target.checked)}
-            />
-            {`キャラクター${charIndex + 1} を有効にする`}
-          </label>
-          <label>{`キャラクター${charIndex + 1} プロンプト`}</label>
-          <textarea
-            value={character.prompt || ''}
-            onChange={(e) => onChangeCharacter(rowIndex, charIndex, 'prompt', e.target.value)}
-          />
-          <label>ネガティブプロンプト</label>
-          <textarea
-            value={character.negativePrompt || ''}
-            onChange={(e) =>
-              onChangeCharacter(rowIndex, charIndex, 'negativePrompt', e.target.value)
-            }
+          <CharacterCard
+            index={charIndex}
+            character={character}
+            onChange={(ci, field, value) => onChangeCharacter(rowIndex, ci, field, value)}
+            onRemove={(ci) => onRemoveCharacter(rowIndex, ci)}
           />
         </details>
       ))}
@@ -141,14 +124,7 @@ export default function QueueTemplateEditModal({
       <button type="button" onClick={onAddRow}>
         ＋ プロンプトを追加
       </button>
-      <div className="modal-buttons">
-        <button type="button" className="secondary" onClick={onCancel}>
-          キャンセル
-        </button>
-        <button type="button" onClick={onSave}>
-          保存
-        </button>
-      </div>
+      <ModalButtons onCancel={onCancel} onConfirm={onSave} />
     </ModalOverlay>
   );
 }

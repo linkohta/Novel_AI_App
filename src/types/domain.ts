@@ -12,7 +12,8 @@ export interface Character {
   enabled: boolean;
 }
 
-export interface QueueCharacter extends Character {}
+// 複数プロンプト連続生成の行ごとのキャラクターは左パネルのものと同じ形。
+export type QueueCharacter = Character;
 
 // AIポーション（Vibe Transfer）用の参照画像1件分。imageはbase64文字列
 // （data URLのprefixは含まない。sourceが'vibeFile'の場合はNovelAI公式の

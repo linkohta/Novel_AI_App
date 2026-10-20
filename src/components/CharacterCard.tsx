@@ -1,11 +1,25 @@
-import type { Character } from '../types/domain';
+// キャラクタープロンプト1件分の入力カード（有効チェック・プロンプト・
+// ネガティブプロンプト・削除）。左パネルのキャラクター一覧・複数プロンプト
+// 連続生成の行ごとのキャラクター・複数プロンプトテンプレートの編集ダイアログ
+// の3か所で共用する。テンプレートのドラフトはidを持たないため、idに依存せず
+// 表示に必要な3フィールドだけを受け取る。
+export interface CharacterCardValue {
+  prompt?: string;
+  negativePrompt?: string;
+  enabled?: boolean;
+}
 
 interface CharacterCardProps {
   index: number;
-  character: Character;
-  onChange: (index: number, field: keyof Character, value: string | boolean) => void;
+  character: CharacterCardValue;
+  onChange: (
+    index: number,
+    field: 'prompt' | 'negativePrompt' | 'enabled',
+    value: string | boolean
+  ) => void;
   onRemove: (index: number) => void;
-  onFocusField: (key: string) => void;
+  // チャンク／テンプレート挿入先の追跡用。挿入対象にならない編集ダイアログでは省略する。
+  onFocusField?: (key: string) => void;
 }
 
 export default function CharacterCard({
@@ -37,7 +51,7 @@ export default function CharacterCard({
         value={character.prompt || ''}
         disabled={!enabled}
         onChange={(e) => onChange(index, 'prompt', e.target.value)}
-        onFocus={() => onFocusField(`char:${index}:prompt`)}
+        onFocus={() => onFocusField?.(`char:${index}:prompt`)}
       />
 
       <label>ネガティブプロンプト</label>
@@ -45,7 +59,7 @@ export default function CharacterCard({
         value={character.negativePrompt || ''}
         disabled={!enabled}
         onChange={(e) => onChange(index, 'negativePrompt', e.target.value)}
-        onFocus={() => onFocusField(`char:${index}:negativePrompt`)}
+        onFocus={() => onFocusField?.(`char:${index}:negativePrompt`)}
       />
     </div>
   );

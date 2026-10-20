@@ -61,3 +61,6 @@ export function useVibeTransfer(setStatus?: (status: string) => void) {
     balanceVibeTransferStrengths,
   };
 }
+
+// フックの戻り値の型。タブコンポーネント等へまとめて渡すために公開する。
+export type UseVibeTransferResult = ReturnType<typeof useVibeTransfer>;

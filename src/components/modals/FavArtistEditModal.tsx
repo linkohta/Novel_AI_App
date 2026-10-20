@@ -1,4 +1,5 @@
 import ModalOverlay from './ModalOverlay';
+import ModalButtons from './ModalButtons';
 import type { FavoriteArtist } from '../../types/domain';
 
 interface FavArtistEditModalProps {
@@ -23,14 +24,7 @@ export default function FavArtistEditModal({
         value={draft?.name || ''}
         onChange={(e) => onChange({ ...(draft as FavoriteArtist), name: e.target.value })}
       />
-      <div className="modal-buttons">
-        <button type="button" className="secondary" onClick={onCancel}>
-          キャンセル
-        </button>
-        <button type="button" onClick={onSave}>
-          保存
-        </button>
-      </div>
+      <ModalButtons onCancel={onCancel} onConfirm={onSave} />
     </ModalOverlay>
   );
 }

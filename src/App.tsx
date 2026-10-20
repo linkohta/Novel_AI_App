@@ -1,15 +1,12 @@
 import { useRef, useState } from 'react';
-import PromptSection from './components/PromptSection';
-import CharactersSection from './components/CharactersSection';
-import VibeTransferSection from './components/VibeTransferSection';
 import ModelSection from './components/ModelSection';
-import BatchSection from './components/BatchSection';
-import PromptQueueSection from './components/PromptQueueSection';
 import ResultPanel from './components/ResultPanel';
 import AppModals from './components/AppModals';
 import ManagementModal from './components/ManagementModal';
 import TabBar from './components/TabBar';
 import SettingsTab from './components/SettingsTab';
+import PromptTab from './components/PromptTab';
+import BatchTab from './components/BatchTab';
 import { useNamedList } from './hooks/useNamedList';
 import { useFavoritesList } from './hooks/useFavoritesList';
 import { useQueueItems } from './hooks/useQueueItems';
@@ -24,24 +21,18 @@ import { useBatchGeneration } from './hooks/useBatchGeneration';
 import { useQueueGeneration } from './hooks/useQueueGeneration';
 import { useSettingsPersistence } from './hooks/useSettingsPersistence';
 import { useImageMetadataLoader } from './hooks/useImageMetadataLoader';
-import { errorMessage } from './utils/errorMessage';
-import { handleSingleFile } from './utils/fileInput';
+import { useModelParams } from './hooks/useModelParams';
+import { useGeneration } from './hooks/useGeneration';
+import { useSubscriptionInfo } from './hooks/useSubscriptionInfo';
 import type {
   FavoriteArtist,
   FavoriteCharacter,
-  GenerateParamsExtra,
-  HistoryItem,
   NamedItem,
   QueueTemplate,
   QueueTemplateDraftRow,
   SectionState,
   TemplateApplyState,
 } from './types/domain';
-import type {
-  GenerateImageParams,
-  GenerateImageResult,
-  SubscriptionInfo,
-} from './types/window-api';
 
 const DEFAULT_SECTION_STATE: SectionState = {
   promptSection: true,
@@ -58,30 +49,26 @@ const TAB_ITEMS = [
   { key: 'batch', label: '連続生成' },
 ];
 
+// トップレベルコンポーネント。各機能のstate・ハンドラはsrc/hooks/のカスタム
+// フックが持ち、ここではフック同士の配線と、左パネル（タブ）・結果パネル・
+// モーダル群のJSXの組み立てだけを行う。
 export default function App() {
-  // 永続化される設定。
+  // 永続化される単純な入力値（まとまった機能を持たないものだけをここに置く）。
   const [apiKey, setApiKey] = useState('');
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
-  const [model, setModel] = useState('nai-diffusion-5-full');
-  const [width, setWidth] = useState('1216');
-  const [height, setHeight] = useState('832');
-  const [steps, setSteps] = useState('28');
-  const [scale, setScale] = useState('5');
-  const [sampler, setSampler] = useState('k_euler_ancestral');
-  const [qualityToggle, setQualityToggle] = useState(true);
-  const [varietyPlus, setVarietyPlus] = useState(false);
   const [outputDir, setOutputDir] = useState('');
   const [sectionState, setSectionState] = useState<SectionState>(DEFAULT_SECTION_STATE);
   const [activeTab, setActiveTab] = useState('prompt');
+  const modelParams = useModelParams();
+
+  // 画面下部のステータス表示。ほぼすべてのフックがエラー・結果の通知に使う横断的な状態。
+  const [status, setStatus] = useState('');
 
   // 使用頻度の低い管理系（チャンク／テンプレート／お気に入り編集）は左パネルを
   // 圧迫しないよう別モーダルへ切り出しており、開閉はここでのみ管理する
   // （永続化はしない。次回起動時は常に閉じた状態から始まる）。
   const [managementModalOpen, setManagementModalOpen] = useState(false);
-
-  // 永続化しない（旧アプリと同様、シードは常に0/ランダムから開始する）。
-  const [seed, setSeed] = useState('0');
 
   // プロンプトチャンク／テンプレート／お気に入りのリスト。
   const chunksList = useNamedList<NamedItem, { name: string; text: string }>({
@@ -114,15 +101,6 @@ export default function App() {
   const favoriteArtists = useFavoritesList<FavoriteArtist>('artist');
   const favoriteCharacters = useFavoritesList<FavoriteCharacter>('character');
 
-  // 生成の状態。
-  const [status, setStatus] = useState('');
-  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
-  const [subscriptionStatus, setSubscriptionStatus] = useState('');
-  const [resultImage, setResultImage] = useState<string | null>(null);
-  const [fileInfo, setFileInfo] = useState('');
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [generating, setGenerating] = useState(false);
-
   // 単純で永続化される値は（以下の生成用フックの中ではなく）ここに保持
   // している。currentSettings() がこれらを読み取る必要があり、かつ
   // handleStartBatch/handleStartQueue はそれぞれもう一方のループの
@@ -135,48 +113,16 @@ export default function App() {
   const [queueInterval, setQueueInterval] = useState('5');
   const [queueRunning, setQueueRunning] = useState(false);
 
-  const {
+  const queueApi = useQueueItems(setStatus);
+  const { queueItems, setQueueItems, updateQueueItemField, updateQueueItemCharacterField } =
+    queueApi;
+
+  const queueTemplateApi = useQueueTemplateDraft({
     queueItems,
     setQueueItems,
-    bulkCount,
-    setBulkCount,
-    applyBulkCount,
-    updateQueueItemField,
-    addQueueItem,
-    removeQueueItem,
-    clearQueueItems,
-    moveQueueItem,
-    updateQueueItemCharacterField,
-    addQueueItemCharacter,
-    removeQueueItemCharacter,
-    addQueueItemVibeTransferImage,
-    addQueueItemVibeTransferSetFile,
-    removeQueueItemVibeTransferImage,
-    balanceQueueItemVibeTransferStrengths,
-    updateQueueItemVibeTransferField,
-    applyBulkVibeTransferImage,
-    applyBulkVibeTransferSetFile,
-  } = useQueueItems(setStatus);
-
-  const {
-    queueTemplateDraft,
-    setQueueTemplateDraft,
-    queueTemplateApplyState,
-    setQueueTemplateApplyState,
-    openQueueTemplateSaveDialog,
-    openQueueTemplateEditDialog,
-    updateQueueTemplateDraftRow,
-    updateQueueTemplateDraftCharacter,
-    addQueueTemplateDraftRow,
-    removeQueueTemplateDraftRow,
-    addQueueTemplateDraftCharacter,
-    removeQueueTemplateDraftCharacter,
-    handleSaveQueueTemplate,
-    handleExportQueueTemplate,
-    handleImportQueueTemplateFiles,
-    handleApplyQueueTemplate,
-    handleQueueTemplateApplyConfirm,
-  } = useQueueTemplateDraft({ queueItems, setQueueItems, queueTemplatesList, setStatus });
+    queueTemplatesList,
+    setStatus,
+  });
 
   // useCharacters（キャラクター名で追加 でテンプレートを組み合わせられる）と
   // usePromptLibrary（プロンプトテンプレートの適用）の両方で共有される——
@@ -184,32 +130,16 @@ export default function App() {
   // フックではなくApp側が保持することで、両者の間の循環依存を避けている。
   const [templateApplyState, setTemplateApplyState] = useState<TemplateApplyState | null>(null);
 
-  const {
-    characters,
-    setCharacters,
-    updateCharacterField,
-    removeCharacter,
-    addBlankCharacter,
-    charNameByName,
-    setCharNameByName,
-    charSeriesByName,
-    setCharSeriesByName,
-    charNameSource,
-    setCharNameSource,
-    charNameNegativeSource,
-    setCharNameNegativeSource,
-    handleAddByName,
-  } = useCharacters({ chunksList, templatesList, setTemplateApplyState, setStatus });
+  const charactersApi = useCharacters({
+    chunksList,
+    templatesList,
+    setTemplateApplyState,
+    setStatus,
+  });
+  const { characters, setCharacters, updateCharacterField } = charactersApi;
 
-  const {
-    vibeTransferImages,
-    setVibeTransferImages,
-    addVibeTransferImage,
-    addVibeTransferSetFile,
-    removeVibeTransferImage,
-    updateVibeTransferImageField,
-    balanceVibeTransferStrengths,
-  } = useVibeTransfer(setStatus);
+  const vibeApi = useVibeTransfer(setStatus);
+  const { vibeTransferImages, setVibeTransferImages } = vibeApi;
 
   const { encodeVibeImages } = useVibeEncoding(setStatus);
 
@@ -225,26 +155,7 @@ export default function App() {
     updateQueueItemCharacterField,
   });
 
-  const {
-    chunkNameInput,
-    setChunkNameInput,
-    handleSaveChunk,
-    chunkEditDraft,
-    setChunkEditDraft,
-    handleSaveChunkEdit,
-    templateNameInput,
-    setTemplateNameInput,
-    templateTextInput,
-    setTemplateTextInput,
-    handleSaveTemplate,
-    templateEditDraft,
-    setTemplateEditDraft,
-    handleSaveTemplateEdit,
-    handleExportTemplate,
-    handleImportTemplateFiles,
-    handleApplyTemplate,
-    handleTemplateApplyConfirm,
-  } = usePromptLibrary({
+  const promptLibrary = usePromptLibrary({
     prompt,
     chunksList,
     templatesList,
@@ -256,28 +167,12 @@ export default function App() {
 
   const charNameByNameRef = useRef<HTMLInputElement>(null);
 
-  const {
-    favArtistNameInput,
-    setFavArtistNameInput,
-    handleSaveFavArtist,
-    favArtistEditDraft,
-    setFavArtistEditDraft,
-    handleSaveFavArtistEdit,
-    favCharNameInput,
-    setFavCharNameInput,
-    favCharSeriesInput,
-    setFavCharSeriesInput,
-    handleSaveFavChar,
-    handleToTemplateFavChar,
-    favCharEditDraft,
-    setFavCharEditDraft,
-    handleSaveFavCharEdit,
-  } = useFavoritesHandlers({
+  const favorites = useFavoritesHandlers({
     favoriteArtists,
     favoriteCharacters,
     setStatus,
-    setCharNameByName,
-    setCharSeriesByName,
+    setCharNameByName: charactersApi.setCharNameByName,
+    setCharSeriesByName: charactersApi.setCharSeriesByName,
     setSectionState,
     charNameByNameRef,
     onNavigateToCharacters: () => {
@@ -293,22 +188,7 @@ export default function App() {
     setPrompt,
     negativePrompt,
     setNegativePrompt,
-    model,
-    setModel,
-    width,
-    setWidth,
-    height,
-    setHeight,
-    steps,
-    setSteps,
-    scale,
-    setScale,
-    sampler,
-    setSampler,
-    qualityToggle,
-    setQualityToggle,
-    varietyPlus,
-    setVarietyPlus,
+    ...modelParams,
     outputDir,
     setOutputDir,
     characters,
@@ -332,81 +212,40 @@ export default function App() {
   const { handleLoadImageMetadata, handleLoadQueueItemImageMetadata } = useImageMetadataLoader({
     setPrompt,
     setNegativePrompt,
-    setSteps,
-    setScale,
-    setSampler,
-    setSeed,
-    setWidth,
-    setHeight,
-    setQualityToggle,
+    setSteps: modelParams.setSteps,
+    setScale: modelParams.setScale,
+    setSampler: modelParams.setSampler,
+    setSeed: modelParams.setSeed,
+    setWidth: modelParams.setWidth,
+    setHeight: modelParams.setHeight,
+    setQualityToggle: modelParams.setQualityToggle,
     setCharacters,
     setQueueItems,
     setStatus,
   });
 
-  async function handleCheckSubscription() {
-    setSubscriptionStatus('確認中...');
-    setSubscriptionInfo(null);
-    try {
-      const info = await window.api.getSubscriptionInfo(apiKey);
-      setSubscriptionInfo(info);
-      setSubscriptionStatus('');
-    } catch (err) {
-      setSubscriptionStatus(`エラー: ${errorMessage(err)}`);
-    }
-  }
+  const { subscriptionInfo, subscriptionStatus, handleCheckSubscription } = useSubscriptionInfo();
 
-  function handleSectionToggle(id: string, isOpen: boolean) {
-    setSectionState((prev) => ({ ...prev, [id]: isOpen }));
-  }
-
-  async function buildGenerateParams(extra?: GenerateParamsExtra): Promise<GenerateImageParams> {
-    const { vibeTransferImages: extraVibeTransferImages, ...restExtra } = extra || {};
-    const targetModel = restExtra.model ?? model;
-    const encodedVibeImages = await encodeVibeImages(
-      extraVibeTransferImages ?? vibeTransferImages,
-      apiKey,
-      targetModel
-    );
-    return {
-      apiKey,
-      prompt,
-      negativePrompt,
-      model,
-      width,
-      height,
-      steps,
-      scale,
-      sampler,
-      seed,
-      qualityToggle,
-      varietyPlus,
-      characterPrompts: characters.filter((c) => c.enabled !== false && c.prompt?.trim()),
-      vibeTransferImages: encodedVibeImages,
-      ...restExtra,
-    };
-  }
-
-  function recordResult(result: GenerateImageResult) {
-    setResultImage(result.dataUrl);
-    setFileInfo(`${result.fileName} (seed: ${result.seed})`);
-    setHistory((prev) => [result, ...prev]);
-  }
-
-  async function handleGenerate() {
-    window.api.saveSettings(currentSettings());
-    setGenerating(true);
-    setStatus('生成中...');
-    try {
-      const result = await window.api.generateImage(await buildGenerateParams());
-      recordResult(result);
-      setStatus(`保存しました: ${result.filePath}`);
-    } catch (err) {
-      setStatus(`エラー: ${errorMessage(err)}`);
-    } finally {
-      setGenerating(false);
-    }
-  }
+  const {
+    resultImage,
+    fileInfo,
+    history,
+    generating,
+    buildGenerateParams,
+    recordResult,
+    handleGenerate,
+    showHistoryItem,
+  } = useGeneration({
+    apiKey,
+    prompt,
+    negativePrompt,
+    modelParams,
+    characters,
+    vibeTransferImages,
+    encodeVibeImages,
+    currentSettings,
+    setStatus,
+  });
 
   const { batchStatus, handleStartBatch, handleStopBatch } = useBatchGeneration({
     batchCount,
@@ -428,6 +267,10 @@ export default function App() {
     currentSettings,
   });
 
+  function handleSectionToggle(id: string, isOpen: boolean) {
+    setSectionState((prev) => ({ ...prev, [id]: isOpen }));
+  }
+
   return (
     <>
       <div className="panel left">
@@ -447,7 +290,7 @@ export default function App() {
           <SettingsTab
             apiKey={apiKey}
             setApiKey={setApiKey}
-            onCheckSubscription={handleCheckSubscription}
+            onCheckSubscription={() => handleCheckSubscription(apiKey)}
             subscriptionStatus={subscriptionStatus}
             subscriptionInfo={subscriptionInfo}
             outputDir={outputDir}
@@ -457,138 +300,51 @@ export default function App() {
         </div>
 
         <div className="tab-panel" hidden={activeTab !== 'prompt'}>
-          <PromptSection
-            open={!!sectionState.promptSection}
-            onToggle={handleSectionToggle}
+          <PromptTab
+            sectionState={sectionState}
+            onSectionToggle={handleSectionToggle}
             prompt={prompt}
             setPrompt={setPrompt}
             negativePrompt={negativePrompt}
             setNegativePrompt={setNegativePrompt}
             onFocusField={setFocusedFieldKey}
             onLoadImageMetadata={handleLoadImageMetadata}
-          />
-
-          <CharactersSection
-            open={!!sectionState.characterSection}
-            onToggle={handleSectionToggle}
-            characters={characters}
-            onChangeCharacter={updateCharacterField}
-            onRemoveCharacter={removeCharacter}
-            onAddBlankCharacter={addBlankCharacter}
-            onFocusField={setFocusedFieldKey}
+            charactersApi={charactersApi}
             chunks={chunksList.items}
             templates={templatesList.items}
-            charNameByName={charNameByName}
-            setCharNameByName={setCharNameByName}
-            charSeriesByName={charSeriesByName}
-            setCharSeriesByName={setCharSeriesByName}
-            charNameSource={charNameSource}
-            setCharNameSource={setCharNameSource}
-            charNameNegativeSource={charNameNegativeSource}
-            setCharNameNegativeSource={setCharNameNegativeSource}
-            onAddByName={handleAddByName}
             nameInputRef={charNameByNameRef}
-          />
-
-          <VibeTransferSection
-            open={!!sectionState.vibeSection}
-            onToggle={handleSectionToggle}
-            vibeTransferImages={vibeTransferImages}
-            onAddImage={(e) => handleSingleFile(e, addVibeTransferImage)}
-            onAddSetFile={(e) => handleSingleFile(e, addVibeTransferSetFile)}
-            onRemoveImage={removeVibeTransferImage}
-            onChangeImageField={updateVibeTransferImageField}
-            onBalanceStrengths={balanceVibeTransferStrengths}
+            vibeApi={vibeApi}
           />
         </div>
 
         <div className="tab-panel" hidden={activeTab !== 'model'}>
-          <ModelSection
-            open
-            onToggle={() => {}}
-            model={model}
-            setModel={setModel}
-            width={width}
-            setWidth={setWidth}
-            height={height}
-            setHeight={setHeight}
-            steps={steps}
-            setSteps={setSteps}
-            scale={scale}
-            setScale={setScale}
-            sampler={sampler}
-            setSampler={setSampler}
-            seed={seed}
-            setSeed={setSeed}
-            qualityToggle={qualityToggle}
-            setQualityToggle={setQualityToggle}
-            varietyPlus={varietyPlus}
-            setVarietyPlus={setVarietyPlus}
-          />
+          <ModelSection open onToggle={() => {}} {...modelParams} />
         </div>
 
         <div className="tab-panel" hidden={activeTab !== 'batch'}>
-          <BatchSection
-            open={!!sectionState.batchSection}
-            onToggle={handleSectionToggle}
+          <BatchTab
+            sectionState={sectionState}
+            onSectionToggle={handleSectionToggle}
             batchCount={batchCount}
             setBatchCount={setBatchCount}
             batchInterval={batchInterval}
             setBatchInterval={setBatchInterval}
-            onStartBatch={handleStartBatch}
-            onStopBatch={handleStopBatch}
             batchRunning={batchRunning}
             batchStatus={batchStatus}
-          />
-
-          <PromptQueueSection
-            open={!!sectionState.promptQueueSection}
-            onToggle={handleSectionToggle}
-            queueItems={queueItems}
-            bulkCount={bulkCount}
-            setBulkCount={setBulkCount}
-            onApplyBulkCount={applyBulkCount}
-            onApplyBulkVibeTransferImage={(e) => handleSingleFile(e, applyBulkVibeTransferImage)}
-            onApplyBulkVibeTransferSetFile={(e) =>
-              handleSingleFile(e, applyBulkVibeTransferSetFile)
-            }
-            onChangeItem={updateQueueItemField}
-            onRemoveItem={removeQueueItem}
-            onMoveItemUp={(index) => moveQueueItem(index, -1)}
-            onMoveItemDown={(index) => moveQueueItem(index, 1)}
-            onAddItem={addQueueItem}
-            onClearItems={() => {
-              if (window.confirm('複数プロンプト連続生成のリストをすべて削除しますか？')) {
-                clearQueueItems();
-              }
-            }}
-            onAddItemCharacter={addQueueItemCharacter}
-            onRemoveItemCharacter={removeQueueItemCharacter}
-            onChangeItemCharacter={updateQueueItemCharacterField}
-            onLoadItemImageMetadata={handleLoadQueueItemImageMetadata}
-            onAddItemVibeTransferImage={(index, e) =>
-              handleSingleFile(e, (file) => addQueueItemVibeTransferImage(index, file))
-            }
-            onAddItemVibeTransferSetFile={(index, e) =>
-              handleSingleFile(e, (file) => addQueueItemVibeTransferSetFile(index, file))
-            }
-            onRemoveItemVibeTransferImage={removeQueueItemVibeTransferImage}
-            onBalanceItemVibeTransferStrengths={balanceQueueItemVibeTransferStrengths}
-            onChangeItemVibeTransferField={updateQueueItemVibeTransferField}
-            onFocusField={setFocusedFieldKey}
+            onStartBatch={handleStartBatch}
+            onStopBatch={handleStopBatch}
+            queueApi={queueApi}
+            queueTemplateApi={queueTemplateApi}
+            queueTemplates={queueTemplatesList.items}
+            onDeleteQueueTemplate={queueTemplatesList.removeItem}
             queueInterval={queueInterval}
             setQueueInterval={setQueueInterval}
-            onStartQueue={handleStartQueue}
-            onStopQueue={handleStopQueue}
             queueRunning={queueRunning}
             queueStatus={queueStatus}
-            queueTemplates={queueTemplatesList.items}
-            onSaveAsQueueTemplate={openQueueTemplateSaveDialog}
-            onApplyQueueTemplate={handleApplyQueueTemplate}
-            onEditQueueTemplate={openQueueTemplateEditDialog}
-            onDeleteQueueTemplate={queueTemplatesList.removeItem}
-            onExportQueueTemplate={handleExportQueueTemplate}
-            onImportQueueTemplateFiles={handleImportQueueTemplateFiles}
+            onStartQueue={handleStartQueue}
+            onStopQueue={handleStopQueue}
+            onFocusField={setFocusedFieldKey}
+            onLoadQueueItemImageMetadata={handleLoadQueueItemImageMetadata}
           />
         </div>
 
@@ -611,82 +367,57 @@ export default function App() {
         resultImage={resultImage || ''}
         fileInfo={fileInfo}
         history={history}
-        onSelectHistory={(item) => {
-          setResultImage(item.dataUrl);
-          setFileInfo(item.fileName);
-        }}
+        onSelectHistory={showHistoryItem}
       />
 
       <ManagementModal
         open={managementModalOpen}
         onClose={() => setManagementModalOpen(false)}
         chunks={chunksList.items}
-        chunkNameInput={chunkNameInput}
-        setChunkNameInput={setChunkNameInput}
-        onSaveChunk={handleSaveChunk}
+        chunkNameInput={promptLibrary.chunkNameInput}
+        setChunkNameInput={promptLibrary.setChunkNameInput}
+        onSaveChunk={promptLibrary.handleSaveChunk}
         onInsertChunk={(chunk) => insertIntoFocused(chunk.text)}
-        onEditChunk={(chunk) => setChunkEditDraft({ ...chunk })}
+        onEditChunk={(chunk) => promptLibrary.setChunkEditDraft({ ...chunk })}
         onDeleteChunk={(id) => chunksList.removeItem(id)}
         templates={templatesList.items}
-        templateNameInput={templateNameInput}
-        setTemplateNameInput={setTemplateNameInput}
-        templateTextInput={templateTextInput}
-        setTemplateTextInput={setTemplateTextInput}
-        onSaveTemplate={handleSaveTemplate}
-        onApplyTemplate={handleApplyTemplate}
-        onEditTemplate={(template) => setTemplateEditDraft({ ...template })}
+        templateNameInput={promptLibrary.templateNameInput}
+        setTemplateNameInput={promptLibrary.setTemplateNameInput}
+        templateTextInput={promptLibrary.templateTextInput}
+        setTemplateTextInput={promptLibrary.setTemplateTextInput}
+        onSaveTemplate={promptLibrary.handleSaveTemplate}
+        onApplyTemplate={promptLibrary.handleApplyTemplate}
+        onEditTemplate={(template) => promptLibrary.setTemplateEditDraft({ ...template })}
         onDeleteTemplate={(id) => templatesList.removeItem(id)}
-        onExportTemplate={handleExportTemplate}
-        onImportTemplateFiles={handleImportTemplateFiles}
+        onExportTemplate={promptLibrary.handleExportTemplate}
+        onImportTemplateFiles={promptLibrary.handleImportTemplateFiles}
         favArtists={favoriteArtists.items}
-        favArtistNameInput={favArtistNameInput}
-        setFavArtistNameInput={setFavArtistNameInput}
-        onSaveFavArtist={handleSaveFavArtist}
+        favArtistNameInput={favorites.favArtistNameInput}
+        setFavArtistNameInput={favorites.setFavArtistNameInput}
+        onSaveFavArtist={favorites.handleSaveFavArtist}
         onInsertFavArtist={(fav) => insertIntoFocused(`artist:${fav.name}`)}
-        onEditFavArtist={(fav) => setFavArtistEditDraft({ ...fav })}
+        onEditFavArtist={(fav) => favorites.setFavArtistEditDraft({ ...fav })}
         onDeleteFavArtist={(id) => favoriteArtists.removeItem(id)}
         favChars={favoriteCharacters.items}
-        favCharNameInput={favCharNameInput}
-        setFavCharNameInput={setFavCharNameInput}
-        favCharSeriesInput={favCharSeriesInput}
-        setFavCharSeriesInput={setFavCharSeriesInput}
-        onSaveFavChar={handleSaveFavChar}
+        favCharNameInput={favorites.favCharNameInput}
+        setFavCharNameInput={favorites.setFavCharNameInput}
+        favCharSeriesInput={favorites.favCharSeriesInput}
+        setFavCharSeriesInput={favorites.setFavCharSeriesInput}
+        onSaveFavChar={favorites.handleSaveFavChar}
         onInsertFavChar={(fav) =>
           insertIntoFocused(fav.series ? `${fav.name} (${fav.series})` : fav.name)
         }
-        onToTemplateFavChar={handleToTemplateFavChar}
-        onEditFavChar={(fav) => setFavCharEditDraft({ ...fav })}
+        onToTemplateFavChar={favorites.handleToTemplateFavChar}
+        onEditFavChar={(fav) => favorites.setFavCharEditDraft({ ...fav })}
         onDeleteFavChar={(id) => favoriteCharacters.removeItem(id)}
       />
 
       <AppModals
-        chunkEditDraft={chunkEditDraft}
-        setChunkEditDraft={setChunkEditDraft}
-        handleSaveChunkEdit={handleSaveChunkEdit}
-        templateEditDraft={templateEditDraft}
-        setTemplateEditDraft={setTemplateEditDraft}
-        handleSaveTemplateEdit={handleSaveTemplateEdit}
+        promptLibrary={promptLibrary}
         templateApplyState={templateApplyState}
         setTemplateApplyState={setTemplateApplyState}
-        handleTemplateApplyConfirm={handleTemplateApplyConfirm}
-        queueTemplateDraft={queueTemplateDraft}
-        setQueueTemplateDraft={setQueueTemplateDraft}
-        updateQueueTemplateDraftRow={updateQueueTemplateDraftRow}
-        updateQueueTemplateDraftCharacter={updateQueueTemplateDraftCharacter}
-        addQueueTemplateDraftRow={addQueueTemplateDraftRow}
-        removeQueueTemplateDraftRow={removeQueueTemplateDraftRow}
-        addQueueTemplateDraftCharacter={addQueueTemplateDraftCharacter}
-        removeQueueTemplateDraftCharacter={removeQueueTemplateDraftCharacter}
-        handleSaveQueueTemplate={handleSaveQueueTemplate}
-        queueTemplateApplyState={queueTemplateApplyState}
-        setQueueTemplateApplyState={setQueueTemplateApplyState}
-        handleQueueTemplateApplyConfirm={handleQueueTemplateApplyConfirm}
-        favArtistEditDraft={favArtistEditDraft}
-        setFavArtistEditDraft={setFavArtistEditDraft}
-        handleSaveFavArtistEdit={handleSaveFavArtistEdit}
-        favCharEditDraft={favCharEditDraft}
-        setFavCharEditDraft={setFavCharEditDraft}
-        handleSaveFavCharEdit={handleSaveFavCharEdit}
+        queueTemplateApi={queueTemplateApi}
+        favorites={favorites}
       />
     </>
   );

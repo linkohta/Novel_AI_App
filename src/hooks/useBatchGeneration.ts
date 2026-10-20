@@ -3,6 +3,7 @@ import { waitWithCountdown } from '../utils/sleep';
 import type { GenerateParamsExtra } from '../types/domain';
 import type { GenerateImageParams, GenerateImageResult, Settings } from '../types/window-api';
 import { errorMessage } from '../utils/errorMessage';
+import { clampCount, parseIntervalSec } from '../utils/numbers';
 
 interface UseBatchGenerationParams {
   batchCount: string;
@@ -34,8 +35,8 @@ export function useBatchGeneration({
   async function handleStartBatch() {
     if (queueRunning) return;
     window.api.saveSettings(currentSettings());
-    const count = Math.max(1, Math.min(100, parseInt(batchCount, 10) || 1));
-    const intervalSec = Math.max(1, parseInt(batchInterval, 10) || 5);
+    const count = clampCount(batchCount);
+    const intervalSec = parseIntervalSec(batchInterval);
     const batchFolder = `batch_${Date.now()}`;
 
     batchStopRef.current = false;
