@@ -84,4 +84,6 @@ npm run format        # Prettier で自動整形
 npm run lint           # ESLint で検査
 ```
 
+依存関係を追加・更新したら `npm audit` で既知の脆弱性が無いことも確認してください。現在、electron-builder の間接依存に含まれる脆弱性（`sprintf-js`）を回避するため、`package.json` の `overrides` で `global-agent` のバージョンを固定しています（経緯と外す条件は [CLAUDE.md](./CLAUDE.md) の「依存関係」を参照）。
+
 詳細な開発ルールや内部構成は [CLAUDE.md](./CLAUDE.md) を参照してください。

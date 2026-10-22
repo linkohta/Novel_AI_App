@@ -101,6 +101,7 @@ NovelAI の画像生成 API にプロンプトを送信し、生成された画�
   - `electron-builder`: デスクトップ版を単独実行可能なインストーラー/実行ファイルにパッケージングする（devDependency）。設定は `package.json` の `build` フィールド。
   - `electron-vite`: `npm run dev` 専用の開発用ランチャー（devDependency、`electron.vite.config.ts`）。本番ビルド（`vite build`）には関与しない。
   - `eslint-plugin-react-hooks`: `src/**/*.tsx` のHooksルール（`rules-of-hooks` / `exhaustive-deps`）をESLintで検査するためのプラグイン（devDependency、`eslint.config.js`）。
+  - **`package.json` の `overrides`（`global-agent: ^4.1.3`）**: `electron-builder@26` → `app-builder-lib` → `@electron/get@3`（`electron` 本体が使う `@electron/get@5` とは別に、入れ子で入る）→ `global-agent@3` → `roarr` → `sprintf-js` という間接依存が、`sprintf-js` のDoS脆弱性（[GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c)、修正版なし）で `npm audit` に引っかかるため、`global-agent` だけを `roarr` に依存しない4.x系へ強制している。`npm audit fix --force` が提案する解決策は `electron-builder@26.5.0` への**ダウングレード**であり、`@electron/get` 自体を5.x系へ上書きする方法も `@electron/get@5` がESM専用で `app-builder-lib` からの `require()` と噛み合わないため、どちらも採用していない。`global-agent@4` もCommonJSのまま `bootstrap()` をexportしており、`@electron/get@3` の使い方（プロキシ環境変数 `ELECTRON_GET_USE_PROXY` 指定時に `require('global-agent').bootstrap()` を呼ぶだけ）とは互換がある。electron-builderの安定版が `@electron/get@5` 以降へ移行した（27系の正式版等）時点でこの `overrides` は不要になるため、electron-builderを更新したら `overrides` を外して `npm audit` が通るか確認すること。
 
 ## 開発コマンド
 
