@@ -1,4 +1,4 @@
-import type { FavoriteArtist, FavoriteCharacter } from '../types/domain';
+import type { FavoriteArtist, FavoriteCharacter, FavoriteSeries } from '../types/domain';
 import { favoriteCharacterText } from '../utils/favorites';
 
 interface FavoritesSectionProps {
@@ -19,6 +19,13 @@ interface FavoritesSectionProps {
   onToTemplateFavChar: (favorite: FavoriteCharacter) => void;
   onEditFavChar: (favorite: FavoriteCharacter) => void;
   onDeleteFavChar: (id: string) => void;
+  favSeries: FavoriteSeries[];
+  favSeriesNameInput: string;
+  setFavSeriesNameInput: (value: string) => void;
+  onSaveFavSeries: () => void;
+  onInsertFavSeries: (favorite: FavoriteSeries) => void;
+  onEditFavSeries: (favorite: FavoriteSeries) => void;
+  onDeleteFavSeries: (id: string) => void;
 }
 
 interface NameFavoriteListProps<T extends { id: string; name: string }> {
@@ -34,7 +41,7 @@ interface NameFavoriteListProps<T extends { id: string; name: string }> {
   onDelete: (id: string) => void;
 }
 
-// 名前1項目だけを持つお気に入り（アーティスト等）の入力欄＋チップ一覧。
+// 名前1項目だけを持つお気に入り（アーティスト・作品）の入力欄＋チップ一覧。
 function NameFavoriteList<T extends { id: string; name: string }>({
   label,
   placeholder,
@@ -102,6 +109,13 @@ export default function FavoritesSection({
   onToTemplateFavChar,
   onEditFavChar,
   onDeleteFavChar,
+  favSeries,
+  favSeriesNameInput,
+  setFavSeriesNameInput,
+  onSaveFavSeries,
+  onInsertFavSeries,
+  onEditFavSeries,
+  onDeleteFavSeries,
 }: FavoritesSectionProps) {
   return (
     <div className="manage-block">
@@ -169,6 +183,19 @@ export default function FavoritesSection({
           </div>
         ))}
       </div>
+
+      <NameFavoriteList
+        label="お気に入り作品"
+        placeholder="作品名"
+        listId="favSeriesList"
+        items={favSeries}
+        nameInput={favSeriesNameInput}
+        setNameInput={setFavSeriesNameInput}
+        onSave={onSaveFavSeries}
+        onInsert={onInsertFavSeries}
+        onEdit={onEditFavSeries}
+        onDelete={onDeleteFavSeries}
+      />
     </div>
   );
 }

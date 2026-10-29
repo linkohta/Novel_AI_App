@@ -61,7 +61,7 @@ export interface SubscriptionInfo {
   opusPerks: SubscriptionOpusPerk[];
 }
 
-export type FavoriteKind = 'artist' | 'character';
+export type FavoriteKind = 'artist' | 'character' | 'series';
 
 export interface WindowApi {
   loadSettings(): Promise<Settings>;

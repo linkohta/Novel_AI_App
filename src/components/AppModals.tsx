@@ -18,11 +18,11 @@ interface AppModalsProps {
   setTemplateApplyState: Dispatch<SetStateAction<TemplateApplyState | null>>;
   // 複数プロンプトテンプレートの編集ドラフト・適用状態。
   queueTemplateApi: UseQueueTemplateDraftResult;
-  // お気に入りアーティスト／キャラクターの編集ドラフト。
+  // お気に入りアーティスト／キャラクター／作品の編集ドラフト。
   favorites: UseFavoritesHandlersResult;
 }
 
-// App.tsxが持つ編集・適用系の状態を渡すだけの、モーダル6種のまとめ役。
+// App.tsxが持つ編集・適用系の状態を渡すだけの、モーダル7種のまとめ役。
 // 各モーダル自体は状態を持たず、開閉は draft/applyState が truthy かどうかで
 // 決まる（ModalOverlay側の条件付きレンダリング）。
 export default function AppModals({
@@ -87,6 +87,14 @@ export default function AppModals({
         onChange={favorites.setFavCharEditDraft}
         onCancel={() => favorites.setFavCharEditDraft(null)}
         onSave={favorites.handleSaveFavCharEdit}
+      />
+      <FavNameEditModal
+        draft={favorites.favSeriesEditDraft}
+        onChange={favorites.setFavSeriesEditDraft}
+        onCancel={() => favorites.setFavSeriesEditDraft(null)}
+        onSave={favorites.handleSaveFavSeriesEdit}
+        title="お気に入り作品を編集"
+        label="作品名"
       />
     </>
   );

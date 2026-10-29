@@ -9,11 +9,12 @@ export const chunksPath = path.join(userDataDir, 'chunks.json');
 export const templatesPath = path.join(userDataDir, 'templates.json');
 export const queueTemplatesPath = path.join(userDataDir, 'queue-templates.json');
 
-export type FavoriteKind = 'artist' | 'character';
+export type FavoriteKind = 'artist' | 'character' | 'series';
 
 export const FAVORITE_PATHS: Record<FavoriteKind, string> = {
   artist: path.join(userDataDir, 'favorite-artists.json'),
   character: path.join(userDataDir, 'favorite-characters.json'),
+  series: path.join(userDataDir, 'favorite-series.json'),
 };
 
 // パッケージ化されたビルドは読み取り専用の場所（例: Program Files）に

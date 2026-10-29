@@ -2,7 +2,7 @@ import ModalOverlay from './modals/ModalOverlay';
 import ChunksSection from './ChunksSection';
 import TemplatesSection from './TemplatesSection';
 import FavoritesSection from './FavoritesSection';
-import type { FavoriteArtist, FavoriteCharacter, NamedItem } from '../types/domain';
+import type { FavoriteArtist, FavoriteCharacter, FavoriteSeries, NamedItem } from '../types/domain';
 
 interface ManagementModalProps {
   open: boolean;
@@ -42,6 +42,13 @@ interface ManagementModalProps {
   onToTemplateFavChar: (favorite: FavoriteCharacter) => void;
   onEditFavChar: (favorite: FavoriteCharacter) => void;
   onDeleteFavChar: (id: string) => void;
+  favSeries: FavoriteSeries[];
+  favSeriesNameInput: string;
+  setFavSeriesNameInput: (value: string) => void;
+  onSaveFavSeries: () => void;
+  onInsertFavSeries: (favorite: FavoriteSeries) => void;
+  onEditFavSeries: (favorite: FavoriteSeries) => void;
+  onDeleteFavSeries: (id: string) => void;
 }
 
 // プロンプトチャンク／プロンプトテンプレート／お気に入りは使用頻度が低く
@@ -85,6 +92,13 @@ export default function ManagementModal({
   onToTemplateFavChar,
   onEditFavChar,
   onDeleteFavChar,
+  favSeries,
+  favSeriesNameInput,
+  setFavSeriesNameInput,
+  onSaveFavSeries,
+  onInsertFavSeries,
+  onEditFavSeries,
+  onDeleteFavSeries,
 }: ManagementModalProps) {
   return (
     <ModalOverlay open={open}>
@@ -129,6 +143,13 @@ export default function ManagementModal({
         onToTemplateFavChar={onToTemplateFavChar}
         onEditFavChar={onEditFavChar}
         onDeleteFavChar={onDeleteFavChar}
+        favSeries={favSeries}
+        favSeriesNameInput={favSeriesNameInput}
+        setFavSeriesNameInput={setFavSeriesNameInput}
+        onSaveFavSeries={onSaveFavSeries}
+        onInsertFavSeries={onInsertFavSeries}
+        onEditFavSeries={onEditFavSeries}
+        onDeleteFavSeries={onDeleteFavSeries}
       />
       <div className="modal-buttons">
         <button type="button" onClick={onClose}>

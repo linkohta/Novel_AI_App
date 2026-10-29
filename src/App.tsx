@@ -28,6 +28,7 @@ import { favoriteArtistText, favoriteCharacterText } from './utils/favorites';
 import type {
   FavoriteArtist,
   FavoriteCharacter,
+  FavoriteSeries,
   NamedItem,
   QueueTemplate,
   QueueTemplateDraftRow,
@@ -101,6 +102,7 @@ export default function App() {
   });
   const favoriteArtists = useFavoritesList<FavoriteArtist>('artist');
   const favoriteCharacters = useFavoritesList<FavoriteCharacter>('character');
+  const favoriteSeries = useFavoritesList<FavoriteSeries>('series');
 
   // 単純で永続化される値は（以下の生成用フックの中ではなく）ここに保持
   // している。currentSettings() がこれらを読み取る必要があり、かつ
@@ -172,6 +174,7 @@ export default function App() {
   const favorites = useFavoritesHandlers({
     favoriteArtists,
     favoriteCharacters,
+    favoriteSeries,
     setStatus,
     setCharNameByName: charactersApi.setCharNameByName,
     setCharSeriesByName: charactersApi.setCharSeriesByName,
@@ -417,6 +420,13 @@ export default function App() {
         onToTemplateFavChar={favorites.handleToTemplateFavChar}
         onEditFavChar={(fav) => favorites.setFavCharEditDraft({ ...fav })}
         onDeleteFavChar={(id) => favoriteCharacters.removeItem(id)}
+        favSeries={favoriteSeries.items}
+        favSeriesNameInput={favorites.favSeriesNameInput}
+        setFavSeriesNameInput={favorites.setFavSeriesNameInput}
+        onSaveFavSeries={favorites.handleSaveFavSeries}
+        onInsertFavSeries={(fav) => insertIntoFocused(fav.name)}
+        onEditFavSeries={(fav) => favorites.setFavSeriesEditDraft({ ...fav })}
+        onDeleteFavSeries={(id) => favoriteSeries.removeItem(id)}
       />
 
       <AppModals
