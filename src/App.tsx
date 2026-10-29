@@ -24,7 +24,11 @@ import { useImageMetadataLoader } from './hooks/useImageMetadataLoader';
 import { useModelParams } from './hooks/useModelParams';
 import { useGeneration } from './hooks/useGeneration';
 import { useSubscriptionInfo } from './hooks/useSubscriptionInfo';
-import { favoriteArtistText, favoriteCharacterText } from './utils/favorites';
+import {
+  buildFavoriteOptionGroups,
+  favoriteArtistText,
+  favoriteCharacterText,
+} from './utils/favorites';
 import type {
   FavoriteArtist,
   FavoriteCharacter,
@@ -435,6 +439,11 @@ export default function App() {
         setTemplateApplyState={setTemplateApplyState}
         queueTemplateApi={queueTemplateApi}
         favorites={favorites}
+        favoriteOptionGroups={buildFavoriteOptionGroups(
+          favoriteArtists.items,
+          favoriteCharacters.items,
+          favoriteSeries.items
+        )}
       />
     </>
   );

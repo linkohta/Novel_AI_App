@@ -426,6 +426,19 @@ button.secondary {
 .modal .template-var-field {
   margin-bottom: 4px;
 }
+/* 変数の入力欄と「お気に入りから選択...」を横に並べる。 */
+.modal .template-var-row {
+  display: flex;
+  gap: 6px;
+}
+.modal .template-var-row input {
+  flex: 3;
+  min-width: 0;
+}
+.modal .template-var-row select {
+  flex: 2;
+  min-width: 0;
+}
 .modal .no-vars {
   color: #a9abb5;
   font-size: 12px;

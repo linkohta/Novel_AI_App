@@ -9,6 +9,7 @@ import type { TemplateApplyState } from '../types/domain';
 import type { UsePromptLibraryResult } from '../hooks/usePromptLibrary';
 import type { UseQueueTemplateDraftResult } from '../hooks/useQueueTemplateDraft';
 import type { UseFavoritesHandlersResult } from '../hooks/useFavoritesHandlers';
+import type { FavoriteOptionGroup } from '../utils/favorites';
 
 interface AppModalsProps {
   // チャンク／テンプレートの編集ドラフトとテンプレート適用の確定処理。
@@ -20,6 +21,8 @@ interface AppModalsProps {
   queueTemplateApi: UseQueueTemplateDraftResult;
   // お気に入りアーティスト／キャラクター／作品の編集ドラフト。
   favorites: UseFavoritesHandlersResult;
+  // テンプレート変数の入力欄で選べる保存済みのお気に入り（単一・複数プロンプトの両テンプレートで共用）。
+  favoriteOptionGroups: FavoriteOptionGroup[];
 }
 
 // App.tsxが持つ編集・適用系の状態を渡すだけの、モーダル7種のまとめ役。
@@ -31,6 +34,7 @@ export default function AppModals({
   setTemplateApplyState,
   queueTemplateApi,
   favorites,
+  favoriteOptionGroups,
 }: AppModalsProps) {
   return (
     <>
@@ -54,6 +58,7 @@ export default function AppModals({
       />
       <TemplateApplyModal
         applyState={templateApplyState}
+        favoriteOptionGroups={favoriteOptionGroups}
         onCancel={() => setTemplateApplyState(null)}
         onConfirm={promptLibrary.handleTemplateApplyConfirm}
       />
@@ -71,6 +76,7 @@ export default function AppModals({
       />
       <QueueTemplateApplyModal
         applyState={queueTemplateApi.queueTemplateApplyState}
+        favoriteOptionGroups={favoriteOptionGroups}
         onCancel={() => queueTemplateApi.setQueueTemplateApplyState(null)}
         onConfirm={queueTemplateApi.handleQueueTemplateApplyConfirm}
       />
