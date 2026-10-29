@@ -3,7 +3,7 @@ import NamedItemEditModal from './modals/NamedItemEditModal';
 import TemplateApplyModal from './modals/TemplateApplyModal';
 import QueueTemplateEditModal from './modals/QueueTemplateEditModal';
 import QueueTemplateApplyModal from './modals/QueueTemplateApplyModal';
-import FavArtistEditModal from './modals/FavArtistEditModal';
+import FavNameEditModal from './modals/FavNameEditModal';
 import FavCharEditModal from './modals/FavCharEditModal';
 import type { TemplateApplyState } from '../types/domain';
 import type { UsePromptLibraryResult } from '../hooks/usePromptLibrary';
@@ -74,11 +74,13 @@ export default function AppModals({
         onCancel={() => queueTemplateApi.setQueueTemplateApplyState(null)}
         onConfirm={queueTemplateApi.handleQueueTemplateApplyConfirm}
       />
-      <FavArtistEditModal
+      <FavNameEditModal
         draft={favorites.favArtistEditDraft}
         onChange={favorites.setFavArtistEditDraft}
         onCancel={() => favorites.setFavArtistEditDraft(null)}
         onSave={favorites.handleSaveFavArtistEdit}
+        title="お気に入りアーティストを編集"
+        label="アーティスト名"
       />
       <FavCharEditModal
         draft={favorites.favCharEditDraft}

@@ -24,6 +24,7 @@ import { useImageMetadataLoader } from './hooks/useImageMetadataLoader';
 import { useModelParams } from './hooks/useModelParams';
 import { useGeneration } from './hooks/useGeneration';
 import { useSubscriptionInfo } from './hooks/useSubscriptionInfo';
+import { favoriteArtistText, favoriteCharacterText } from './utils/favorites';
 import type {
   FavoriteArtist,
   FavoriteCharacter,
@@ -395,7 +396,7 @@ export default function App() {
         favArtistNameInput={favorites.favArtistNameInput}
         setFavArtistNameInput={favorites.setFavArtistNameInput}
         onSaveFavArtist={favorites.handleSaveFavArtist}
-        onInsertFavArtist={(fav) => insertIntoFocused(`artist:${fav.name}`)}
+        onInsertFavArtist={(fav) => insertIntoFocused(favoriteArtistText(fav))}
         onEditFavArtist={(fav) => favorites.setFavArtistEditDraft({ ...fav })}
         onDeleteFavArtist={(id) => favoriteArtists.removeItem(id)}
         favChars={favoriteCharacters.items}
@@ -404,9 +405,7 @@ export default function App() {
         favCharSeriesInput={favorites.favCharSeriesInput}
         setFavCharSeriesInput={favorites.setFavCharSeriesInput}
         onSaveFavChar={favorites.handleSaveFavChar}
-        onInsertFavChar={(fav) =>
-          insertIntoFocused(fav.series ? `${fav.name} (${fav.series})` : fav.name)
-        }
+        onInsertFavChar={(fav) => insertIntoFocused(favoriteCharacterText(fav))}
         onToTemplateFavChar={favorites.handleToTemplateFavChar}
         onEditFavChar={(fav) => favorites.setFavCharEditDraft({ ...fav })}
         onDeleteFavChar={(id) => favoriteCharacters.removeItem(id)}

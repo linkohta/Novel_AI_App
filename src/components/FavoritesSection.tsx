@@ -1,4 +1,5 @@
 import type { FavoriteArtist, FavoriteCharacter } from '../types/domain';
+import { favoriteCharacterText } from '../utils/favorites';
 
 interface FavoritesSectionProps {
   favArtists: FavoriteArtist[];
@@ -18,6 +19,69 @@ interface FavoritesSectionProps {
   onToTemplateFavChar: (favorite: FavoriteCharacter) => void;
   onEditFavChar: (favorite: FavoriteCharacter) => void;
   onDeleteFavChar: (id: string) => void;
+}
+
+interface NameFavoriteListProps<T extends { id: string; name: string }> {
+  label: string;
+  placeholder: string;
+  listId: string;
+  items: T[];
+  nameInput: string;
+  setNameInput: (value: string) => void;
+  onSave: () => void;
+  onInsert: (favorite: T) => void;
+  onEdit: (favorite: T) => void;
+  onDelete: (id: string) => void;
+}
+
+// 名前1項目だけを持つお気に入り（アーティスト等）の入力欄＋チップ一覧。
+function NameFavoriteList<T extends { id: string; name: string }>({
+  label,
+  placeholder,
+  listId,
+  items,
+  nameInput,
+  setNameInput,
+  onSave,
+  onInsert,
+  onEdit,
+  onDelete,
+}: NameFavoriteListProps<T>) {
+  return (
+    <>
+      <label>{label}</label>
+      <div className="chunk-row">
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+        />
+        <button type="button" onClick={onSave}>
+          保存
+        </button>
+      </div>
+      <div id={listId}>
+        {items.map((favorite) => (
+          <div className="chunk-chip" key={favorite.id}>
+            <span
+              className="chunk-insert"
+              title="クリックでフォーカス中の欄に挿入"
+              onClick={() => onInsert(favorite)}
+            >
+              {favorite.name}
+            </span>
+            <span className="chunk-edit" onClick={() => onEdit(favorite)}>
+              ✎
+            </span>
+            <span className="chunk-delete" onClick={() => onDelete(favorite.id)}>
+              ×
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
 }
 
 export default function FavoritesSection({
@@ -42,37 +106,18 @@ export default function FavoritesSection({
   return (
     <div className="manage-block">
       <h3>お気に入り</h3>
-      <label>お気に入りアーティスト</label>
-      <div className="chunk-row">
-        <input
-          type="text"
-          placeholder="アーティスト名"
-          value={favArtistNameInput}
-          onChange={(e) => setFavArtistNameInput(e.target.value)}
-        />
-        <button type="button" onClick={onSaveFavArtist}>
-          保存
-        </button>
-      </div>
-      <div id="favArtistList">
-        {favArtists.map((favorite) => (
-          <div className="chunk-chip" key={favorite.id}>
-            <span
-              className="chunk-insert"
-              title="クリックでフォーカス中の欄に挿入"
-              onClick={() => onInsertFavArtist(favorite)}
-            >
-              {favorite.name}
-            </span>
-            <span className="chunk-edit" onClick={() => onEditFavArtist(favorite)}>
-              ✎
-            </span>
-            <span className="chunk-delete" onClick={() => onDeleteFavArtist(favorite.id)}>
-              ×
-            </span>
-          </div>
-        ))}
-      </div>
+      <NameFavoriteList
+        label="お気に入りアーティスト"
+        placeholder="アーティスト名"
+        listId="favArtistList"
+        items={favArtists}
+        nameInput={favArtistNameInput}
+        setNameInput={setFavArtistNameInput}
+        onSave={onSaveFavArtist}
+        onInsert={onInsertFavArtist}
+        onEdit={onEditFavArtist}
+        onDelete={onDeleteFavArtist}
+      />
 
       <label>お気に入りキャラクター</label>
       <div className="row">
@@ -99,33 +144,30 @@ export default function FavoritesSection({
         キャラクターを保存
       </button>
       <div id="favCharList">
-        {favChars.map((favorite) => {
-          const label = favorite.series ? `${favorite.name} (${favorite.series})` : favorite.name;
-          return (
-            <div className="chunk-chip" key={favorite.id}>
-              <span
-                className="chunk-insert"
-                title="クリックでフォーカス中の欄に挿入"
-                onClick={() => onInsertFavChar(favorite)}
-              >
-                {label}
-              </span>
-              <span
-                className="chunk-to-template"
-                title="「キャラクター名で追加」欄に入力する"
-                onClick={() => onToTemplateFavChar(favorite)}
-              >
-                テンプレへ
-              </span>
-              <span className="chunk-edit" onClick={() => onEditFavChar(favorite)}>
-                ✎
-              </span>
-              <span className="chunk-delete" onClick={() => onDeleteFavChar(favorite.id)}>
-                ×
-              </span>
-            </div>
-          );
-        })}
+        {favChars.map((favorite) => (
+          <div className="chunk-chip" key={favorite.id}>
+            <span
+              className="chunk-insert"
+              title="クリックでフォーカス中の欄に挿入"
+              onClick={() => onInsertFavChar(favorite)}
+            >
+              {favoriteCharacterText(favorite)}
+            </span>
+            <span
+              className="chunk-to-template"
+              title="「キャラクター名で追加」欄に入力する"
+              onClick={() => onToTemplateFavChar(favorite)}
+            >
+              テンプレへ
+            </span>
+            <span className="chunk-edit" onClick={() => onEditFavChar(favorite)}>
+              ✎
+            </span>
+            <span className="chunk-delete" onClick={() => onDeleteFavChar(favorite.id)}>
+              ×
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
