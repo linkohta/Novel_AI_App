@@ -24,9 +24,15 @@ import { useImageMetadataLoader } from './hooks/useImageMetadataLoader';
 import { useModelParams } from './hooks/useModelParams';
 import { useGeneration } from './hooks/useGeneration';
 import { useSubscriptionInfo } from './hooks/useSubscriptionInfo';
+import {
+  buildFavoriteOptionGroups,
+  favoriteArtistText,
+  favoriteCharacterText,
+} from './utils/favorites';
 import type {
   FavoriteArtist,
   FavoriteCharacter,
+  FavoriteSeries,
   NamedItem,
   QueueTemplate,
   QueueTemplateDraftRow,
@@ -100,6 +106,7 @@ export default function App() {
   });
   const favoriteArtists = useFavoritesList<FavoriteArtist>('artist');
   const favoriteCharacters = useFavoritesList<FavoriteCharacter>('character');
+  const favoriteSeries = useFavoritesList<FavoriteSeries>('series');
 
   // 単純で永続化される値は（以下の生成用フックの中ではなく）ここに保持
   // している。currentSettings() がこれらを読み取る必要があり、かつ
@@ -111,6 +118,7 @@ export default function App() {
   const [batchInterval, setBatchInterval] = useState('5');
   const [batchRunning, setBatchRunning] = useState(false);
   const [queueInterval, setQueueInterval] = useState('5');
+  const [queueFolderName, setQueueFolderName] = useState('');
   const [queueRunning, setQueueRunning] = useState(false);
 
   const queueApi = useQueueItems(setStatus);
@@ -170,6 +178,7 @@ export default function App() {
   const favorites = useFavoritesHandlers({
     favoriteArtists,
     favoriteCharacters,
+    favoriteSeries,
     setStatus,
     setCharNameByName: charactersApi.setCharNameByName,
     setCharSeriesByName: charactersApi.setCharSeriesByName,
@@ -205,6 +214,8 @@ export default function App() {
     setBatchInterval,
     queueInterval,
     setQueueInterval,
+    queueFolderName,
+    setQueueFolderName,
     activeTab,
     setActiveTab,
   });
@@ -260,6 +271,7 @@ export default function App() {
   const { queueStatus, handleStartQueue, handleStopQueue } = useQueueGeneration({
     queueItems,
     queueInterval,
+    queueFolderName,
     setQueueRunning,
     batchRunning,
     buildGenerateParams,
@@ -307,6 +319,8 @@ export default function App() {
             setPrompt={setPrompt}
             negativePrompt={negativePrompt}
             setNegativePrompt={setNegativePrompt}
+            seed={modelParams.seed}
+            setSeed={modelParams.setSeed}
             onFocusField={setFocusedFieldKey}
             onLoadImageMetadata={handleLoadImageMetadata}
             charactersApi={charactersApi}
@@ -339,6 +353,8 @@ export default function App() {
             onDeleteQueueTemplate={queueTemplatesList.removeItem}
             queueInterval={queueInterval}
             setQueueInterval={setQueueInterval}
+            queueFolderName={queueFolderName}
+            setQueueFolderName={setQueueFolderName}
             queueRunning={queueRunning}
             queueStatus={queueStatus}
             onStartQueue={handleStartQueue}
@@ -395,7 +411,7 @@ export default function App() {
         favArtistNameInput={favorites.favArtistNameInput}
         setFavArtistNameInput={favorites.setFavArtistNameInput}
         onSaveFavArtist={favorites.handleSaveFavArtist}
-        onInsertFavArtist={(fav) => insertIntoFocused(`artist:${fav.name}`)}
+        onInsertFavArtist={(fav) => insertIntoFocused(favoriteArtistText(fav))}
         onEditFavArtist={(fav) => favorites.setFavArtistEditDraft({ ...fav })}
         onDeleteFavArtist={(id) => favoriteArtists.removeItem(id)}
         favChars={favoriteCharacters.items}
@@ -404,12 +420,17 @@ export default function App() {
         favCharSeriesInput={favorites.favCharSeriesInput}
         setFavCharSeriesInput={favorites.setFavCharSeriesInput}
         onSaveFavChar={favorites.handleSaveFavChar}
-        onInsertFavChar={(fav) =>
-          insertIntoFocused(fav.series ? `${fav.name} (${fav.series})` : fav.name)
-        }
+        onInsertFavChar={(fav) => insertIntoFocused(favoriteCharacterText(fav))}
         onToTemplateFavChar={favorites.handleToTemplateFavChar}
         onEditFavChar={(fav) => favorites.setFavCharEditDraft({ ...fav })}
         onDeleteFavChar={(id) => favoriteCharacters.removeItem(id)}
+        favSeries={favoriteSeries.items}
+        favSeriesNameInput={favorites.favSeriesNameInput}
+        setFavSeriesNameInput={favorites.setFavSeriesNameInput}
+        onSaveFavSeries={favorites.handleSaveFavSeries}
+        onInsertFavSeries={(fav) => insertIntoFocused(fav.name)}
+        onEditFavSeries={(fav) => favorites.setFavSeriesEditDraft({ ...fav })}
+        onDeleteFavSeries={(id) => favoriteSeries.removeItem(id)}
       />
 
       <AppModals
@@ -418,6 +439,11 @@ export default function App() {
         setTemplateApplyState={setTemplateApplyState}
         queueTemplateApi={queueTemplateApi}
         favorites={favorites}
+        favoriteOptionGroups={buildFavoriteOptionGroups(
+          favoriteArtists.items,
+          favoriteCharacters.items,
+          favoriteSeries.items
+        )}
       />
     </>
   );

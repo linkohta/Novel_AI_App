@@ -31,18 +31,27 @@ const SKIP_CFG_ABOVE_SIGMA: Record<string, number | null> = {
   'nai-diffusion-furry-3': 11.84515480302779,
 };
 
+// ファイル名・フォルダ名1つ分を安全な文字列にする。Windowsで使えない文字
+// （制御文字と \ / : * ? " < > |）を`_`に置換し、Windowsでは末尾に置けない
+// ドット・空白を取り除く。「.」「..」は空文字列になるため、親ディレクトリを
+// 辿る指定にはならない。複数プロンプト連続生成の保存先フォルダ名のように
+// ユーザーが入力した日本語の名前もそのまま使えるよう、英数字以外も残す。
+export function sanitizePathSegment(segment: string): string {
+  return Array.from(segment)
+    .map((ch) => (ch.charCodeAt(0) < 0x20 || '\\/:*?"<>|'.includes(ch) ? '_' : ch))
+    .join('')
+    .trim()
+    .replace(/[. ]+$/, '');
+}
+
 // 1個以上の"/"区切りセグメントからなるバッチフォルダパス
 // （例: "queue_123/prompt1"）をサニタイズする。ネストしたサブフォルダが
-// 機能し続けるよう、各セグメントごとに個別に不正な文字を取り除く。
+// 機能し続けるよう、各セグメントごとに個別に不正な文字を置換する。
 // 生成画像を出力ディレクトリ配下の任意のbatch/queueサブフォルダに書き込む
 // Electronメインプロセス（electron/generation-handlers.ts）から使われる。
 export function sanitizeBatchFolder(batchFolder?: string | null): string {
   if (!batchFolder) return '';
-  return String(batchFolder)
-    .split('/')
-    .map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ''))
-    .filter(Boolean)
-    .join('/');
+  return String(batchFolder).split('/').map(sanitizePathSegment).filter(Boolean).join('/');
 }
 
 export interface CharacterPromptInput {

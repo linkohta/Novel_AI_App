@@ -200,6 +200,27 @@ button.secondary {
   border: 1px solid #383944;
   cursor: pointer;
 }
+/* 生成履歴サムネイルのページ送り（1ページ20件、ResultPanel.tsx）。 */
+.history-pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 16px;
+}
+.history-pager button {
+  width: auto;
+  margin-top: 0;
+  padding: 6px 12px;
+}
+.history-pager button:disabled {
+  background: #2c2d35;
+  color: #6b6d78;
+}
+.history-pager-info {
+  font-size: 12px;
+  color: #a9abb5;
+  white-space: nowrap;
+}
 .file-info {
   font-size: 12px;
   color: #a9abb5;
@@ -404,6 +425,19 @@ button.secondary {
 }
 .modal .template-var-field {
   margin-bottom: 4px;
+}
+/* 変数の入力欄と「お気に入りから選択...」を横に並べる。 */
+.modal .template-var-row {
+  display: flex;
+  gap: 6px;
+}
+.modal .template-var-row input {
+  flex: 3;
+  min-width: 0;
+}
+.modal .template-var-row select {
+  flex: 2;
+  min-width: 0;
 }
 .modal .no-vars {
   color: #a9abb5;

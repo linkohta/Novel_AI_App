@@ -32,6 +32,7 @@ import type {
   QueueTemplateDraftCharacter,
   QueueTemplateDraftRow,
 } from '../types/domain';
+import { sanitizePathSegment } from '../../shared/novelai.mjs';
 
 const HEADING_PREFIX = '### ';
 const HEADING_PATTERN =
@@ -96,12 +97,7 @@ export function fileNameToTemplateName(fileName: string): string {
 
 // テンプレート名をファイル名として安全な文字列にする（Windowsで使えない文字を置換）。
 export function templateNameToFileName(name: string): string {
-  const safe = Array.from(name)
-    .map((ch) => (ch.charCodeAt(0) < 0x20 || '\\/:*?"<>|'.includes(ch) ? '_' : ch))
-    .join('')
-    .replace(/[. ]+$/, '')
-    .trim();
-  return `${safe || 'template'}.txt`;
+  return `${sanitizePathSegment(name) || 'template'}.txt`;
 }
 
 export function serializePromptTemplate(template: { name: string; text: string }): string {

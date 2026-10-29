@@ -41,6 +41,8 @@ interface UseSettingsPersistenceParams {
   setBatchInterval: Dispatch<SetStateAction<string>>;
   queueInterval: string;
   setQueueInterval: Dispatch<SetStateAction<string>>;
+  queueFolderName: string;
+  setQueueFolderName: Dispatch<SetStateAction<string>>;
   activeTab: string;
   setActiveTab: Dispatch<SetStateAction<string>>;
 }
@@ -90,6 +92,8 @@ export function useSettingsPersistence({
   setBatchInterval,
   queueInterval,
   setQueueInterval,
+  queueFolderName,
+  setQueueFolderName,
   activeTab,
   setActiveTab,
 }: UseSettingsPersistenceParams) {
@@ -142,6 +146,7 @@ export function useSettingsPersistence({
       if (settings.batchCount) setBatchCount(settings.batchCount);
       if (settings.batchInterval) setBatchInterval(settings.batchInterval);
       if (settings.queueInterval) setQueueInterval(settings.queueInterval);
+      if (settings.queueFolderName) setQueueFolderName(settings.queueFolderName);
       if (settings.activeTab) setActiveTab(settings.activeTab);
       setSettingsLoaded(true);
     })();
@@ -173,6 +178,7 @@ export function useSettingsPersistence({
       batchCount,
       batchInterval,
       queueInterval,
+      queueFolderName,
       activeTab,
     }),
     [
@@ -195,6 +201,7 @@ export function useSettingsPersistence({
       batchCount,
       batchInterval,
       queueInterval,
+      queueFolderName,
       activeTab,
     ]
   );

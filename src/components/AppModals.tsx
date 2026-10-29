@@ -3,12 +3,13 @@ import NamedItemEditModal from './modals/NamedItemEditModal';
 import TemplateApplyModal from './modals/TemplateApplyModal';
 import QueueTemplateEditModal from './modals/QueueTemplateEditModal';
 import QueueTemplateApplyModal from './modals/QueueTemplateApplyModal';
-import FavArtistEditModal from './modals/FavArtistEditModal';
+import FavNameEditModal from './modals/FavNameEditModal';
 import FavCharEditModal from './modals/FavCharEditModal';
 import type { TemplateApplyState } from '../types/domain';
 import type { UsePromptLibraryResult } from '../hooks/usePromptLibrary';
 import type { UseQueueTemplateDraftResult } from '../hooks/useQueueTemplateDraft';
 import type { UseFavoritesHandlersResult } from '../hooks/useFavoritesHandlers';
+import type { FavoriteOptionGroup } from '../utils/favorites';
 
 interface AppModalsProps {
   // チャンク／テンプレートの編集ドラフトとテンプレート適用の確定処理。
@@ -18,11 +19,13 @@ interface AppModalsProps {
   setTemplateApplyState: Dispatch<SetStateAction<TemplateApplyState | null>>;
   // 複数プロンプトテンプレートの編集ドラフト・適用状態。
   queueTemplateApi: UseQueueTemplateDraftResult;
-  // お気に入りアーティスト／キャラクターの編集ドラフト。
+  // お気に入りアーティスト／キャラクター／作品の編集ドラフト。
   favorites: UseFavoritesHandlersResult;
+  // テンプレート変数の入力欄で選べる保存済みのお気に入り（単一・複数プロンプトの両テンプレートで共用）。
+  favoriteOptionGroups: FavoriteOptionGroup[];
 }
 
-// App.tsxが持つ編集・適用系の状態を渡すだけの、モーダル6種のまとめ役。
+// App.tsxが持つ編集・適用系の状態を渡すだけの、モーダル7種のまとめ役。
 // 各モーダル自体は状態を持たず、開閉は draft/applyState が truthy かどうかで
 // 決まる（ModalOverlay側の条件付きレンダリング）。
 export default function AppModals({
@@ -31,6 +34,7 @@ export default function AppModals({
   setTemplateApplyState,
   queueTemplateApi,
   favorites,
+  favoriteOptionGroups,
 }: AppModalsProps) {
   return (
     <>
@@ -54,6 +58,7 @@ export default function AppModals({
       />
       <TemplateApplyModal
         applyState={templateApplyState}
+        favoriteOptionGroups={favoriteOptionGroups}
         onCancel={() => setTemplateApplyState(null)}
         onConfirm={promptLibrary.handleTemplateApplyConfirm}
       />
@@ -71,20 +76,31 @@ export default function AppModals({
       />
       <QueueTemplateApplyModal
         applyState={queueTemplateApi.queueTemplateApplyState}
+        favoriteOptionGroups={favoriteOptionGroups}
         onCancel={() => queueTemplateApi.setQueueTemplateApplyState(null)}
         onConfirm={queueTemplateApi.handleQueueTemplateApplyConfirm}
       />
-      <FavArtistEditModal
+      <FavNameEditModal
         draft={favorites.favArtistEditDraft}
         onChange={favorites.setFavArtistEditDraft}
         onCancel={() => favorites.setFavArtistEditDraft(null)}
         onSave={favorites.handleSaveFavArtistEdit}
+        title="お気に入りアーティストを編集"
+        label="アーティスト名"
       />
       <FavCharEditModal
         draft={favorites.favCharEditDraft}
         onChange={favorites.setFavCharEditDraft}
         onCancel={() => favorites.setFavCharEditDraft(null)}
         onSave={favorites.handleSaveFavCharEdit}
+      />
+      <FavNameEditModal
+        draft={favorites.favSeriesEditDraft}
+        onChange={favorites.setFavSeriesEditDraft}
+        onCancel={() => favorites.setFavSeriesEditDraft(null)}
+        onSave={favorites.handleSaveFavSeriesEdit}
+        title="お気に入り作品を編集"
+        label="作品名"
       />
     </>
   );

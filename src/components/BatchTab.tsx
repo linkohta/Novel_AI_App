@@ -25,6 +25,8 @@ interface BatchTabProps {
   onDeleteQueueTemplate: (id: string) => void;
   queueInterval: string;
   setQueueInterval: (value: string) => void;
+  queueFolderName: string;
+  setQueueFolderName: (value: string) => void;
   queueRunning: boolean;
   queueStatus: string;
   onStartQueue: () => void;
@@ -52,6 +54,8 @@ export default function BatchTab({
   onDeleteQueueTemplate,
   queueInterval,
   setQueueInterval,
+  queueFolderName,
+  setQueueFolderName,
   queueRunning,
   queueStatus,
   onStartQueue,
@@ -113,6 +117,8 @@ export default function BatchTab({
         }}
         queueInterval={queueInterval}
         setQueueInterval={setQueueInterval}
+        queueFolderName={queueFolderName}
+        setQueueFolderName={setQueueFolderName}
         onStartQueue={onStartQueue}
         onStopQueue={onStopQueue}
         queueRunning={queueRunning}

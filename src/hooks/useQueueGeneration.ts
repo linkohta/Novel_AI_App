@@ -5,10 +5,12 @@ import type { GenerateImageParams, GenerateImageResult, Settings } from '../type
 import { errorMessage } from '../utils/errorMessage';
 import { clampCount, parseIntervalSec } from '../utils/numbers';
 import { activeCharacters } from '../utils/characters';
+import { sanitizePathSegment } from '../../shared/novelai.mjs';
 
 interface UseQueueGenerationParams {
   queueItems: QueueItem[];
   queueInterval: string;
+  queueFolderName: string;
   setQueueRunning: Dispatch<SetStateAction<boolean>>;
   batchRunning: boolean;
   buildGenerateParams: (extra?: GenerateParamsExtra) => Promise<GenerateImageParams>;
@@ -18,12 +20,13 @@ interface UseQueueGenerationParams {
 
 // 「複数プロンプト連続生成」のループ：queue-itemsのリストを上から順に走査し、
 // 各行のプロンプトを`count`回、生成の間に待機を挟みながら生成し、
-// （全行にわたる）すべての画像を1つの共有`queue_<timestamp>/`フォルダに
-// 保存する。単一プロンプトの連続生成ループと同時実行されないようガードして
+// （全行にわたる）すべての画像を1つの共有フォルダ（既定は`queue_<timestamp>/`、
+// 保存先フォルダ名の指定があれば`<指定名>_<timestamp>/`）に保存する。単一プロンプトの連続生成ループと同時実行されないようガードして
 // いる（useBatchGeneration.ts参照）。
 export function useQueueGeneration({
   queueItems,
   queueInterval,
+  queueFolderName,
   setQueueRunning,
   batchRunning,
   buildGenerateParams,
@@ -41,7 +44,12 @@ export function useQueueGeneration({
       .map((item) => ({ ...item, count: clampCount(item.count) }))
       .filter((item) => item.prompt.trim());
     if (!items.length) return;
-    const queueFolder = `queue_${Date.now()}`;
+    // 同じフォルダ名で再実行しても前回の画像と混ざらないよう、指定時も毎回
+    // タイムスタンプを付けて別フォルダにする。指定名に「/」等が含まれていても
+    // サブフォルダにはせず1つのフォルダ名として扱う（ステータス表示に実際の
+    // フォルダ名を出せるよう、メインプロセスと同じサニタイズをここで済ませる）。
+    const folderBaseName = sanitizePathSegment(queueFolderName) || 'queue';
+    const queueFolder = `${folderBaseName}_${Date.now()}`;
     const totalCount = items.reduce((sum, item) => sum + item.count, 0);
 
     queueStopRef.current = false;

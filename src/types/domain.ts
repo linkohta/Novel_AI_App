@@ -59,6 +59,13 @@ export interface FavoriteCharacter {
   [key: string]: JsonValue;
 }
 
+// お気に入り作品（作品名のみ）。nameに作品名を持つ。
+export interface FavoriteSeries {
+  id: string;
+  name: string;
+  [key: string]: JsonValue;
+}
+
 // 保存済みの複数プロンプトテンプレートの1行。実際にはQueueTemplateDraftRowの
 // 形のまま保存されるが、古い保存データやtxtインポート由来のデータでは
 // count/enabledが欠けている可能性があるため省略可能として扱い、利用側で
