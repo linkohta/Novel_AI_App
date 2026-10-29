@@ -20,6 +20,8 @@ interface PromptQueueSectionProps {
   onClearItems: () => void;
   queueInterval: string;
   setQueueInterval: (value: string) => void;
+  queueFolderName: string;
+  setQueueFolderName: (value: string) => void;
   onStartQueue: () => void;
   onStopQueue: () => void;
   queueRunning: boolean;
@@ -50,6 +52,8 @@ export default function PromptQueueSection({
   onClearItems,
   queueInterval,
   setQueueInterval,
+  queueFolderName,
+  setQueueFolderName,
   onStartQueue,
   onStopQueue,
   queueRunning,
@@ -108,6 +112,18 @@ export default function PromptQueueSection({
         onExportQueueTemplate={onExportQueueTemplate}
         onImportQueueTemplateFiles={onImportQueueTemplateFiles}
       />
+
+      <label>保存先フォルダ名（任意）</label>
+      <input
+        type="text"
+        placeholder="queue"
+        value={queueFolderName}
+        onChange={(e) => setQueueFolderName(e.target.value)}
+        disabled={queueRunning}
+      />
+      <p className="hint">
+        生成画像は保存先フォルダ内の「フォルダ名_タイムスタンプ」フォルダにまとめて保存されます（未入力時は「queue_タイムスタンプ」）。
+      </p>
 
       <div className="row">
         <div>

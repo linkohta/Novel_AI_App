@@ -112,6 +112,7 @@ export default function App() {
   const [batchInterval, setBatchInterval] = useState('5');
   const [batchRunning, setBatchRunning] = useState(false);
   const [queueInterval, setQueueInterval] = useState('5');
+  const [queueFolderName, setQueueFolderName] = useState('');
   const [queueRunning, setQueueRunning] = useState(false);
 
   const queueApi = useQueueItems(setStatus);
@@ -206,6 +207,8 @@ export default function App() {
     setBatchInterval,
     queueInterval,
     setQueueInterval,
+    queueFolderName,
+    setQueueFolderName,
     activeTab,
     setActiveTab,
   });
@@ -261,6 +264,7 @@ export default function App() {
   const { queueStatus, handleStartQueue, handleStopQueue } = useQueueGeneration({
     queueItems,
     queueInterval,
+    queueFolderName,
     setQueueRunning,
     batchRunning,
     buildGenerateParams,
@@ -342,6 +346,8 @@ export default function App() {
             onDeleteQueueTemplate={queueTemplatesList.removeItem}
             queueInterval={queueInterval}
             setQueueInterval={setQueueInterval}
+            queueFolderName={queueFolderName}
+            setQueueFolderName={setQueueFolderName}
             queueRunning={queueRunning}
             queueStatus={queueStatus}
             onStartQueue={handleStartQueue}
