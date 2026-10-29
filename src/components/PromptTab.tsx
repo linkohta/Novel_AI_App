@@ -14,6 +14,8 @@ interface PromptTabProps {
   setPrompt: (value: string) => void;
   negativePrompt: string;
   setNegativePrompt: (value: string) => void;
+  seed: string;
+  setSeed: (value: string) => void;
   onFocusField: (key: string) => void;
   onLoadImageMetadata: (e: ChangeEvent<HTMLInputElement>) => void;
   // useCharactersの戻り値をそのまま受け取る（キャラクター一覧＋「キャラクター名で追加」フォーム）。
@@ -25,7 +27,7 @@ interface PromptTabProps {
   vibeApi: UseVibeTransferResult;
 }
 
-// 左パネル「プロンプト」タブの中身：プロンプト本文・キャラクタープロンプト・
+// 左パネル「プロンプト」タブの中身：プロンプト本文・シード・キャラクタープロンプト・
 // AIポーション。状態は持たず、App.tsxの各フックの戻り値を各セクションへ配線するだけ。
 export default function PromptTab({
   sectionState,
@@ -34,6 +36,8 @@ export default function PromptTab({
   setPrompt,
   negativePrompt,
   setNegativePrompt,
+  seed,
+  setSeed,
   onFocusField,
   onLoadImageMetadata,
   charactersApi,
@@ -51,6 +55,8 @@ export default function PromptTab({
         setPrompt={setPrompt}
         negativePrompt={negativePrompt}
         setNegativePrompt={setNegativePrompt}
+        seed={seed}
+        setSeed={setSeed}
         onFocusField={onFocusField}
         onLoadImageMetadata={onLoadImageMetadata}
       />

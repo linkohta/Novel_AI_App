@@ -33,8 +33,6 @@ interface ModelSectionProps {
   setScale: (value: string) => void;
   sampler: string;
   setSampler: (value: string) => void;
-  seed: string;
-  setSeed: (value: string) => void;
   qualityToggle: boolean;
   setQualityToggle: (value: boolean) => void;
   varietyPlus: boolean;
@@ -56,8 +54,6 @@ export default function ModelSection({
   setScale,
   sampler,
   setSampler,
-  seed,
-  setSeed,
   qualityToggle,
   setQualityToggle,
   varietyPlus,
@@ -142,9 +138,6 @@ export default function ModelSection({
           </option>
         ))}
       </select>
-
-      <label>シード (0でランダム)</label>
-      <input type="number" value={seed} onChange={(e) => setSeed(e.target.value)} />
     </Section>
   );
 }

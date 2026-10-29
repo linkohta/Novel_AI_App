@@ -308,6 +308,8 @@ export default function App() {
             setPrompt={setPrompt}
             negativePrompt={negativePrompt}
             setNegativePrompt={setNegativePrompt}
+            seed={modelParams.seed}
+            setSeed={modelParams.setSeed}
             onFocusField={setFocusedFieldKey}
             onLoadImageMetadata={handleLoadImageMetadata}
             charactersApi={charactersApi}
